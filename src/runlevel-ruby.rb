@@ -108,9 +108,9 @@ module YCP
             ),
             []),
             Left(HBox(
-              PushButton(term(:id, :startstop), _("Start/Stop")),
+              PushButton(term(:id, :startstop), _('&Start/Stop')),
               HSpacing(1),
-              PushButton(term(:id, :enabledisable), _("Enable/Disable"))
+              PushButton(term(:id, :enabledisable), _('&Enable/Disable'))
             ))
         )
         caption = _("Services")
@@ -143,6 +143,7 @@ module YCP
           )
         end
 
+        UI.SetFocus(term(:id, "services"))
         success
       end
 
@@ -166,6 +167,7 @@ module YCP
         )
 
         UI.SetFocus(term(:id, "services"))
+        true
       end
 
       def save
