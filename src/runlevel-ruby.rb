@@ -7,9 +7,17 @@ module YCP
       YCP.import("Wizard")
       YCP.import("Service")
       YCP.import("Label")
+      YCP.import("Popup")
 
       TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
       SERVICE_SUFFIX = '.service'
+
+      @modified = false
+
+      module Status
+        ACTIVE = 'active'
+        INACTIVE = 'inactive'
+      end
 
       # Belongs to Service module
       def services
@@ -32,7 +40,8 @@ module YCP
             'active'      => service_def[2],
             # The low-level unit activation state, values depend on unit type.
             'sub'         => service_def[3],
-            'description' => service_def[4..-1].join(" ")
+            'description' => service_def[4..-1].join(" "),
+            'enabled'     => Service::Enabled(service_def[0]),
           }
         }
         Builtins.y2debug("All services read: %1", @services)
@@ -40,11 +49,26 @@ module YCP
         @services
       end
 
+      def modified!
+        @modified = true
+      end
+
+      def modified?
+        @modified
+      end
+
       def redraw_services
+        UI.OpenDialog(Label(_('Reading services status...')))
         table_items = self.services.sort.collect{
           |service, service_def|
-          term(:item, term(:id, service), service, "Yep", service_def["active"], service_def["description"])
+          term(:item, term(:id, service),
+            service,
+            service_def['enabled'] ? _('Enabled') : _('Disabled'),
+            service_def["active"] == Status::ACTIVE ? _('Active') : _('Inactive'),
+            service_def["description"]
+          )
         }
+        UI.CloseDialog
 
         UI.ChangeWidget(term(:id, "services"), :Items, table_items)
         UI.SetFocus(term(:id, "services"))
@@ -57,7 +81,7 @@ module YCP
             term(:header,
               _("Service"),
               _("Enabled"),
-              _("Running"),
+              _("Active"),
               _("Description")
             ),
             []),
@@ -76,6 +100,11 @@ module YCP
         self.redraw_services
       end
 
+      def toggle_enabled
+        service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
+        Builtins.y2milestone("Toggling (enabled) service: %1", service)
+      end
+
       def main
         textdomain "runlevel-ruby"
 
@@ -83,9 +112,17 @@ module YCP
         self.adjust_dialog
 
         while true
-          ret = UI.UserInput
-          Builtins.y2milestone("User returned %1", ret)
-          break if ret == :abort
+          returned = UI.UserInput
+          Builtins.y2milestone("User returned %1", returned)
+
+          case returned
+            when :abort
+              break if Popup::ReallyAbort(self.modified?)
+            when :enabledisable
+              toggle_enabled
+            else
+              Builtins.y2error("Unknown user input: %1", returned)
+          end
         end
 
         UI.CloseDialog
