@@ -137,10 +137,9 @@ module YCP
             (service_running?(service) ? _('Active') : _('Inactive'))
           )
         else
-          Report::Error(running ?
-            Message::CannotStopService(service)
-            :
-            Message::CannotStartService(service)
+          Popup::ErrorDetails(
+            (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
+            service_full_info(service)
           )
         end
 
