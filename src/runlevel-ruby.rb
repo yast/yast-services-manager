@@ -8,6 +8,8 @@ module YCP
       YCP.import("Service")
       YCP.import("Label")
       YCP.import("Popup")
+      YCP.import("Report")
+      YCP.import("Message")
 
       TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
       SERVICE_SUFFIX = '.service'
@@ -69,6 +71,14 @@ module YCP
         @services[service]['enabled']
       end
 
+      def service_running!(service, new_running)
+        @services[service]['active'] = new_running
+      end
+
+      def service_running?(service)
+        @services[service]['active'] == Status::ACTIVE
+      end
+
       def redraw_services
         UI.OpenDialog(Label(_('Reading services status...')))
         table_items = self.services.sort.collect{
@@ -112,6 +122,31 @@ module YCP
         self.redraw_services
       end
 
+      def toggle_running
+        service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
+        Builtins.y2milestone("Toggling service running: %1", service)
+        running = self.service_running?(service)
+
+        success = (running ? Service::Stop(service) : Service::Start(service))
+
+        if success
+          self.service_running!(service, (running ? Status::INACTIVE : Status::ACTIVE))
+          UI.ChangeWidget(
+            term(:id, "services"),
+            term(:Cell, service, 2),
+            (self.service_running?(service) ? _('Active') : _('Inactive'))
+          )
+        else
+          Report::Error(running ?
+            Message::CannotStopService(service)
+            :
+            Message::CannotStartService(service)
+          )
+        end
+
+        success
+      end
+
       def toggle_enabled
         service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
         Builtins.y2milestone("Toggling service status: %1", service)
@@ -139,6 +174,8 @@ module YCP
               break if Popup::ReallyAbort(self.modified?)
             when :enabledisable
               toggle_enabled
+            when :startstop
+              toggle_running
             else
               Builtins.y2error("Unknown user input: %1", returned)
           end
