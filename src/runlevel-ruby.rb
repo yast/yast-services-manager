@@ -40,8 +40,10 @@ module YCP
             'active'      => service_def[2],
             # The low-level unit activation state, values depend on unit type.
             'sub'         => service_def[3],
+            # English description of the service
             'description' => service_def[4..-1].join(" "),
             'enabled'     => Service::Enabled(service_def[0]),
+            'modified'    => false,
           }
         }
         Builtins.y2debug("All services read: %1", @services)
@@ -55,6 +57,16 @@ module YCP
 
       def modified?
         @modified
+      end
+
+      def service_enabled!(service, new_status)
+        @services[service]['enabled']  = new_status
+        @services[service]['modified'] = true
+        self.modified!
+      end
+
+      def service_enabled?(service)
+        @services[service]['enabled']
       end
 
       def redraw_services
@@ -102,7 +114,14 @@ module YCP
 
       def toggle_enabled
         service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
-        Builtins.y2milestone("Toggling (enabled) service: %1", service)
+        Builtins.y2milestone("Toggling service status: %1", service)
+        self.service_enabled!(service, !self.service_enabled?(service))
+
+        UI.ChangeWidget(
+          term(:id, "services"),
+          term(:Cell, service, 1),
+          (self.service_enabled?(service) ? _('Enabled') : _('Disabled'))
+        )
       end
 
       def main
