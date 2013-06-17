@@ -64,7 +64,7 @@ module YCP
       def service_enabled!(service, new_status)
         @services[service]['enabled']  = new_status
         @services[service]['modified'] = true
-        self.modified!
+        modified!
       end
 
       def service_enabled?(service)
@@ -81,7 +81,7 @@ module YCP
 
       def redraw_services
         UI.OpenDialog(Label(_('Reading services status...')))
-        table_items = self.services.sort.collect{
+        table_items = services.sort.collect{
           |service, service_def|
           term(:item, term(:id, service),
             service,
@@ -119,22 +119,22 @@ module YCP
         Wizard.HideBackButton
         Wizard.SetAbortButton(:abort, Label.CancelButton)
 
-        self.redraw_services
+        redraw_services
       end
 
       def toggle_running
         service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
         Builtins.y2milestone("Toggling service running: %1", service)
-        running = self.service_running?(service)
+        running = service_running?(service)
 
         success = (running ? Service::Stop(service) : Service::Start(service))
 
         if success
-          self.service_running!(service, (running ? Status::INACTIVE : Status::ACTIVE))
+          service_running!(service, (running ? Status::INACTIVE : Status::ACTIVE))
           UI.ChangeWidget(
             term(:id, "services"),
             term(:Cell, service, 2),
-            (self.service_running?(service) ? _('Active') : _('Inactive'))
+            (service_running?(service) ? _('Active') : _('Inactive'))
           )
         else
           Report::Error(running ?
@@ -147,23 +147,69 @@ module YCP
         success
       end
 
+      # Belongs to Service module
+      def service_full_info(service)
+        SCR.Execute(
+          path(".target.bash_output"),
+          TERM_OPTIONS + "systemctl status #{service}#{SERVICE_SUFFIX}" + " 2>&1"
+        )["stdout"]
+      end
+
       def toggle_enabled
         service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
         Builtins.y2milestone("Toggling service status: %1", service)
-        self.service_enabled!(service, !self.service_enabled?(service))
+        service_enabled!(service, !service_enabled?(service))
 
         UI.ChangeWidget(
           term(:id, "services"),
           term(:Cell, service, 1),
-          (self.service_enabled?(service) ? _('Enabled') : _('Disabled'))
+          (service_enabled?(service) ? _('Enabled') : _('Disabled'))
         )
+
+        UI.SetFocus(term(:id, "services"))
+      end
+
+      def save
+        return true unless modified?
+
+        UI.OpenDialog(Label(_('Writing configuration...')))
+
+        ret = true
+        services.each {
+          |service, service_def|
+          if service_def['modified']
+            unless (service_enabled?(service) ? Service::Enable(service) : Service::Disable(service))
+              ret = false
+
+              Popup::ErrorDetails(
+                (service_enabled?(service) ?
+                  _("Could not enable service #{service}")
+                  :
+                  _("Could not disable service #{service}")
+                ),
+                service_full_info(service)
+              )
+            end
+          end
+        }
+
+        UI.CloseDialog
+
+        # Writing has failed, user can decide whether to continue or leave
+        unless ret
+          ret = ! Popup::ContinueCancel(
+            _("Writing the configuration have failed.\nWould you like to continue editing?")
+          )
+        end
+
+        ret
       end
 
       def main
         textdomain "runlevel-ruby"
 
         Wizard.CreateDialog
-        self.adjust_dialog
+        adjust_dialog
 
         while true
           returned = UI.UserInput
@@ -171,11 +217,13 @@ module YCP
 
           case returned
             when :abort
-              break if Popup::ReallyAbort(self.modified?)
+              break if Popup::ReallyAbort(modified?)
             when :enabledisable
               toggle_enabled
             when :startstop
               toggle_running
+            when :next
+              break if save
             else
               Builtins.y2error("Unknown user input: %1", returned)
           end
