@@ -21,7 +21,20 @@ module YCP
         INACTIVE = 'inactive'
       end
 
-      # Belongs to Service module
+      # Belongs to Service module (after it's converted to Ruby) #
+
+      # Returns hash of all services read using systemctl
+      #
+      # @return Hash
+      # @struct {
+      #     'service_name'  => {
+      #       'load'        => Reflects whether the unit definition was properly loaded
+      #       'active'      => The high-level unit activation state, i.e. generalization of SUB
+      #       'description' => English description of the service
+      #       'enabled'     => (Boolean) whether the service has been enabled
+      #       'modified'    => (Boolean) whether the service (enabled) has been changed
+      #     }
+      #   }
       def services
         return @services if !@services.nil?
 
@@ -36,13 +49,9 @@ module YCP
           service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
 
           @services[service_def[0]] = {
-            # Reflects whether the unit definition was properly loaded.
             'load'        => service_def[1],
-            # The high-level unit activation state, i.e. generalization of SUB.
             'active'      => service_def[2],
-            # The low-level unit activation state, values depend on unit type.
-            'sub'         => service_def[3],
-            # English description of the service
+            # [3] is SUB: The low-level unit activation state, values depend on unit type
             'description' => service_def[4..-1].join(" "),
             'enabled'     => Service::Enabled(service_def[0]),
             'modified'    => false,
@@ -53,32 +62,65 @@ module YCP
         @services
       end
 
+      # Belongs to Service module (after it's converted to Ruby) #
+
+      # Returns full information about the service
+      #
+      # @param String service name
+      # @return String full unformatted information
+      def service_full_info(service)
+        SCR.Execute(
+          path(".target.bash_output"),
+          TERM_OPTIONS + "systemctl status #{service}#{SERVICE_SUFFIX}" + " 2>&1"
+        )["stdout"]
+      end
+
+      # Sets that configuration has been modified
       def modified!
         @modified = true
       end
 
+      # Returns whether configuration has been modified
+      # @return (Boolean) whether modified
       def modified?
         @modified
       end
 
+      # Enables a given service (in memoery only, use save() later)
+      #
+      # @param String service name
+      # @param Boolean new service status
       def service_enabled!(service, new_status)
         @services[service]['enabled']  = new_status
         @services[service]['modified'] = true
         modified!
       end
 
+      # Returns whether the given service has been enabled
+      #
+      # @param String service
+      # @return Boolean enabled
       def service_enabled?(service)
         @services[service]['enabled']
       end
 
+      # Sets whether service should be running after writing the configuration
+      #
+      # @param String service name
+      # @param Boolean running
       def service_running!(service, new_running)
         @services[service]['active'] = new_running
       end
 
+      # Returns the current setting whether service should be running
+      #
+      # @param String service name
+      # @return Boolean running
       def service_running?(service)
         @services[service]['active'] == Status::ACTIVE
       end
 
+      # Redraws the services dialog
       def redraw_services
         UI.OpenDialog(Label(_('Reading services status...')))
         table_items = services.sort.collect{
@@ -96,15 +138,16 @@ module YCP
         UI.SetFocus(term(:id, "services"))
       end
 
+      # Fills the dialog contents
       def adjust_dialog
         contents = VBox(
           Table(
             term(:id, "services"),
             term(:header,
-              _("Service"),
-              _("Enabled"),
-              _("Active"),
-              _("Description")
+              _('Service'),
+              _('Enabled'),
+              _('Active'),
+              _('Description')
             ),
             []),
             Left(HBox(
@@ -113,7 +156,7 @@ module YCP
               PushButton(term(:id, :enabledisable), _('&Enable/Disable'))
             ))
         )
-        caption = _("Services")
+        caption = _('Services')
 
         Wizard.SetContentsButtons(caption, contents, "", Label.CancelButton, Label.OKButton)
         Wizard.HideBackButton
@@ -122,6 +165,9 @@ module YCP
         redraw_services
       end
 
+      # Toggles (starts/stops) the currently selected service
+      #
+      # @return Boolean if successful
       def toggle_running
         service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
         Builtins.y2milestone("Toggling service running: %1", service)
@@ -147,14 +193,8 @@ module YCP
         success
       end
 
-      # Belongs to Service module
-      def service_full_info(service)
-        SCR.Execute(
-          path(".target.bash_output"),
-          TERM_OPTIONS + "systemctl status #{service}#{SERVICE_SUFFIX}" + " 2>&1"
-        )["stdout"]
-      end
-
+      # Toggles (enable/disable) whether the currently selected service should
+      # be enabled or disabled while writing the configuration
       def toggle_enabled
         service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
         Builtins.y2milestone("Toggling service status: %1", service)
@@ -170,6 +210,9 @@ module YCP
         true
       end
 
+      # Saves the current configuration
+      #
+      # @return Boolean if successful
       def save
         return true unless modified?
 
@@ -206,6 +249,7 @@ module YCP
         ret
       end
 
+      # Main function
       def main
         textdomain "runlevel-ruby"
 
