@@ -19,6 +19,8 @@ module YCP
       module Status
         ACTIVE = 'active'
         INACTIVE = 'inactive'
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
       end
 
       # Belongs to Service module (after it's converted to Ruby) #
@@ -42,20 +44,34 @@ module YCP
 
         SCR.Execute(
           path(".target.bash_output"),
+          TERM_OPTIONS + 'systemctl list-unit-files --type service --no-legend --no-pager --no-ask-password'
+        )["stdout"].each_line {
+          |line|
+          service_def = line.split(/[\s]+/)
+          # only enabled or disabled services can be handled
+          # static and masked are ignored here
+          if service_def[1] == Status::ENABLED || service_def[1] == Status::DISABLED
+            service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
+            @services[service_def[0]] = {
+              'enabled'  => (service_def[1] == Status::ENABLED),
+              'modified' => false,
+            }
+          end
+        }
+
+        SCR.Execute(
+          path(".target.bash_output"),
           TERM_OPTIONS + 'systemctl --all --type service --no-legend --no-pager --no-ask-password'
         )["stdout"].each_line {
           |line|
           service_def = line.split(/[\s]+/)
           service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
 
-          @services[service_def[0]] = {
-            'load'        => service_def[1],
-            'active'      => service_def[2],
-            # [3] is SUB: The low-level unit activation state, values depend on unit type
-            'description' => service_def[4..-1].join(" "),
-            'enabled'     => Service::Enabled(service_def[0]),
-            'modified'    => false,
-          }
+          unless @services[service_def[0]].nil?
+            @services[service_def[0]]['load']        = service_def[1]
+            @services[service_def[0]]['active']      = service_def[2]
+            @services[service_def[0]]['description'] = service_def[4..-1].join(" ")
+          end
         }
         Builtins.y2debug("All services read: %1", @services)
 
