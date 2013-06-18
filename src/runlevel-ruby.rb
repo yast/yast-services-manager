@@ -160,6 +160,33 @@ module YCP
         UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
       end
 
+      def redraw_service(service)
+        enabled = service_enabled?(service)
+        UI.ChangeWidget(
+          term(:id, IDs::SERVICES_TABLE),
+          term(:Cell, service, 1),
+          (enabled ? _('Enabled') : _('Disabled'))
+        )
+
+        running = service_running?(service)
+
+        # The current state matches the futural state
+        if (enabled == running)
+          UI.ChangeWidget(
+            term(:id, IDs::SERVICES_TABLE),
+            term(:Cell, service, 2),
+            (running ? _('Active') : _('Inactive'))
+          )
+        # The current state differs the the futural state
+        else
+          UI.ChangeWidget(
+            term(:id, IDs::SERVICES_TABLE),
+            term(:Cell, service, 2),
+            (running ? _('Active (will stop)') : _('Inactive (will start)'))
+          )
+        end
+      end
+
       # Fills the dialog contents
       def adjust_dialog
         contents = VBox(
@@ -199,11 +226,7 @@ module YCP
 
         if success
           service_running!(service, (running ? Status::INACTIVE : Status::ACTIVE))
-          UI.ChangeWidget(
-            term(:id, IDs::SERVICES_TABLE),
-            term(:Cell, service, 2),
-            (service_running?(service) ? _('Active') : _('Inactive'))
-          )
+          redraw_service(service)
         else
           Popup::ErrorDetails(
             (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
@@ -222,12 +245,7 @@ module YCP
         Builtins.y2milestone("Toggling service status: %1", service)
         service_enabled!(service, !service_enabled?(service))
 
-        UI.ChangeWidget(
-          term(:id, IDs::SERVICES_TABLE),
-          term(:Cell, service, 1),
-          (service_enabled?(service) ? _('Enabled') : _('Disabled'))
-        )
-
+        redraw_service(service)
         UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
         true
       end
@@ -241,6 +259,8 @@ module YCP
         UI.OpenDialog(Label(_('Writing configuration...')))
 
         ret = true
+
+        # At first, only adjust services startup (enabled/disabled)
         services.each {
           |service, service_def|
           if service_def['modified']
@@ -252,6 +272,26 @@ module YCP
                   _("Could not enable service #{service}")
                   :
                   _("Could not disable service #{service}")
+                ),
+                service_full_info(service)
+              )
+            end
+          end
+        }
+
+        # Then try to adjust services run (active/inactive)
+        # Might start or stop some services that would cause system instability
+        services.each {
+          |service, service_def|
+          if service_def['modified']
+            unless (service_enabled?(service) ? Service::Start(service) : Service::Stop(service))
+              ret = false
+
+              Popup::ErrorDetails(
+                (service_enabled?(service) ?
+                  _("Could not start service #{service}")
+                  :
+                  _("Could not stop service #{service}")
                 ),
                 service_full_info(service)
               )
