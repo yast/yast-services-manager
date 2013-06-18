@@ -23,6 +23,12 @@ module YCP
         DISABLED = 'disabled'
       end
 
+      module IDs
+        SERVICES_TABLE = "services"
+        TOGGLE_RUNNING = :startstop
+        TOGGLE_ENABLED = :enabledisable
+      end
+
       # Belongs to Service module (after it's converted to Ruby) #
 
       # Returns hash of all services read using systemctl
@@ -150,15 +156,15 @@ module YCP
         }
         UI.CloseDialog
 
-        UI.ChangeWidget(term(:id, "services"), :Items, table_items)
-        UI.SetFocus(term(:id, "services"))
+        UI.ChangeWidget(term(:id, IDs::SERVICES_TABLE), :Items, table_items)
+        UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
       end
 
       # Fills the dialog contents
       def adjust_dialog
         contents = VBox(
           Table(
-            term(:id, "services"),
+            term(:id, IDs::SERVICES_TABLE),
             term(:header,
               _('Service'),
               _('Enabled'),
@@ -167,9 +173,9 @@ module YCP
             ),
             []),
             Left(HBox(
-              PushButton(term(:id, :startstop), _('&Start/Stop')),
+              PushButton(term(:id, IDs::TOGGLE_RUNNING), _('&Start/Stop')),
               HSpacing(1),
-              PushButton(term(:id, :enabledisable), _('&Enable/Disable'))
+              PushButton(term(:id, IDs::TOGGLE_ENABLED), _('&Enable/Disable'))
             ))
         )
         caption = _('Services')
@@ -185,7 +191,7 @@ module YCP
       #
       # @return Boolean if successful
       def toggle_running
-        service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
+        service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
         Builtins.y2milestone("Toggling service running: %1", service)
         running = service_running?(service)
 
@@ -194,7 +200,7 @@ module YCP
         if success
           service_running!(service, (running ? Status::INACTIVE : Status::ACTIVE))
           UI.ChangeWidget(
-            term(:id, "services"),
+            term(:id, IDs::SERVICES_TABLE),
             term(:Cell, service, 2),
             (service_running?(service) ? _('Active') : _('Inactive'))
           )
@@ -205,24 +211,24 @@ module YCP
           )
         end
 
-        UI.SetFocus(term(:id, "services"))
+        UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
         success
       end
 
       # Toggles (enable/disable) whether the currently selected service should
       # be enabled or disabled while writing the configuration
       def toggle_enabled
-        service = UI.QueryWidget(term(:id, "services"), :CurrentItem)
+        service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
         Builtins.y2milestone("Toggling service status: %1", service)
         service_enabled!(service, !service_enabled?(service))
 
         UI.ChangeWidget(
-          term(:id, "services"),
+          term(:id, IDs::SERVICES_TABLE),
           term(:Cell, service, 1),
           (service_enabled?(service) ? _('Enabled') : _('Disabled'))
         )
 
-        UI.SetFocus(term(:id, "services"))
+        UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
         true
       end
 
@@ -279,9 +285,9 @@ module YCP
           case returned
             when :abort
               break if Popup::ReallyAbort(modified?)
-            when :enabledisable
+            when IDs::TOGGLE_ENABLED
               toggle_enabled
-            when :startstop
+            when IDs::TOGGLE_RUNNING
               toggle_running
             when :next
               break if save
