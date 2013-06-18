@@ -1,6 +1,7 @@
 About
 =====
-YaST Runlevel written in Ruby
+YaST Runlevel written in Ruby.
+Still work in progress but already working.
 
 Running
 =======
@@ -10,4 +11,9 @@ Running
 
 Todo
 ====
-Makefile
+- Makefile/Rakefile
+- Test
+- Packaging
+- Use Classes/Struct and OOP instead of Hashes
+- Default target
+- Documentation (probably yard)
