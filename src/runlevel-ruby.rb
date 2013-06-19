@@ -14,6 +14,7 @@ module YCP
 
       TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
       SERVICE_SUFFIX = '.service'
+      SYSTEMCTL_DEFAULT_OPTIONS = ' --no-legend --no-pager --no-ask-password '
 
       @modified = false
 
@@ -51,9 +52,9 @@ module YCP
         @services = {}
 
         SCR.Execute(
-          path(".target.bash_output"),
-          TERM_OPTIONS + 'systemctl list-unit-files --type service --no-legend --no-pager --no-ask-password'
-        )["stdout"].each_line {
+          path('.target.bash_output'),
+          TERM_OPTIONS + 'systemctl list-unit-files --type service' + SYSTEMCTL_DEFAULT_OPTIONS
+        )['stdout'].each_line {
           |line|
           service_def = line.split(/[\s]+/)
           # only enabled or disabled services can be handled
@@ -68,9 +69,9 @@ module YCP
         }
 
         SCR.Execute(
-          path(".target.bash_output"),
-          TERM_OPTIONS + 'systemctl --all --type service --no-legend --no-pager --no-ask-password'
-        )["stdout"].each_line {
+          path('.target.bash_output'),
+          TERM_OPTIONS + 'systemctl --all --type service' + SYSTEMCTL_DEFAULT_OPTIONS
+        )['stdout'].each_line {
           |line|
           service_def = line.split(/[\s]+/)
           service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
@@ -81,7 +82,7 @@ module YCP
             @services[service_def[0]]['description'] = service_def[4..-1].join(" ")
           end
         }
-        Builtins.y2debug("All services read: %1", @services)
+        Builtins.y2debug('All services read: %1', @services)
 
         @services
       end
@@ -139,9 +140,9 @@ module YCP
       # @return String full unformatted information
       def service_full_info(service)
         SCR.Execute(
-          path(".target.bash_output"),
+          path('.target.bash_output'),
           TERM_OPTIONS + "systemctl status #{service}#{SERVICE_SUFFIX}" + " 2>&1"
-        )["stdout"]
+        )['stdout']
       end
 
       # Sets that configuration has been modified
@@ -197,8 +198,8 @@ module YCP
           term(:item, term(:id, service),
             service,
             service_def['enabled'] ? _('Enabled') : _('Disabled'),
-            service_def["active"] == Status::ACTIVE ? _('Active') : _('Inactive'),
-            service_def["description"]
+            service_def['active'] == Status::ACTIVE ? _('Active') : _('Inactive'),
+            service_def['description']
           )
         }
         UI.CloseDialog
@@ -279,7 +280,7 @@ module YCP
       # @return Boolean if successful
       def toggle_running
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
-        Builtins.y2milestone("Toggling service running: %1", service)
+        Builtins.y2milestone('Toggling service running: %1', service)
         running = service_running?(service)
 
         success = (running ? Service::Stop(service) : Service::Start(service))
@@ -302,7 +303,7 @@ module YCP
       # be enabled or disabled while writing the configuration
       def toggle_enabled
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
-        Builtins.y2milestone("Toggling service status: %1", service)
+        Builtins.y2milestone('Toggling service status: %1', service)
         service_enabled!(service, !service_enabled?(service))
 
         redraw_service(service)
@@ -322,7 +323,7 @@ module YCP
       #
       # @return Boolean if successful
       def save
-        Builtins.y2milestone("Writing configuration")
+        Builtins.y2milestone('Writing configuration')
         UI.OpenDialog(Label(_('Writing configuration...')))
 
         ret = save_services && SystemdTarget.save
@@ -350,7 +351,7 @@ module YCP
 
         while true
           returned = UI.UserInput
-          Builtins.y2milestone("User returned %1", returned)
+          Builtins.y2milestone('User returned %1', returned)
 
           case returned
             when :abort
@@ -364,7 +365,7 @@ module YCP
             when :next
               break if save
             else
-              Builtins.y2error("Unknown user input: %1", returned)
+              Builtins.y2error('Unknown user input: %1', returned)
           end
         end
 
