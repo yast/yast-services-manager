@@ -10,6 +10,7 @@ module YCP
       YCP.import("Popup")
       YCP.import("Report")
       YCP.import("Message")
+      YCP.import("SystemdTarget")
 
       TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
       SERVICE_SUFFIX = '.service'
@@ -24,9 +25,10 @@ module YCP
       end
 
       module IDs
-        SERVICES_TABLE = "services"
-        TOGGLE_RUNNING = :startstop
-        TOGGLE_ENABLED = :enabledisable
+        SERVICES_TABLE = :services_table
+        TOGGLE_RUNNING = :start_stop
+        TOGGLE_ENABLED = :enable_disable
+        DEFAULT_TARGET = :default_target
       end
 
       # Belongs to Service module (after it's converted to Ruby) #
@@ -82,6 +84,51 @@ module YCP
         Builtins.y2debug("All services read: %1", @services)
 
         @services
+      end
+
+      def save_services
+        ret = true
+
+        # At first, only adjust services startup (enabled/disabled)
+        services.each {
+          |service, service_def|
+          if service_def['modified']
+            unless (service_enabled?(service) ? Service::Enable(service) : Service::Disable(service))
+              ret = false
+
+              Popup::ErrorDetails(
+                (service_enabled?(service) ?
+                  _("Could not enable service #{service}")
+                  :
+                  _("Could not disable service #{service}")
+                ),
+                service_full_info(service)
+              )
+            end
+          end
+        }
+
+        # Then try to adjust services run (active/inactive)
+        # Might start or stop some services that would cause system instability
+        services.each {
+          |service, service_def|
+          if service_def['modified']
+            unless (service_enabled?(service) ? Service::Start(service) : Service::Stop(service))
+              ret = false
+
+              Popup::ErrorDetails(
+                (service_enabled?(service) ?
+                  _("Could not start service #{service}")
+                  :
+                  _("Could not stop service #{service}")
+                ),
+                service_full_info(service)
+              )
+            end
+          end
+        }
+
+        ret
       end
 
       # Belongs to Service module (after it's converted to Ruby) #
@@ -187,9 +234,21 @@ module YCP
         end
       end
 
+      def redraw_system_targets
+        UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Items, SystemdTarget.all)
+        UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Value, SystemdTarget.current_default)
+      end
+
       # Fills the dialog contents
       def adjust_dialog
         contents = VBox(
+          Left(ComboBox(
+            term(:id, IDs::DEFAULT_TARGET),
+            term(:opt, :notify),
+            _('Default System &Target'),
+            []
+          )),
+          VSpacing(1),
           Table(
             term(:id, IDs::SERVICES_TABLE),
             term(:header,
@@ -205,13 +264,14 @@ module YCP
               PushButton(term(:id, IDs::TOGGLE_ENABLED), _('&Enable/Disable'))
             ))
         )
-        caption = _('Services')
+        caption = _('Services Manager')
 
         Wizard.SetContentsButtons(caption, contents, "", Label.CancelButton, Label.OKButton)
         Wizard.HideBackButton
         Wizard.SetAbortButton(:abort, Label.CancelButton)
 
         redraw_services
+        redraw_system_targets
       end
 
       # Toggles (starts/stops) the currently selected service
@@ -250,54 +310,22 @@ module YCP
         true
       end
 
+      def handle_dialog
+        new_default_target = UI.QueryWidget(term(:id, IDs::DEFAULT_TARGET), :Value)
+        Builtins.y2milestone("Setting new default target #{new_default_target}")
+        SystemdTarget.set_default(new_default_target)
+
+        modified! if SystemdTarget.is_modified
+      end
+
       # Saves the current configuration
       #
       # @return Boolean if successful
       def save
-        return true unless modified?
-
+        Builtins.y2milestone("Writing configuration")
         UI.OpenDialog(Label(_('Writing configuration...')))
 
-        ret = true
-
-        # At first, only adjust services startup (enabled/disabled)
-        services.each {
-          |service, service_def|
-          if service_def['modified']
-            unless (service_enabled?(service) ? Service::Enable(service) : Service::Disable(service))
-              ret = false
-
-              Popup::ErrorDetails(
-                (service_enabled?(service) ?
-                  _("Could not enable service #{service}")
-                  :
-                  _("Could not disable service #{service}")
-                ),
-                service_full_info(service)
-              )
-            end
-          end
-        }
-
-        # Then try to adjust services run (active/inactive)
-        # Might start or stop some services that would cause system instability
-        services.each {
-          |service, service_def|
-          if service_def['modified']
-            unless (service_enabled?(service) ? Service::Start(service) : Service::Stop(service))
-              ret = false
-
-              Popup::ErrorDetails(
-                (service_enabled?(service) ?
-                  _("Could not start service #{service}")
-                  :
-                  _("Could not stop service #{service}")
-                ),
-                service_full_info(service)
-              )
-            end
-          end
-        }
+        ret = save_services && SystemdTarget.save
 
         UI.CloseDialog
 
@@ -307,6 +335,8 @@ module YCP
             _("Writing the configuration have failed.\nWould you like to continue editing?")
           )
         end
+
+        @modified = false if ret
 
         ret
       end
@@ -329,6 +359,8 @@ module YCP
               toggle_enabled
             when IDs::TOGGLE_RUNNING
               toggle_running
+            when IDs::DEFAULT_TARGET
+              handle_dialog
             when :next
               break if save
             else
