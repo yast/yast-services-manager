@@ -7,12 +7,11 @@ Running
 =======
 
     sudo rake install
-    sudo yast2 runlevel-ruby
+    sudo yast2 services-manager
 
 Todo
 ====
-- Makefile/Rakefile
-- Test
+- Tests
 - Packaging
 - Use Classes/Struct and OOP instead of Hashes
 - Documentation (probably yard)
