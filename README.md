@@ -15,5 +15,4 @@ Todo
 - Test
 - Packaging
 - Use Classes/Struct and OOP instead of Hashes
-- Default target
 - Documentation (probably yard)
