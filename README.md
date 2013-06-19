@@ -6,9 +6,7 @@ Still work in progress but already working.
 Running
 =======
 
-    sudo cp src/runlevel-ruby.rb /usr/share/YaST2/clients/
-    sudo cp src/SystemdTarget.rb /usr/share/YaST2/modules/
-    sudo cp src/ServiceV2.rb /usr/share/YaST2/modules/
+    sudo rake install
     sudo yast2 runlevel-ruby
 
 Todo
