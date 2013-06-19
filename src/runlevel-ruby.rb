@@ -11,19 +11,7 @@ module YCP
       YCP.import("Report")
       YCP.import("Message")
       YCP.import("SystemdTarget")
-
-      TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
-      SERVICE_SUFFIX = '.service'
-      SYSTEMCTL_DEFAULT_OPTIONS = ' --no-legend --no-pager --no-ask-password '
-
-      @modified = false
-
-      module Status
-        ACTIVE = 'active'
-        INACTIVE = 'inactive'
-        ENABLED = 'enabled'
-        DISABLED = 'disabled'
-      end
+      YCP.import("ServiceV2")
 
       module IDs
         SERVICES_TABLE = :services_table
@@ -32,173 +20,16 @@ module YCP
         DEFAULT_TARGET = :default_target
       end
 
-      # Belongs to Service module (after it's converted to Ruby) #
-
-      # Returns hash of all services read using systemctl
-      #
-      # @return Hash
-      # @struct {
-      #     'service_name'  => {
-      #       'load'        => Reflects whether the unit definition was properly loaded
-      #       'active'      => The high-level unit activation state, i.e. generalization of SUB
-      #       'description' => English description of the service
-      #       'enabled'     => (Boolean) whether the service has been enabled
-      #       'modified'    => (Boolean) whether the service (enabled) has been changed
-      #     }
-      #   }
-      def services
-        return @services if !@services.nil?
-
-        @services = {}
-
-        SCR.Execute(
-          path('.target.bash_output'),
-          TERM_OPTIONS + 'systemctl list-unit-files --type service' + SYSTEMCTL_DEFAULT_OPTIONS
-        )['stdout'].each_line {
-          |line|
-          service_def = line.split(/[\s]+/)
-          # only enabled or disabled services can be handled
-          # static and masked are ignored here
-          if service_def[1] == Status::ENABLED || service_def[1] == Status::DISABLED
-            service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
-            @services[service_def[0]] = {
-              'enabled'  => (service_def[1] == Status::ENABLED),
-              'modified' => false,
-            }
-          end
-        }
-
-        SCR.Execute(
-          path('.target.bash_output'),
-          TERM_OPTIONS + 'systemctl --all --type service' + SYSTEMCTL_DEFAULT_OPTIONS
-        )['stdout'].each_line {
-          |line|
-          service_def = line.split(/[\s]+/)
-          service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
-
-          unless @services[service_def[0]].nil?
-            @services[service_def[0]]['load']        = service_def[1]
-            @services[service_def[0]]['active']      = service_def[2]
-            @services[service_def[0]]['description'] = service_def[4..-1].join(" ")
-          end
-        }
-        Builtins.y2debug('All services read: %1', @services)
-
-        @services
-      end
-
-      def save_services
-        ret = true
-
-        # At first, only adjust services startup (enabled/disabled)
-        services.each {
-          |service, service_def|
-          if service_def['modified']
-            unless (service_enabled?(service) ? Service::Enable(service) : Service::Disable(service))
-              ret = false
-
-              Popup::ErrorDetails(
-                (service_enabled?(service) ?
-                  _("Could not enable service #{service}")
-                  :
-                  _("Could not disable service #{service}")
-                ),
-                service_full_info(service)
-              )
-            end
-          end
-        }
-
-        # Then try to adjust services run (active/inactive)
-        # Might start or stop some services that would cause system instability
-        services.each {
-          |service, service_def|
-          if service_def['modified']
-            unless (service_enabled?(service) ? Service::Start(service) : Service::Stop(service))
-              ret = false
-
-              Popup::ErrorDetails(
-                (service_enabled?(service) ?
-                  _("Could not start service #{service}")
-                  :
-                  _("Could not stop service #{service}")
-                ),
-                service_full_info(service)
-              )
-            end
-          end
-        }
-
-        ret
-      end
-
-      # Belongs to Service module (after it's converted to Ruby) #
-
-      # Returns full information about the service
-      #
-      # @param String service name
-      # @return String full unformatted information
-      def service_full_info(service)
-        SCR.Execute(
-          path('.target.bash_output'),
-          TERM_OPTIONS + "systemctl status #{service}#{SERVICE_SUFFIX}" + " 2>&1"
-        )['stdout']
-      end
-
-      # Sets that configuration has been modified
-      def modified!
-        @modified = true
-      end
-
-      # Returns whether configuration has been modified
-      # @return (Boolean) whether modified
-      def modified?
-        @modified
-      end
-
-      # Enables a given service (in memoery only, use save() later)
-      #
-      # @param String service name
-      # @param Boolean new service status
-      def service_enabled!(service, new_status)
-        @services[service]['enabled']  = new_status
-        @services[service]['modified'] = true
-        modified!
-      end
-
-      # Returns whether the given service has been enabled
-      #
-      # @param String service
-      # @return Boolean enabled
-      def service_enabled?(service)
-        @services[service]['enabled']
-      end
-
-      # Sets whether service should be running after writing the configuration
-      #
-      # @param String service name
-      # @param Boolean running
-      def service_running!(service, new_running)
-        @services[service]['active'] = new_running
-      end
-
-      # Returns the current setting whether service should be running
-      #
-      # @param String service name
-      # @return Boolean running
-      def service_running?(service)
-        @services[service]['active'] == Status::ACTIVE
-      end
-
       # Redraws the services dialog
       def redraw_services
         UI.OpenDialog(Label(_('Reading services status...')))
-        table_items = services.sort.collect{
+
+        table_items = ServiceV2.all.collect {
           |service, service_def|
           term(:item, term(:id, service),
             service,
             service_def['enabled'] ? _('Enabled') : _('Disabled'),
-            service_def['active'] == Status::ACTIVE ? _('Active') : _('Inactive'),
+            service_def['active'] ? _('Active') : _('Inactive'),
             service_def['description']
           )
         }
@@ -209,14 +40,15 @@ module YCP
       end
 
       def redraw_service(service)
-        enabled = service_enabled?(service)
+        enabled = ServiceV2.is_enabled(service)
+
         UI.ChangeWidget(
           term(:id, IDs::SERVICES_TABLE),
           term(:Cell, service, 1),
           (enabled ? _('Enabled') : _('Disabled'))
         )
 
-        running = service_running?(service)
+        running = ServiceV2.is_running(service)
 
         # The current state matches the futural state
         if (enabled == running)
@@ -281,17 +113,17 @@ module YCP
       def toggle_running
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
         Builtins.y2milestone('Toggling service running: %1', service)
-        running = service_running?(service)
+        running = ServiceV2.is_running(service)
 
         success = (running ? Service::Stop(service) : Service::Start(service))
 
         if success
-          service_running!(service, (running ? Status::INACTIVE : Status::ACTIVE))
+          ServiceV2.set_running(service, (! running))
           redraw_service(service)
         else
           Popup::ErrorDetails(
             (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
-            service_full_info(service)
+            ServiceV2.full_info(service)
           )
         end
 
@@ -304,7 +136,7 @@ module YCP
       def toggle_enabled
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
         Builtins.y2milestone('Toggling service status: %1', service)
-        service_enabled!(service, !service_enabled?(service))
+        ServiceV2.set_enabled(service, ! ServiceV2.is_enabled(service))
 
         redraw_service(service)
         UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
@@ -315,8 +147,6 @@ module YCP
         new_default_target = UI.QueryWidget(term(:id, IDs::DEFAULT_TARGET), :Value)
         Builtins.y2milestone("Setting new default target #{new_default_target}")
         SystemdTarget.set_default(new_default_target)
-
-        modified! if SystemdTarget.is_modified
       end
 
       # Saves the current configuration
@@ -326,7 +156,8 @@ module YCP
         Builtins.y2milestone('Writing configuration')
         UI.OpenDialog(Label(_('Writing configuration...')))
 
-        ret = save_services && SystemdTarget.save
+        ret = SystemdTarget.save && ServiceV2.save
+        # TODO: report errors
 
         UI.CloseDialog
 
@@ -337,9 +168,12 @@ module YCP
           )
         end
 
-        @modified = false if ret
-
         ret
+      end
+
+      # Are there any unsaved changes?
+      def modified?
+        SystemdTarget.modified || ServiceV2.modified
       end
 
       # Main function
