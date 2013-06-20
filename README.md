@@ -12,6 +12,5 @@ Running
 Todo
 ====
 - Tests
-- Packaging
 - Use Classes/Struct and OOP instead of Hashes
 - Documentation (probably yard)
