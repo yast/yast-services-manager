@@ -1,4 +1,5 @@
 require 'fileutils'
+require 'tmpdir'
 
 YAST_DIR = '/usr/share/YaST2/'
 YAST_DESKTOP = '/usr/share/applications/YaST2/'
@@ -35,26 +36,35 @@ task :install do
 end
 
 task :package do
+  project_dir = File.dirname(File.expand_path(__FILE__))
   workdir = File.expand_path(File.dirname(PACKAGE_ARCHIVE))
-  archive_dir = File.join(workdir, PACKAGE_NAME)
-  # TODO: cleanup first (or rather use tmpdir)
-  FileUtils.mkdir_p(archive_dir, :verbose => true)
-  FILES.each {
-    |dir, install_to|
 
-    if File.file?(dir)
-      FileUtils.cp(dir, archive_dir, :verbose => true)
-    else
-      dest_dir = File.join(archive_dir, dir)
-      FileUtils.mkdir_p(dest_dir, :verbose => true)
-      Dir.foreach(dir) do |file|
-        file_path = File.join(dir, file)
-        next unless File.file?(file_path)
-        FileUtils.cp(file_path, dest_dir, :verbose => true)
+  Dir.mktmpdir("#{PACKAGE_NAME}-") {
+    |tmpdir|
+    puts "Working in temporary directory: #{tmpdir}"
+    workdir = tmpdir
+
+    archive_dir = File.join(workdir, PACKAGE_NAME)
+    FileUtils.mkdir_p(archive_dir, :verbose => true)
+
+    FILES.each {
+      |dir, install_to|
+
+      if File.file?(dir)
+        FileUtils.cp(dir, archive_dir, :verbose => true)
+      else
+        dest_dir = File.join(archive_dir, dir)
+        FileUtils.mkdir_p(dest_dir, :verbose => true)
+        Dir.foreach(dir) do |file|
+          file_path = File.join(dir, file)
+          next unless File.file?(file_path)
+          FileUtils.cp(file_path, dest_dir, :verbose => true)
+        end
       end
-    end
+    }
+
+    `tar -C #{workdir} -cjvf #{PACKAGE_ARCHIVE} #{PACKAGE_NAME}`
   }
-  `tar -C #{workdir} -cjvf #{PACKAGE_ARCHIVE} #{PACKAGE_NAME}`
 end
 
 task :test do
