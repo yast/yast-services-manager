@@ -18,6 +18,7 @@ module YCP
         TOGGLE_RUNNING = :start_stop
         TOGGLE_ENABLED = :enable_disable
         DEFAULT_TARGET = :default_target
+        SHOW_DETAILS   = :show_details
       end
 
       # Redraws the services dialog
@@ -91,11 +92,13 @@ module YCP
               _('Description')
             ),
             []),
-            Left(HBox(
+            HBox(
               PushButton(term(:id, IDs::TOGGLE_RUNNING), _('&Start/Stop')),
               HSpacing(1),
-              PushButton(term(:id, IDs::TOGGLE_ENABLED), _('&Enable/Disable'))
-            ))
+              PushButton(term(:id, IDs::TOGGLE_ENABLED), _('&Enable/Disable')),
+              HStretch(),
+              PushButton(term(:id, IDs::SHOW_DETAILS), _('Show &Details'))
+            )
         )
         caption = _('Services Manager')
 
@@ -141,6 +144,20 @@ module YCP
         redraw_service(service)
         UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
         true
+      end
+
+      def show_details
+        service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
+        full_info = ServiceV2.full_info(service)
+        x_size = full_info.lines.collect{|line| line.size}.sort.last
+        y_size = full_info.lines.count
+
+        Popup.LongText(
+          _("Service #{service} Full Info"),
+          RichText("<pre>#{full_info}</pre>"),
+          # counted size plus dialog spacing
+          x_size + 8, y_size + 6
+        )
       end
 
       def handle_dialog
@@ -196,6 +213,8 @@ module YCP
               toggle_running
             when IDs::DEFAULT_TARGET
               handle_dialog
+            when IDs::SHOW_DETAILS
+              show_details
             when :next
               break if save
             else
