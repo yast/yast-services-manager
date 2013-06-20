@@ -1,0 +1,6 @@
+-------------------------------------------------------------------
+Thu Jun 20 10:39:41 CEST 2013 - locilka@suse.com
+
+- 0.0.4
+- Initial version: Services can be started and stopped, enabled
+  or disabled. Default target can be set.
