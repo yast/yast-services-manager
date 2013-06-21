@@ -17,21 +17,23 @@
 
 
 Name:           yast2-services-manager
-Version:        0.0.5
+Version:        0.0.6
 Release:        0
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-services-manager.tar.bz2
 
-
 Group:          System/YaST
 License:        GPL-2.0
-Requires:       yast2 >= 2.24.1
 
 BuildArchitectures: noarch
 
+Requires:       yast2 >= 2.24.1
 Requires:       yast2-ruby-bindings >= 1.0.0
-BuildRequires:  yast2 >= 2.24.1 ruby yast2-ruby-bindings >= 1.0.0 update-desktop-files
+
+BuildRequires:  update-desktop-files
+BuildRequires:  yast2-ruby-bindings >= 1.0.0 yast2 >= 2.24.1
+BuildRequires:  ruby rubygem-mocha
 
 Summary:        YaST2 - Services Manager
 
@@ -44,6 +46,7 @@ Provides user interface and libraries to configure running services and the defa
 %setup -n yast2-services-manager
 
 %build
+rake test
 
 %install
 rake install DESTDIR="$RPM_BUILD_ROOT"

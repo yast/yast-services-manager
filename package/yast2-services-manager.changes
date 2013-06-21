@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 21 15:20:35 CEST 2013 - locilka@suse.com
+
+- 0.0.6
+- Added infrastructure for tests and one simple exemplary test
+
+-------------------------------------------------------------------
 Fri Jun 21 11:12:03 CEST 2013 - locilka@suse.com
 
 - 0.0.5

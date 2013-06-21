@@ -1,5 +1,6 @@
 require 'fileutils'
 require 'tmpdir'
+require 'rake/testtask'
 
 YAST_DIR = '/usr/share/YaST2/'
 YAST_DESKTOP = '/usr/share/applications/YaST2/'
@@ -12,6 +13,8 @@ FILES = {
   'src/clients' => File.join(YAST_DIR, 'clients'),
   'src/modules' => File.join(YAST_DIR, 'modules'),
   'src/desktop' => File.join(YAST_DESKTOP),
+  'test'        => nil,
+  'test/unit'   => nil,
 }
 
 task :install do
@@ -68,7 +71,12 @@ task :package do
 end
 
 task :test do
-  puts "TO BE DONE"
+  Rake::TestTask.new do |t|
+    t.libs = ["lib"]
+    t.warning = false
+    t.verbose = true
+    t.test_files = FileList['test/unit/*.rb']
+  end
 end
 
 task :default => 'install'
