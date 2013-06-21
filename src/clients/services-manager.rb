@@ -69,7 +69,7 @@ module YCP
       end
 
       def redraw_system_targets
-        UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Items, SystemdTarget.all)
+        UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Items, SystemdTarget.all.keys)
         UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Value, SystemdTarget.current_default)
       end
 
