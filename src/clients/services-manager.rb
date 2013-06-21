@@ -69,8 +69,13 @@ module YCP
       end
 
       def redraw_system_targets
-        UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Items, SystemdTarget.all.keys)
-        UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Value, SystemdTarget.current_default)
+        items = SystemdTarget.all.collect {
+          |target, target_def|
+          label = target_def['description'] || target
+          term(:item, term(:id, target), label, (target == SystemdTarget.current_default))
+        }
+
+        UI.ChangeWidget(term(:id, IDs::DEFAULT_TARGET), :Items, items)
       end
 
       # Fills the dialog contents

@@ -7,6 +7,7 @@ module YCP
     DEFAULT_TARGET_PATH = '/etc/systemd/system/default.target'
     SYSTEMD_TARGETS_DIR = '/usr/lib/systemd/system'
     TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
+    SYSTEMCTL_DEFAULT_OPTIONS = ' --no-legend --no-pager --no-ask-password '
     TARGET_SUFFIX = '.target'
     DEFAULT_TARGET = 'default'
 
@@ -14,6 +15,9 @@ module YCP
       ENABLED  = 'enabled'
       DISABLED = 'disabled'
       SUPPORTED = [ENABLED, DISABLED]
+
+      ACTIVE = 'active'
+      INACTIVE = 'inactive'
     end
 
     def initialize
@@ -59,24 +63,39 @@ module YCP
     end
 
     def all
-      return @targets unless @targets.nil?
+      return @targets if @targets
 
       @targets = {}
 
       SCR.Execute(
         path('.target.bash_output'),
-        TERM_OPTIONS + 'systemctl list-unit-files --type target --no-legend --no-pager --no-ask-password'
+        TERM_OPTIONS + 'systemctl list-unit-files --type target' + SYSTEMCTL_DEFAULT_OPTIONS
       )["stdout"].each_line {
         |line|
         # Format: target_name#{target_suffix}      status
         target = line.split(/[\s]+/)
         if Status::SUPPORTED.include?(target[1])
           target[0].chomp! TARGET_SUFFIX
-          target[0]
           next if (target[0] == DEFAULT_TARGET)
+
           @targets[target[0]] = {
             'enabled'  => (target[1] == Status::ENABLED),
           }
+        end
+      }
+
+      SCR.Execute(
+        path('.target.bash_output'),
+        TERM_OPTIONS + 'systemctl --all --type target' + SYSTEMCTL_DEFAULT_OPTIONS
+      )["stdout"].each_line {
+        |line|
+        target = line.split(/[\s]+/)
+        target[0].chomp! TARGET_SUFFIX
+
+        unless @targets[target[0]].nil?
+          @targets[target[0]]['load']        = target[1]
+          @targets[target[0]]['active']      = (target[2] == Status::ACTIVE)
+          @targets[target[0]]['description'] = target[4..-1].join(" ")
         end
       }
 
