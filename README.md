@@ -9,8 +9,13 @@ Running
     sudo rake install
     sudo yast2 services-manager
 
+Running Tasks
+=============
+
+    rake test
+    rake package
+
 Todo
 ====
-- Tests
 - Use Classes/Struct and OOP instead of Hashes
 - Documentation (probably yard)
