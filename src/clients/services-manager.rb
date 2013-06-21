@@ -151,6 +151,7 @@ module YCP
         true
       end
 
+      # Opens up a popup with details about the currently selected service
       def show_details
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
         full_info = ServiceV2.full_info(service)
@@ -163,6 +164,9 @@ module YCP
           # counted size plus dialog spacing
           x_size + 8, y_size + 6
         )
+
+        UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
+        true
       end
 
       def handle_dialog
