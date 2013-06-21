@@ -32,4 +32,14 @@ class SystemTarget < Test::Unit::TestCase
     YCP::SCR.stubs(:Execute).returns(first_scr_call, second_scr_call)
     assert_equal(3, YCP::SystemdTarget.all.keys.count)
   end
+
+  def test_current_default_target
+    default_target = 'multi-user-with-cookies'
+    default_target_path = File.join(
+      YCP::SystemdTargetClass::SYSTEMD_TARGETS_DIR,
+      default_target + YCP::SystemdTargetClass::TARGET_SUFFIX
+    )
+    YCP::SCR.stubs(:Read).returns(default_target_path)
+    assert_equal(default_target, YCP::SystemdTarget.current_default)
+  end
 end
