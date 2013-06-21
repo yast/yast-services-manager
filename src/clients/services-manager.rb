@@ -11,7 +11,7 @@ module YCP
       YCP.import("Report")
       YCP.import("Message")
       YCP.import("SystemdTarget")
-      YCP.import("ServiceV2")
+      YCP.import("SystemdService")
 
       module IDs
         SERVICES_TABLE = :services_table
@@ -25,7 +25,7 @@ module YCP
       def redraw_services
         UI.OpenDialog(Label(_('Reading services status...')))
 
-        table_items = ServiceV2.all.collect {
+        table_items = SystemdService.all.collect {
           |service, service_def|
           term(:item, term(:id, service),
             service,
@@ -41,7 +41,7 @@ module YCP
       end
 
       def redraw_service(service)
-        enabled = ServiceV2.is_enabled(service)
+        enabled = SystemdService.is_enabled(service)
 
         UI.ChangeWidget(
           term(:id, IDs::SERVICES_TABLE),
@@ -49,7 +49,7 @@ module YCP
           (enabled ? _('Enabled') : _('Disabled'))
         )
 
-        running = ServiceV2.is_running(service)
+        running = SystemdService.is_running(service)
 
         # The current state matches the futural state
         if (enabled == running)
@@ -121,17 +121,17 @@ module YCP
       def toggle_running
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
         Builtins.y2milestone('Toggling service running: %1', service)
-        running = ServiceV2.is_running(service)
+        running = SystemdService.is_running(service)
 
         success = (running ? Service::Stop(service) : Service::Start(service))
 
         if success
-          ServiceV2.set_running(service, (! running))
+          SystemdService.set_running(service, (! running))
           redraw_service(service)
         else
           Popup::ErrorDetails(
             (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
-            ServiceV2.full_info(service)
+            SystemdService.full_info(service)
           )
         end
 
@@ -144,7 +144,7 @@ module YCP
       def toggle_enabled
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
         Builtins.y2milestone('Toggling service status: %1', service)
-        ServiceV2.set_enabled(service, ! ServiceV2.is_enabled(service))
+        SystemdService.set_enabled(service, ! SystemdService.is_enabled(service))
 
         redraw_service(service)
         UI.SetFocus(term(:id, IDs::SERVICES_TABLE))
@@ -154,7 +154,7 @@ module YCP
       # Opens up a popup with details about the currently selected service
       def show_details
         service = UI.QueryWidget(term(:id, IDs::SERVICES_TABLE), :CurrentItem)
-        full_info = ServiceV2.full_info(service)
+        full_info = SystemdService.full_info(service)
         x_size = full_info.lines.collect{|line| line.size}.sort.last
         y_size = full_info.lines.count
 
@@ -182,7 +182,7 @@ module YCP
         Builtins.y2milestone('Writing configuration')
         UI.OpenDialog(Label(_('Writing configuration...')))
 
-        ret = SystemdTarget.save && ServiceV2.save
+        ret = SystemdTarget.save && SystemdService.save
         # TODO: report errors
 
         UI.CloseDialog
@@ -199,7 +199,7 @@ module YCP
 
       # Are there any unsaved changes?
       def modified?
-        SystemdTarget.modified || ServiceV2.modified
+        SystemdTarget.modified || SystemdService.modified
       end
 
       # Main function

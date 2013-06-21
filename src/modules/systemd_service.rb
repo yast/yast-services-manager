@@ -3,7 +3,7 @@
 require "ycp"
 
 module YCP
-  class ServiceV2Class < Module
+  class SystemdServiceClass < Module
     TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX = '.service'
     SYSTEMCTL_DEFAULT_OPTIONS = ' --no-legend --no-pager --no-ask-password '
@@ -87,7 +87,7 @@ module YCP
       all.each {
         |service, service_def|
         if service_def['modified']
-          if (ServiceV2.is_enabled(service) ? Service::Enable(service) : Service::Disable(service))
+          if (SystemdService.is_enabled(service) ? Service::Enable(service) : Service::Disable(service))
             enableddisabled << service
           else
             ret = false
@@ -112,7 +112,7 @@ module YCP
       all.each {
         |service, service_def|
         if service_def['modified']
-          if (ServiceV2.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
+          if (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
             startedstopped << service
           else
             ret = false
@@ -223,9 +223,9 @@ module YCP
     publish({:function => :set_running, :type => "void"})
     publish({:function => :is_running, :type => "boolean"})
 
-    publish({:function => :errors, :type => "<map <string, string> >"})
+    publish({:function => :errors, :type => "list <map <string, string> >"})
     publish({:function => :clear_errors, :type => "boolean"})
   end
 
-  ServiceV2 = ServiceV2Class.new
+  SystemdService = SystemdServiceClass.new
 end
