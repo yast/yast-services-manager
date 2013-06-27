@@ -2,7 +2,7 @@
 
 require "ycp"
 
-module YCP
+module Yast
   class SystemdServiceClass < Module
     TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX = '.service'

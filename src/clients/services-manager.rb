@@ -1,17 +1,17 @@
 # encoding: utf-8
 
-module YCP
+module Yast
   module Clients
     class RunlevelRuby < Client
-      YCP.import("UI")
-      YCP.import("Wizard")
-      YCP.import("Service")
-      YCP.import("Label")
-      YCP.import("Popup")
-      YCP.import("Report")
-      YCP.import("Message")
-      YCP.import("SystemdTarget")
-      YCP.import("SystemdService")
+      Yast.import("UI")
+      Yast.import("Wizard")
+      Yast.import("Service")
+      Yast.import("Label")
+      Yast.import("Popup")
+      Yast.import("Report")
+      Yast.import("Message")
+      Yast.import("SystemdTarget")
+      Yast.import("SystemdService")
 
       module IDs
         SERVICES_TABLE = :services_table
@@ -237,4 +237,4 @@ module YCP
   end
 end
 
-YCP::Clients::RunlevelRuby.new.main
+Yast::Clients::RunlevelRuby.new.main
