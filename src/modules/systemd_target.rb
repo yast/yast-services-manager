@@ -2,7 +2,7 @@
 
 require "ycp"
 
-module YCP
+module Yast
   class SystemdTargetClass < Module
     DEFAULT_TARGET_PATH = '/etc/systemd/system/default.target'
     SYSTEMD_TARGETS_DIR = '/usr/lib/systemd/system'
@@ -21,7 +21,7 @@ module YCP
     end
 
     def initialize
-      YCP.import('FileUtils')
+      Yast.import('FileUtils')
       textdomain 'runlevel-ruby'
       set_modified(false)
     end

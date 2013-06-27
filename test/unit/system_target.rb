@@ -10,7 +10,7 @@ require "systemd_target"
 
 class SystemTarget < Test::Unit::TestCase
   def teardown
-    YCP::SCR.unstub
+    Yast::SCR.unstub
   end
 
   def test_all_known_targets
@@ -29,17 +29,17 @@ class SystemTarget < Test::Unit::TestCase
                   "target-3          loaded inactive dead       Super-enhanced target\n",
     }
 
-    YCP::SCR.stubs(:Execute).returns(first_scr_call, second_scr_call)
-    assert_equal(3, YCP::SystemdTarget.all.keys.count)
+    Yast::SCR.stubs(:Execute).returns(first_scr_call, second_scr_call)
+    assert_equal(3, Yast::SystemdTarget.all.keys.count)
   end
 
   def test_current_default_target
     default_target = 'multi-user-with-cookies'
     default_target_path = File.join(
-      YCP::SystemdTargetClass::SYSTEMD_TARGETS_DIR,
-      default_target + YCP::SystemdTargetClass::TARGET_SUFFIX
+      Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR,
+      default_target + Yast::SystemdTargetClass::TARGET_SUFFIX
     )
-    YCP::SCR.stubs(:Read).returns(default_target_path)
-    assert_equal(default_target, YCP::SystemdTarget.current_default)
+    Yast::SCR.stubs(:Read).returns(default_target_path)
+    assert_equal(default_target, Yast::SystemdTarget.current_default)
   end
 end
