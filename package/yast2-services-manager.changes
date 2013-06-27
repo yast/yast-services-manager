@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jun 27 08:42:20 UTC 2013 - vmoravec@suse.com
+
+- 0.0.7
+- Use updated yast2-ruby-bindings
+- Adapt namespace to new yast2-ruby-bindings
+
+-------------------------------------------------------------------
 Fri Jun 21 15:20:35 CEST 2013 - locilka@suse.com
 
 - 0.0.6
