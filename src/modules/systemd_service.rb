@@ -19,7 +19,7 @@ module Yast
     end
 
     def initialize
-      textdomain 'runlevel-ruby'
+      textdomain 'services-manager'
       clear_errors
       set_modified(false)
     end

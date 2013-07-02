@@ -1,7 +1,6 @@
 About
 =====
 YaST Runlevel written in Ruby.
-Still work in progress but already working.
 
 Running
 =======
