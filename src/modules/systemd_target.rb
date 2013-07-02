@@ -22,7 +22,7 @@ module Yast
 
     def initialize
       Yast.import('FileUtils')
-      textdomain 'runlevel-ruby'
+      textdomain 'services-manager'
       set_modified(false)
     end
 
