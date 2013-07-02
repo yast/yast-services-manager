@@ -27,7 +27,7 @@ module Yast
 
         table_items = SystemdService.all.collect {
           |service, service_def|
-          term(:item, Id(service),
+          Item(Id(service),
             service,
             service_def['enabled'] ? _('Enabled') : _('Disabled'),
             service_def['active'] ? _('Active') : _('Inactive'),
@@ -45,7 +45,7 @@ module Yast
 
         UI.ChangeWidget(
           Id(IDs::SERVICES_TABLE),
-          term(:Cell, service, 1),
+          Cell(service, 1),
           (enabled ? _('Enabled') : _('Disabled'))
         )
 
@@ -55,14 +55,14 @@ module Yast
         if (enabled == running)
           UI.ChangeWidget(
             Id(IDs::SERVICES_TABLE),
-            term(:Cell, service, 2),
+            Cell(service, 2),
             (running ? _('Active') : _('Inactive'))
           )
         # The current state differs the the futural state
         else
           UI.ChangeWidget(
             Id(IDs::SERVICES_TABLE),
-            term(:Cell, service, 2),
+            Cell(service, 2),
             (running ? _('Active (will stop)') : _('Inactive (will start)'))
           )
         end
@@ -72,7 +72,7 @@ module Yast
         items = SystemdTarget.all.collect {
           |target, target_def|
           label = target_def['description'] || target
-          term(:item, Id(target), label, (target == SystemdTarget.current_default))
+          Item(Id(target), label, (target == SystemdTarget.current_default))
         }
 
         UI.ChangeWidget(Id(IDs::DEFAULT_TARGET), :Items, items)
@@ -90,7 +90,7 @@ module Yast
           VSpacing(1),
           Table(
             Id(IDs::SERVICES_TABLE),
-            term(:header,
+            Header(
               _('Service'),
               _('Enabled'),
               _('Active'),
