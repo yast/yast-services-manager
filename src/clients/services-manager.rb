@@ -96,14 +96,15 @@ module Yast
               _('Active'),
               _('Description')
             ),
-            []),
-            HBox(
-              PushButton(Id(IDs::TOGGLE_RUNNING), _('&Start/Stop')),
-              HSpacing(1),
-              PushButton(Id(IDs::TOGGLE_ENABLED), _('&Enable/Disable')),
-              HStretch(),
-              PushButton(Id(IDs::SHOW_DETAILS), _('Show &Details'))
-            )
+            []
+          ),
+          HBox(
+            PushButton(Id(IDs::TOGGLE_RUNNING), _('&Start/Stop')),
+            HSpacing(1),
+            PushButton(Id(IDs::TOGGLE_ENABLED), _('&Enable/Disable')),
+            HStretch(),
+            PushButton(Id(IDs::SHOW_DETAILS), _('Show &Details'))
+          )
         )
         caption = _('Services Manager')
 
