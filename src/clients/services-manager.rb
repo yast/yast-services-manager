@@ -90,6 +90,7 @@ module Yast
           VSpacing(1),
           Table(
             Id(IDs::SERVICES_TABLE),
+            Opt(:notify),
             Header(
               _('Service'),
               _('Enabled'),
@@ -200,7 +201,7 @@ module Yast
 
       # Are there any unsaved changes?
       def modified?
-        SystemdTarget.modified || SystemdService.modified
+        SystemdTarget.is_modified || SystemdService.is_modified
       end
 
       # Main function
@@ -217,7 +218,8 @@ module Yast
           case returned
             when :abort
               break if Popup::ReallyAbort(modified?)
-            when IDs::TOGGLE_ENABLED
+            # Default for double-click in the table
+            when IDs::TOGGLE_ENABLED, IDs::SERVICES_TABLE
               toggle_enabled
             when IDs::TOGGLE_RUNNING
               toggle_running
