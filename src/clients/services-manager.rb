@@ -2,7 +2,7 @@
 
 module Yast
   module Clients
-    class RunlevelRuby < Client
+    class ServicesManager < Client
       Yast.import("UI")
       Yast.import("Wizard")
       Yast.import("Service")
@@ -204,7 +204,7 @@ module Yast
 
       # Main function
       def main
-        textdomain "runlevel-ruby"
+        textdomain 'services-manager'
 
         Wizard.CreateDialog
         adjust_dialog
@@ -237,4 +237,4 @@ module Yast
   end
 end
 
-Yast::Clients::RunlevelRuby.new.main
+Yast::Clients::ServicesManager.new.main
