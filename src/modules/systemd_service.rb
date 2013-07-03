@@ -54,6 +54,7 @@ module Yast
           @services[service_def[0]] = {
             'enabled'  => (service_def[1] == Status::ENABLED),
             'modified' => false,
+            'active'   => false,
           }
         end
       }
