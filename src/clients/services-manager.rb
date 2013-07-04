@@ -4,20 +4,20 @@ module Yast
   module Clients
     class ServicesManager < Client
       require 'fileutils'
-      $: << File.expand_path(File.join(File.dirname(__FILE__), '../includes/'))
+      $: << File.expand_path(File.join(File.dirname(__FILE__), '../include/'))
 
       Yast.import('Wizard')
 
-      require 'services-manager/dialogs.rb'
+      require 'services-manager/shared.rb'
 
       def main
         Wizard.CreateDialog
 
-        dialogs = Yast::Clients::ServicesManagerDialogs.new
+        sm = Yast::Clients::ServicesManagerShared.new
         ret = false
         while(ret != true)
-          if dialogs.main_dialog == :next
-            ret = dialogs.save
+          if sm.main_dialog == :next
+            ret = sm.save
           end
         end
 

@@ -2,7 +2,7 @@
 
 module Yast
   module Clients
-    class ServicesManagerDialogs < Client
+    class ServicesManagerShared < Client
       Yast.import("UI")
       Yast.import("Wizard")
       Yast.import("Service")

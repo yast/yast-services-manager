@@ -4,11 +4,11 @@ module Yast
   module Clients
     class ServicesManagerAuto < Client
       require 'fileutils'
-      $: << File.expand_path(File.join(File.dirname(__FILE__), '../includes/'))
+      $: << File.expand_path(File.join(File.dirname(__FILE__), '../include/'))
 
       Yast.import('Wizard')
 
-      require 'services-manager/dialogs.rb'
+      require 'services-manager/shared.rb'
 
       def main
         function = ''
@@ -22,15 +22,15 @@ module Yast
           end
         end
 
-        dialogs = Yast::Clients::ServicesManagerDialogs.new
+        sm = Yast::Clients::ServicesManagerShared.new
 
         case function
           when 'Change'
             Wizard.CreateDialog
-            auto_ret = (dialogs.main_dialog == :next)
+            auto_ret = (sm.main_dialog == :next)
             UI.CloseDialog
           when 'Summary'
-            auto_ret = dialogs.summary
+            auto_ret = sm.summary
           when 'Import'
             # FIXME: TBD
           when 'Export'
@@ -38,13 +38,13 @@ module Yast
           when 'Read'
             # FIXME: TBD
           when 'Write'
-            auto_ret = dialogs.save
+            auto_ret = sm.save
           when 'Reset'
             # FIXME: TBD
           when 'Packages'
             auto_ret = {}
           when 'GetModified'
-            auto_ret = dialogs.modified?
+            auto_ret = sm.modified?
           when 'SetModified'
             # FIXME: TBD
           else
