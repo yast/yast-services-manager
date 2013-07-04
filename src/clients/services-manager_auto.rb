@@ -31,8 +31,25 @@ module Yast
             UI.CloseDialog
           when 'Summary'
             auto_ret = dialogs.summary
+          when 'Import'
+            # FIXME: TBD
+          when 'Export'
+            # FIXME: TBD
+          when 'Read'
+            # FIXME: TBD
+          when 'Write'
+            auto_ret = dialogs.save
+          when 'Reset'
+            # FIXME: TBD
+          when 'Packages'
+            auto_ret = {}
+          when 'GetModified'
+            auto_ret = dialogs.modified?
+          when 'SetModified'
+            # FIXME: TBD
           else
             Builtins.y2error("Unknown Autoyast command: #{function}, #{params.inspect}")
+            auto_ret = nil
         end
 
         auto_ret
