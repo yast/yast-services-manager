@@ -103,6 +103,22 @@ module Yast
       @targets
     end
 
+    def export
+      { DEFAULT_TARGET => current_default }
+    end
+
+    def import(data)
+      if data[DEFAULT_TARGET].nil?
+        Builtins.y2warning("Cannot import, target definition '#{DEFAULT_TARGET}' not present in #{data.inspect}")
+        return false
+      else
+        set_default(data[DEFAULT_TARGET])
+      end
+
+      # returns whether succesfully set
+      (current_default == data[DEFAULT_TARGET])
+    end
+
   private
 
     def read_current
