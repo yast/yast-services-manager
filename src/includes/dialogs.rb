@@ -25,6 +25,11 @@ module Yast
         textdomain 'services-manager'
       end
 
+      def summary
+        '<h2>' + _('Services Manager') + '</h2>' +
+          _("<b>Default target</b>: #{SystemdTarget.current_default}")
+      end
+
       # Redraws the services dialog
       def redraw_services
         UI.OpenDialog(Label(_('Reading services status...')))
