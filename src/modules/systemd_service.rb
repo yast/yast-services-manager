@@ -80,7 +80,10 @@ module Yast
 
     # Returns only enabled services, the rest is expected to be disabled
     def export
-      []
+      all.collect {
+        |service_name, service_def|
+        (is_enabled(service_name) ? service_name : nil)
+      }.compact
     end
 
     def save
