@@ -26,9 +26,14 @@ module Yast
       end
 
       def summary
+        list_of_services = SystemdService.export.collect{
+          |service|
+          '<li>' + service + '</li>'
+        }.join
+
         '<h2>' + _('Services Manager') + '</h2>' +
-          _("<b>Default target</b>: #{SystemdTarget.current_default}")
-          # FIXME: list services
+          _("<p><b>Default Target:</b> #{SystemdTarget.current_default}</p>") +
+          _("<p><b>Enabled Services:</b><ul>#{list_of_services}</ul></p>")
       end
 
       # Redraws the services dialog
