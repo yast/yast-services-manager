@@ -28,6 +28,7 @@ module Yast
       def summary
         '<h2>' + _('Services Manager') + '</h2>' +
           _("<b>Default target</b>: #{SystemdTarget.current_default}")
+          # FIXME: list services
       end
 
       # Redraws the services dialog
@@ -236,7 +237,7 @@ module Yast
             when IDs::SHOW_DETAILS
               show_details
             when :next
-              break if save
+              break
             else
               Builtins.y2error('Unknown user input: %1', returned)
           end
