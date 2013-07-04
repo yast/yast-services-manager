@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Jul  4 14:04:32 CEST 2013 - locilka@suse.com
+
+- Dialogs and their handling split into separate file to be used
+  from Autoyast
+- Double click in table of services enables/disables the selected
+  service
+
+-------------------------------------------------------------------
 Thu Jun 27 08:42:20 UTC 2013 - vmoravec@suse.com
 
 - 0.0.7
