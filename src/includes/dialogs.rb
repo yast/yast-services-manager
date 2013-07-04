@@ -2,7 +2,7 @@
 
 module Yast
   module Clients
-    class ServicesManager < Client
+    class ServicesManagerDialogs < Client
       Yast.import("UI")
       Yast.import("Wizard")
       Yast.import("Service")
@@ -19,6 +19,10 @@ module Yast
         TOGGLE_ENABLED = :enable_disable
         DEFAULT_TARGET = :default_target
         SHOW_DETAILS   = :show_details
+      end
+
+      def initialize
+        textdomain 'services-manager'
       end
 
       # Redraws the services dialog
@@ -204,11 +208,10 @@ module Yast
         SystemdTarget.is_modified || SystemdService.is_modified
       end
 
-      # Main function
-      def main
-        textdomain 'services-manager'
-
-        Wizard.CreateDialog
+      # Main dialog function
+      #
+      # @return :next or :abort
+      def main_dialog
         adjust_dialog
 
         while true
@@ -234,10 +237,9 @@ module Yast
           end
         end
 
-        UI.CloseDialog
+        returned
       end
+
     end
   end
 end
-
-Yast::Clients::ServicesManager.new.main

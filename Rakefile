@@ -5,16 +5,18 @@ require 'rake/testtask'
 YAST_DIR = '/usr/share/YaST2/'
 YAST_DESKTOP = '/usr/share/applications/YaST2/'
 PACKAGE_ARCHIVE = './package/yast2-services-manager.tar.bz2'
-PACKAGE_NAME = 'yast2-services-manager'
+DOMAIN = 'services-manager'
+PACKAGE_NAME = 'yast2-' + DOMAIN
 DESTDIR = ENV['DESTDIR'] || '/'
 
 FILES = {
-  'Rakefile'    => nil,
-  'src/clients' => File.join(YAST_DIR, 'clients'),
-  'src/modules' => File.join(YAST_DIR, 'modules'),
-  'src/desktop' => File.join(YAST_DESKTOP),
-  'test'        => nil,
-  'test/unit'   => nil,
+  'Rakefile'     => nil,
+  'src/clients'  => File.join(YAST_DIR, 'clients'),
+  'src/modules'  => File.join(YAST_DIR, 'modules'),
+  'src/includes' => File.join(YAST_DIR, 'includes', DOMAIN),
+  'src/desktop'  => File.join(YAST_DESKTOP),
+  'test'         => nil,
+  'test/unit'    => nil,
 }
 
 task :install do
