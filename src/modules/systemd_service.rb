@@ -78,6 +78,11 @@ module Yast
       @services
     end
 
+    # Returns only enabled services, the rest is expected to be disabled
+    def export
+      []
+    end
+
     def save
       ret = true
       clear_errors
