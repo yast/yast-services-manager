@@ -97,9 +97,9 @@ module Yast
           else
             error = {
               'message' => SystemdService.is_enabled(service) ?
-                _("Could not enable service #{service}")
+                _('Could not enable service %{service}') % {:service => service}
                 :
-                _("Could not disable service #{service}"),
+                _('Could not disable service %{service}') % {:service => service},
               'details' => full_info(service),
             }
             @errors << error
@@ -124,9 +124,9 @@ module Yast
           else
             error = {
               'message' => SystemdService.is_enabled(service) ?
-                _("Could not start service #{service}")
+                _('Could not start service %{service}') % {:service => service}
                 :
-                _("Could not stop service #{service}"),
+                _('Could not stop service %{service}') % {:service => service},
               'details' => full_info(service),
             }
             @errors << error

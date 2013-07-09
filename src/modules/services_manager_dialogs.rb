@@ -27,14 +27,13 @@ module Yast
     end
 
     def summary
-      list_of_services = SystemdService.export.collect{
-        |service|
+      list_of_services = SystemdService.export.collect do |service|
         '<li>' + service + '</li>'
-      }.join
+      end
 
       '<h2>' + _('Services Manager') + '</h2>' +
-        _("<p><b>Default Target:</b> #{SystemdTarget.current_default}</p>") +
-        _("<p><b>Enabled Services:</b><ul>#{list_of_services}</ul></p>")
+        _('<p><b>Default Target:</b> %{default}</p>') % {:default => SystemdTarget.current_default} +
+        _('<p><b>Enabled Services:</b><ul>%{services}</ul></p>') % {:services => list_of_services.join}
     end
 
     # Redraws the services dialog
@@ -177,7 +176,7 @@ module Yast
       y_size = full_info.lines.count
 
       Popup.LongText(
-        _("Service #{service} Full Info"),
+        _('Service %{service} Full Info') % {:service => service},
         RichText("<pre>#{full_info}</pre>"),
         # counted size plus dialog spacing
         x_size + 8, y_size + 6
