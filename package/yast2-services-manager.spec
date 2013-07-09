@@ -63,7 +63,6 @@ rm -rf "$RPM_BUILD_ROOT"
 %defattr(-,root,root)
 %{_prefix}/share/YaST2/clients/*.rb
 %{_prefix}/share/YaST2/modules/*.rb
-%{_prefix}/share/YaST2/includes/services-manager/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
 
 %changelog
