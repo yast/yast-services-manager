@@ -50,8 +50,8 @@ module Yast
       @default_target
     end
 
-    def save
-      return true unless is_modified
+    def save(params = {})
+      return true unless (is_modified || params[:force] == true)
 
       success = (FileUtils.Exists(DEFAULT_TARGET_PATH) ?
         SCR::Execute(path('.target.remove'), DEFAULT_TARGET_PATH) : true

@@ -86,27 +86,21 @@ module Yast
       }.compact
     end
 
-    def save
-      ret = true
-      clear_errors
-
+    def enable_disable_services(force)
       enableddisabled = []
 
-      # At first, only adjust services startup (enabled/disabled)
       all.each {
         |service, service_def|
-        if service_def['modified']
+        if service_def['modified'] || force
           if (SystemdService.is_enabled(service) ? Service::Enable(service) : Service::Disable(service))
             enableddisabled << service
           else
-            ret = false
-
             error = {
-              'message' => service_enabled?(service) ?
+              'message' => SystemdService.is_enabled(service) ?
                 _("Could not enable service #{service}")
                 :
                 _("Could not disable service #{service}"),
-              'details' => service_full_info(service),
+              'details' => full_info(service),
             }
             @errors << error
             Builtins.y2error("Runtime error: %1", error)
@@ -114,38 +108,54 @@ module Yast
         end
       }
 
-      startedstopped = []
-
-      # Then try to adjust services run (active/inactive)
-      # Might start or stop some services that would cause system instability
-      all.each {
-        |service, service_def|
-        if service_def['modified']
-          if (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
-            startedstopped << service
-          else
-            ret = false
-
-            error = {
-              'message' => service_enabled?(service) ?
-                _("Could not start service #{service}")
-                :
-                _("Could not stop service #{service}"),
-              'details' => service_full_info(service),
-            }
-            @errors << error
-            Builtins.y2error("Runtime error: %1", error)
-          end
-        end
-      }
-
-      # Reset ('modified' of) all fully-saved services
-      (enableddisabled + startedstopped).uniq.each {
+      # Reset ('modified' of) all saved services
+      enableddisabled.each {
         |service|
         @services[service]['modified'] = false
       }
+    end
 
-      ret
+    def start_stop_services(force)
+      all.each {
+        |service, service_def|
+        if service_def['modified'] || force
+          if (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
+            startedstopped << service
+          else
+            error = {
+              'message' => SystemdService.is_enabled(service) ?
+                _("Could not start service #{service}")
+                :
+                _("Could not stop service #{service}"),
+              'details' => full_info(service),
+            }
+            @errors << error
+            Builtins.y2error("Runtime error: %1", error)
+          end
+        end
+      }
+    end
+
+    # Saves the current configuration in memory.
+    # Supported parameters:
+    # - :force (boolean) to force writing even if not marked as modified, default is false
+    # - :startstop (boolean) to start enabled or stop disabled services, default is true
+    #
+    # @param <Hash> params
+    # @return <boolean> if successful
+    def save(params = {})
+      force = (params[:force].nil? ? false : params[:force])
+      startstop = (params[:startstop].nil? ? true : params[:startstop])
+      clear_errors
+
+      # At first, only adjust services startup (enabled/disabled)
+      enable_disable_services(force)
+
+      # Then try to adjust services run (active/inactive)
+      # Might start or stop some services that would cause system instability
+      start_stop_services(force) if startstop
+
+      @errors.size == 0
     end
 
     # Returns full information about the service

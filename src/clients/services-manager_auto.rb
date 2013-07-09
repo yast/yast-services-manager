@@ -3,57 +3,50 @@
 module Yast
   module Clients
     class ServicesManagerAuto < Client
-      require 'fileutils'
-      $: << File.expand_path(File.join(File.dirname(__FILE__), '../include/'))
-
       Yast.import('Wizard')
+      Yast.import('ServicesManagerDialogs')
 
-      require 'services-manager/shared.rb'
+      def configure_manually
+        Wizard.CreateDialog
+        ret = (ServicesManagerDialogs.main_dialog == :next)
+        UI.CloseDialog
+      end
 
       def main
-        function = ''
-        params   = {}
-        auto_ret = {}
+        args = WFM.Args
+        Builtins.y2milestone("Client #{__FILE__} called with args #{args.inspect}")
 
-        if WFM.Args.size > 0 && Ops.is(WFM.Args(0), 'string')
-          function = WFM.Args(0)
-          if WFM.Args.size > 1 && Ops.is(WFM.Args(0), 'map')
-            params = Convert.to_map(WFM.Args(1))
-          end
+        if args.size == 0
+          Bultins.y2error("missing autoyast command")
+          return
         end
 
-        sm = Yast::Clients::ServicesManagerShared.new
+        function = args[0] || ''
+        params   = args[1] || {}
 
         case function
-          when 'Change'
-            Wizard.CreateDialog
-            auto_ret = (sm.main_dialog == :next)
-            UI.CloseDialog
-          when 'Summary'
-            auto_ret = sm.summary
+          when 'Change' then configure_manually
+          when 'Summary' then ServicesManagerDialogs.summary
           when 'Import'
             # FIXME: TBD
           when 'Export'
             # FIXME: TBD
           when 'Read'
             # FIXME: TBD
-          when 'Write'
-            auto_ret = sm.save
+          when 'Write' then ServicesManagerDialogs.save(:force => true, :startstop => false)
           when 'Reset'
             # FIXME: TBD
           when 'Packages'
             auto_ret = {}
-          when 'GetModified'
-            auto_ret = sm.modified?
+          when 'GetModified' then ServicesManagerDialogs.modified?
           when 'SetModified'
             # FIXME: TBD
           else
             Builtins.y2error("Unknown Autoyast command: #{function}, #{params.inspect}")
-            auto_ret = nil
+            nil
         end
-
-        auto_ret
       end
+
     end
   end
 end

@@ -13,7 +13,6 @@ FILES = {
   'Rakefile'     => nil,
   'src/clients'  => File.join(YAST_DIR, 'clients'),
   'src/modules'  => File.join(YAST_DIR, 'modules'),
-  'src/includes' => File.join(YAST_DIR, 'include', DOMAIN),
   'src/desktop'  => File.join(YAST_DESKTOP),
   'test'         => nil,
   'test/unit'    => nil,
