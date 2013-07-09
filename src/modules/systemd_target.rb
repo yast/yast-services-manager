@@ -50,8 +50,8 @@ module Yast
       @default_target
     end
 
-    def save
-      return true unless is_modified
+    def save(params = {})
+      return true unless (is_modified || params[:force] == true)
 
       success = (FileUtils.Exists(DEFAULT_TARGET_PATH) ?
         SCR::Execute(path('.target.remove'), DEFAULT_TARGET_PATH) : true
@@ -101,6 +101,22 @@ module Yast
 
       Builtins.y2debug('All targets read: %1', @targets)
       @targets
+    end
+
+    def export
+      { DEFAULT_TARGET => current_default }
+    end
+
+    def import(data)
+      if data[DEFAULT_TARGET].nil?
+        Builtins.y2warning("Cannot import, target definition '#{DEFAULT_TARGET}' not present in #{data.inspect}")
+        return false
+      else
+        set_default(data[DEFAULT_TARGET])
+      end
+
+      # returns whether succesfully set
+      (current_default == data[DEFAULT_TARGET])
     end
 
   private

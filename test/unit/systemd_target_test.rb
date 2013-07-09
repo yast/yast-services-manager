@@ -8,7 +8,7 @@ require "ycp"
 
 require "systemd_target"
 
-class SystemTarget < Test::Unit::TestCase
+class SystemdTargetTest < Test::Unit::TestCase
   def teardown
     Yast::SCR.unstub
   end
