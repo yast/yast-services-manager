@@ -2,17 +2,17 @@
 
 module Yast
   module Clients
-    class ServicesManager < Client
+    class ServicesManagerClient < Client
       Yast.import('Wizard')
-      Yast.import('ServicesManagerDialogs')
+      Yast.import('ServicesManager')
 
       def main
         Wizard.CreateDialog
 
         ret = false
         while(ret != true)
-          if ServicesManagerDialogs.main_dialog == :next
-            ret = ServicesManagerDialogs.save
+          if ServicesManager.main_dialog == :next
+            ret = ServicesManager.save
           end
         end
 
@@ -22,4 +22,4 @@ module Yast
   end
 end
 
-Yast::Clients::ServicesManager.new.main
+Yast::Clients::ServicesManagerClient.new.main

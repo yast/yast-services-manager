@@ -3,7 +3,7 @@
 require "ycp"
 
 module Yast
-  class ServicesManagerDialogsClass < Module
+  class ServicesManagerClass < Module
     Yast.import("UI")
     Yast.import("Wizard")
     Yast.import("Service")
@@ -258,5 +258,5 @@ module Yast
 
   end
 
-  ServicesManagerDialogs = ServicesManagerDialogsClass.new
+  ServicesManager = ServicesManagerClass.new
 end
