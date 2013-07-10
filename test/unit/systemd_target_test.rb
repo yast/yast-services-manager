@@ -47,7 +47,6 @@ class SystemdTargetTest < Test::Unit::TestCase
   def test_export
     default = 'target-2'
     Yast::SystemdTarget.stubs(:current_default).returns(default)
-    expected_export = { 'default' => default }
-    assert_equal(expected_export, Yast::SystemdTarget.export)
+    assert_equal(default, Yast::SystemdTarget.export)
   end
 end
