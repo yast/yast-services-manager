@@ -24,6 +24,17 @@ module Yast
       set_modified(false)
     end
 
+    # TODO: move single-service creation and handling into a separate class
+    def default_service
+      {
+        'enabled'     => false,
+        'modified'    => false,
+        'active'      => false,
+        'load'        => '',
+        'description' => '',
+      }
+    end
+
     # Returns hash of all services read using systemctl
     #
     # @return Hash
@@ -51,11 +62,8 @@ module Yast
         # static and masked are ignored here
         if Status::SUPPORTED_STATES.include?(service_def[1])
           service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
-          @services[service_def[0]] = {
-            'enabled'  => (service_def[1] == Status::ENABLED),
-            'modified' => false,
-            'active'   => false,
-          }
+          @services[service_def[0]] = default_service
+          @services[service_def[0]]['enabled'] = (service_def[1] == Status::ENABLED)
         end
       }
 
@@ -78,12 +86,45 @@ module Yast
       @services
     end
 
+    def exists?(service)
+      !all()[service].nil?
+    end
+
     # Returns only enabled services, the rest is expected to be disabled
     def export
       all.collect {
         |service_name, service_def|
         (is_enabled(service_name) ? service_name : nil)
       }.compact
+    end
+
+    def import(data)
+      if data == nil
+        Builtins.y2error("Incorrect data for import: #{data.inspect}")
+        return false
+      end
+
+      ret = true
+
+      # All imported will be enabled
+      data.each do |service|
+        if exists?(service)
+          Builtins.y2milestone("Enabling service #{service}")
+          set_enabled(service, true)
+        else
+          Builtins.y2error("Service #{service} doesn't exist on this system")
+          ret = false
+        end
+      end
+
+      # All the rest will be disabled
+      services_to_disable = all.collect{|service, service_def| service} - data
+      services_to_disable.each do |service|
+        Builtins.y2milestone("Disabling service #{service}")
+        set_enabled(service, false)
+      end
+
+      ret
     end
 
     def enable_disable_services(force)

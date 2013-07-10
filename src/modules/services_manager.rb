@@ -22,6 +22,11 @@ module Yast
       SHOW_DETAILS   = :show_details
     end
 
+    module Data
+      TARGET = 'default_target'
+      SERVICES = 'services'
+    end
+
     def initialize
       textdomain 'services-manager'
     end
@@ -34,6 +39,18 @@ module Yast
       '<h2>' + _('Services Manager') + '</h2>' +
         _('<p><b>Default Target:</b> %{default}</p>') % {:default => SystemdTarget.current_default} +
         _('<p><b>Enabled Services:</b><ul>%{services}</ul></p>') % {:services => list_of_services.join}
+    end
+
+    def export
+      {
+        Data::TARGET   => SystemdTarget.export,
+        Data::SERVICES => SystemdService.export,
+      }
+    end
+
+    def import(data)
+      SystemdTarget.import(data[Data::TARGET])
+      SystemdService.import(data[Data::SERVICES])
     end
 
     # Redraws the services dialog
@@ -255,6 +272,8 @@ module Yast
     publish({:function => :save, :type => "boolean"})
     publish({:function => :summary, :type => "string"})
     publish({:function => :modified?, :type => "boolean"})
+    publish({:function => :export, :type => "map <string, any>"})
+    publish({:function => :import, :type => "boolean"})
 
   end
 

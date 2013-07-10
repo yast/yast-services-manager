@@ -10,6 +10,7 @@ module Yast
         Wizard.CreateDialog
         ret = (ServicesManager.main_dialog == :next)
         UI.CloseDialog
+        ret
       end
 
       def main
@@ -25,19 +26,16 @@ module Yast
         params   = args[1] || {}
 
         case function
-          when 'Change' then configure_manually
-          when 'Summary' then ServicesManager.summary
-          when 'Import'
-            # FIXME: TBD
-          when 'Export'
-            # FIXME: TBD
+          when 'Change'      then configure_manually
+          when 'Summary'     then ServicesManager.summary
+          when 'Import'      then ServicesManager.import(params)
+          when 'Export'      then ServicesManager.export
           when 'Read'
             # FIXME: TBD
-          when 'Write' then ServicesManager.save(:force => true, :startstop => false)
+          when 'Write'       then ServicesManager.save(:force => true, :startstop => false)
           when 'Reset'
             # FIXME: TBD
-          when 'Packages'
-            auto_ret = {}
+          when 'Packages'    then {}
           when 'GetModified' then ServicesManager.modified?
           when 'SetModified'
             # FIXME: TBD
