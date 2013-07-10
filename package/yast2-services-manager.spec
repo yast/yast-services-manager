@@ -17,7 +17,7 @@
 
 
 Name:           yast2-services-manager
-Version:        0.0.7
+Version:        0.0.8
 Release:        0
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build

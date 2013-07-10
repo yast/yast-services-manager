@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jul 10 15:27:49 CEST 2013 - locilka@suse.com
+
+- 0.0.8
+- Added full AutoYast support
+
+-------------------------------------------------------------------
 Thu Jul  4 14:04:32 CEST 2013 - locilka@suse.com
 
 - Dialogs and their handling split into separate file to be used
