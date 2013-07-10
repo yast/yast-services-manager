@@ -53,6 +53,10 @@ module Yast
       SystemdService.import(data[Data::SERVICES])
     end
 
+    def reset
+      SystemdTarget.reset && SystemdService.reset
+    end
+
     # Redraws the services dialog
     def redraw_services
       UI.OpenDialog(Label(_('Reading services status...')))

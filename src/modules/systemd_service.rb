@@ -20,6 +20,7 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
+      @services = nil
       clear_errors
       set_modified(false)
     end
@@ -33,6 +34,11 @@ module Yast
         'load'        => '',
         'description' => '',
       }
+    end
+
+    def reset
+      initialize
+      true
     end
 
     # Returns hash of all services read using systemctl
@@ -215,8 +221,8 @@ module Yast
     end
 
     # Sets that configuration has been modified
-    def set_modified(modified)
-      @modified = true
+    def set_modified(new_status = true)
+      @modified = new_status
     end
 
     # Returns whether configuration has been modified
@@ -277,6 +283,7 @@ module Yast
 
     publish({:function => :all, :type => "map <string, map>"})
     publish({:function => :save, :type => "boolean"})
+    publish({:function => :reset, :type => "boolean"})
 
     publish({:function => :set_modified, :type => "void"})
     publish({:function => :is_modified, :type => "boolean"})

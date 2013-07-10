@@ -63,7 +63,7 @@ module Yast
     end
 
     def all
-      return @targets if @targets
+      return @targets unless @targets.nil?
 
       @targets = {}
 
@@ -103,6 +103,13 @@ module Yast
       @targets
     end
 
+    def reset
+      @targets = nil
+      @default_target = nil
+      set_modified(false)
+      true
+    end
+
     def export
       current_default
     end
@@ -131,6 +138,7 @@ module Yast
 
     publish({:function => :all, :type => "map <string, map>"})
     publish({:function => :save, :type => "boolean"})
+    publish({:function => :reset, :type => "boolean"})
 
     publish({:function => :current_default, :type => "string"})
     publish({:function => :set_default, :type => "boolean"})

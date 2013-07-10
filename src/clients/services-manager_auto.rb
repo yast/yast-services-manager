@@ -33,8 +33,7 @@ module Yast
           when 'Read'
             # FIXME: TBD
           when 'Write'       then ServicesManager.save(:force => true, :startstop => false)
-          when 'Reset'
-            # FIXME: TBD
+          when 'Reset'       then ServicesManager.reset
           when 'Packages'    then {}
           when 'GetModified' then ServicesManager.modified?
           when 'SetModified'
