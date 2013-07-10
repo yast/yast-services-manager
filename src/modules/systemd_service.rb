@@ -41,6 +41,10 @@ module Yast
       true
     end
 
+    def read
+      (all.size > 0)
+    end
+
     # Returns hash of all services read using systemctl
     #
     # @return Hash

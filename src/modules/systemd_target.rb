@@ -125,6 +125,10 @@ module Yast
       (current_default == data)
     end
 
+    def read
+      (all.size > 0 && !current_default.nil?)
+    end
+
   private
 
     def read_current

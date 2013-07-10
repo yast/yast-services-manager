@@ -30,8 +30,7 @@ module Yast
           when 'Summary'     then ServicesManager.summary
           when 'Import'      then ServicesManager.import(params)
           when 'Export'      then ServicesManager.export
-          when 'Read'
-            # FIXME: TBD
+          when 'Read'        then ServicesManager.read
           when 'Write'       then ServicesManager.save(:force => true, :startstop => false)
           when 'Reset'       then ServicesManager.reset
           when 'Packages'    then {}
