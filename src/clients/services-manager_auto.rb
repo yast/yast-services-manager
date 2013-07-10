@@ -8,7 +8,7 @@ module Yast
 
       def configure_manually
         Wizard.CreateDialog
-        ret = (ServicesManager.main_dialog == :next)
+        ret = ServicesManager.main_dialog
         UI.CloseDialog
         ret
       end
