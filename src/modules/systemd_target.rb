@@ -30,8 +30,8 @@ module Yast
       @modified
     end
 
-    def set_modified(modified)
-      @modified = modified
+    def set_modified(new_modified = true)
+      @modified = new_modified
     end
 
     def set_default(target)
@@ -143,6 +143,7 @@ module Yast
     publish({:function => :all, :type => "map <string, map>"})
     publish({:function => :save, :type => "boolean"})
     publish({:function => :reset, :type => "boolean"})
+    publish({:function => :read, :type => "boolean"})
 
     publish({:function => :current_default, :type => "string"})
     publish({:function => :set_default, :type => "boolean"})

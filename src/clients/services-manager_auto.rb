@@ -35,8 +35,7 @@ module Yast
           when 'Reset'       then ServicesManager.reset
           when 'Packages'    then {}
           when 'GetModified' then ServicesManager.modified?
-          when 'SetModified'
-            # FIXME: TBD
+          when 'SetModified' then ServicesManager.modified!
           else
             Builtins.y2error("Unknown Autoyast command: #{function}, #{params.inspect}")
             nil

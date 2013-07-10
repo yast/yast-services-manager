@@ -61,6 +61,11 @@ module Yast
       SystemdTarget.read && SystemdService.read
     end
 
+    def modified!
+      SystemdTarget.set_modified
+      SystemdService.set_modified
+    end
+
     # Redraws the services dialog
     def redraw_services
       UI.OpenDialog(Label(_('Reading services status...')))
@@ -278,8 +283,10 @@ module Yast
 
     publish({:function => :main_dialog, :type => "symbol"})
     publish({:function => :save, :type => "boolean"})
+    publish({:function => :read, :type => "boolean"})
     publish({:function => :summary, :type => "string"})
     publish({:function => :modified?, :type => "boolean"})
+    publish({:function => :modified!, :type => "void"})
     publish({:function => :export, :type => "map <string, any>"})
     publish({:function => :import, :type => "boolean"})
 
