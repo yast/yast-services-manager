@@ -9,9 +9,14 @@ module Yast
       def main
         Wizard.CreateDialog
 
-        final_state = (ServicesManager.main_dialog == :next)
-        if final_state
-          ret = ServicesManager.save
+        final_state = false
+        while(true)
+          if (ServicesManager.main_dialog == :next)
+            final_state = ServicesManager.save
+            break if final_state
+          else
+            break
+          end
         end
 
         UI.CloseDialog
