@@ -127,6 +127,14 @@ module Yast
       ret
     end
 
+    def reset_modified(services)
+      # Reset ('modified' of) all saved services
+      services.each {
+        |service|
+        @services[service]['modified'] = false
+      }
+    end
+
     def enable_disable_services(force)
       enableddisabled = []
 
@@ -149,20 +157,14 @@ module Yast
         end
       }
 
-      # Reset ('modified' of) all saved services
-      enableddisabled.each {
-        |service|
-        @services[service]['modified'] = false
-      }
+      enableddisabled
     end
 
     def start_stop_services(force)
       all.each {
         |service, service_def|
         if service_def['modified'] || force
-          if (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
-            startedstopped << service
-          else
+          unless (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
             error = {
               'message' => SystemdService.is_enabled(service) ?
                 _('Could not start service %{service}') % {:service => service}
@@ -190,11 +192,13 @@ module Yast
       clear_errors
 
       # At first, only adjust services startup (enabled/disabled)
-      enable_disable_services(force)
+      changed_services = enable_disable_services(force)
 
       # Then try to adjust services run (active/inactive)
       # Might start or stop some services that would cause system instability
       start_stop_services(force) if startstop
+
+      reset_modified(changed_services)
 
       @errors.size == 0
     end
