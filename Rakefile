@@ -8,6 +8,7 @@ PACKAGE_ARCHIVE = './package/yast2-services-manager.tar.bz2'
 DOMAIN = 'services-manager'
 PACKAGE_NAME = 'yast2-' + DOMAIN
 DESTDIR = ENV['DESTDIR'] || '/'
+RNC_DESTINATION = '/usr/share/YaST2/schema/autoyast/rnc/'
 
 FILES = {
   'Rakefile'     => nil,
@@ -16,6 +17,7 @@ FILES = {
   'src/desktop'  => File.join(YAST_DESKTOP),
   'test'         => nil,
   'test/unit'    => nil,
+  'config'       => RNC_DESTINATION,
 }
 
 task :install do

@@ -64,5 +64,6 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_prefix}/share/YaST2/clients/*.rb
 %{_prefix}/share/YaST2/modules/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
+%{_prefix}/share/YaST2/schema/autoyast/rnc/*.rnc
 
 %changelog
