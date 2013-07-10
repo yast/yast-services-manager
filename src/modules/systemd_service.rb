@@ -285,6 +285,9 @@ module Yast
 
     publish({:function => :errors, :type => "list <map <string, string> >"})
     publish({:function => :clear_errors, :type => "boolean"})
+
+    publish({:function => :export, :type => "list <string>"})
+    publish({:function => :import, :type => "boolean"})
   end
 
   SystemdService = SystemdServiceClass.new

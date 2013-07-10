@@ -137,6 +137,9 @@ module Yast
 
     publish({:function => :set_modified, :type => "void"})
     publish({:function => :is_modified, :type => "boolean"})
+
+    publish({:function => :export, :type => "string"})
+    publish({:function => :import, :type => "boolean"})
   end
 
   SystemdTarget = SystemdTargetClass.new
