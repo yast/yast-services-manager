@@ -14,13 +14,14 @@ FILES = {
   'src/clients'  => File.join(YAST_DIR, 'clients'),
   'src/modules'  => File.join(YAST_DIR, 'modules'),
   'src/desktop'  => File.join(YAST_DESKTOP),
-  'test'         => nil,
-  'test/unit'    => nil,
+  'test'         => nil
 }
 
+Rake::TaskManager.record_task_metadata = true
+
+desc "Install the files on local system"
 task :install do
-  FILES.each {
-    |dir, install_to|
+  FILES.each do |dir, install_to|
     next if install_to.nil?
 
     install_to = File.join(DESTDIR, install_to)
@@ -36,9 +37,10 @@ task :install do
         puts "Cannot instal file #{file_path} to #{install_to}: #{e.message}"
       end
     end
-  }
+  end
 end
 
+desc "Create a package in path #{PACKAGE_ARCHIVE}"
 task :package do
   project_dir = File.dirname(File.expand_path(__FILE__))
   workdir = File.expand_path(File.dirname(PACKAGE_ARCHIVE))
@@ -71,13 +73,15 @@ task :package do
   }
 end
 
-task :test do
-  Rake::TestTask.new do |t|
-    t.libs = ["lib"]
-    t.warning = false
-    t.verbose = true
-    t.test_files = FileList['test/unit/*.rb']
-  end
+Rake::TestTask.new do |t|
+  t.libs = ["lib"]
+  t.warning = false
+  t.verbose = true
+  t.test_files = FileList['test/*_test.rb']
 end
 
-task :default => 'install'
+task :default do
+  Rake.application.options.show_tasks = :tasks
+  Rake.application.options.show_task_pattern = //
+  Rake.application.display_tasks_and_comments
+end

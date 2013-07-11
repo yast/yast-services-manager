@@ -1,3 +1,6 @@
 require "fileutils"
+require "test/unit"
+require "mocha/setup"
+require "ycp"
 
-$: << File.expand_path(File.join(File.dirname(__FILE__), '../src/modules'))
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../src/modules'))
