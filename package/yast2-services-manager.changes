@@ -3,6 +3,7 @@ Wed Jul 10 15:27:49 CEST 2013 - locilka@suse.com
 
 - 0.0.8
 - Added full AutoYast support
+- Temporarily disabled tests for openSUSE 13.1 and further
 
 -------------------------------------------------------------------
 Thu Jul  4 14:04:32 CEST 2013 - locilka@suse.com
