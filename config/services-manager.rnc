@@ -1,0 +1,16 @@
+default namespace = "http://www.suse.com/1.0/yast2ns"
+namespace a = "http://relaxng.org/ns/compatibility/annotations/1.0"
+namespace config = "http://www.suse.com/1.0/configns"
+
+service = element service { text }
+
+services = element services {
+  attribute config:type { text }?,
+  service*
+}
+
+default_target = element default_target { text }
+
+services-manager = element services-manager {
+  default_target? & services?
+}

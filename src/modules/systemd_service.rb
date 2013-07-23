@@ -20,8 +20,29 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
+      @services = nil
       clear_errors
       set_modified(false)
+    end
+
+    # TODO: move single-service creation and handling into a separate class
+    def default_service
+      {
+        'enabled'     => false,
+        'modified'    => false,
+        'active'      => false,
+        'load'        => '',
+        'description' => '',
+      }
+    end
+
+    def reset
+      initialize
+      true
+    end
+
+    def read
+      (all.size > 0)
     end
 
     # Returns hash of all services read using systemctl
@@ -51,11 +72,8 @@ module Yast
         # static and masked are ignored here
         if Status::SUPPORTED_STATES.include?(service_def[1])
           service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
-          @services[service_def[0]] = {
-            'enabled'  => (service_def[1] == Status::ENABLED),
-            'modified' => false,
-            'active'   => false,
-          }
+          @services[service_def[0]] = default_service
+          @services[service_def[0]]['enabled'] = (service_def[1] == Status::ENABLED)
         end
       }
 
@@ -78,12 +96,53 @@ module Yast
       @services
     end
 
+    def exists?(service)
+      !all()[service].nil?
+    end
+
     # Returns only enabled services, the rest is expected to be disabled
     def export
       all.collect {
         |service_name, service_def|
         (is_enabled(service_name) ? service_name : nil)
       }.compact
+    end
+
+    def import(data)
+      if data == nil
+        Builtins.y2error("Incorrect data for import: #{data.inspect}")
+        return false
+      end
+
+      ret = true
+
+      # All imported will be enabled
+      data.each do |service|
+        if exists?(service)
+          Builtins.y2milestone("Enabling service #{service}")
+          set_enabled(service, true)
+        else
+          Builtins.y2error("Service #{service} doesn't exist on this system")
+          ret = false
+        end
+      end
+
+      # All the rest will be disabled
+      services_to_disable = all.collect{|service, service_def| service} - data
+      services_to_disable.each do |service|
+        Builtins.y2milestone("Disabling service #{service}")
+        set_enabled(service, false)
+      end
+
+      ret
+    end
+
+    def reset_modified(services)
+      # Reset ('modified' of) all saved services
+      services.each {
+        |service|
+        @services[service]['modified'] = false
+      }
     end
 
     def enable_disable_services(force)
@@ -108,20 +167,14 @@ module Yast
         end
       }
 
-      # Reset ('modified' of) all saved services
-      enableddisabled.each {
-        |service|
-        @services[service]['modified'] = false
-      }
+      enableddisabled
     end
 
     def start_stop_services(force)
       all.each {
         |service, service_def|
         if service_def['modified'] || force
-          if (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
-            startedstopped << service
-          else
+          unless (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
             error = {
               'message' => SystemdService.is_enabled(service) ?
                 _('Could not start service %{service}') % {:service => service}
@@ -149,11 +202,13 @@ module Yast
       clear_errors
 
       # At first, only adjust services startup (enabled/disabled)
-      enable_disable_services(force)
+      changed_services = enable_disable_services(force)
 
       # Then try to adjust services run (active/inactive)
       # Might start or stop some services that would cause system instability
       start_stop_services(force) if startstop
+
+      reset_modified(changed_services)
 
       @errors.size == 0
     end
@@ -170,8 +225,8 @@ module Yast
     end
 
     # Sets that configuration has been modified
-    def set_modified(modified)
-      @modified = true
+    def set_modified(new_status = true)
+      @modified = new_status
     end
 
     # Returns whether configuration has been modified
@@ -232,6 +287,7 @@ module Yast
 
     publish({:function => :all, :type => "map <string, map>"})
     publish({:function => :save, :type => "boolean"})
+    publish({:function => :reset, :type => "boolean"})
 
     publish({:function => :set_modified, :type => "void"})
     publish({:function => :is_modified, :type => "boolean"})
@@ -244,6 +300,9 @@ module Yast
 
     publish({:function => :errors, :type => "list <map <string, string> >"})
     publish({:function => :clear_errors, :type => "boolean"})
+
+    publish({:function => :export, :type => "list <string>"})
+    publish({:function => :import, :type => "boolean"})
   end
 
   SystemdService = SystemdServiceClass.new
