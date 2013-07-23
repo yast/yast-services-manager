@@ -3,7 +3,7 @@
 require "ycp"
 
 module Yast
-  class ServicesManagerDialogsClass < Module
+  class ServicesManagerClass < Module
     Yast.import("UI")
     Yast.import("Wizard")
     Yast.import("Service")
@@ -22,6 +22,11 @@ module Yast
       SHOW_DETAILS   = :show_details
     end
 
+    module Data
+      TARGET = 'default_target'
+      SERVICES = 'services'
+    end
+
     def initialize
       textdomain 'services-manager'
     end
@@ -34,6 +39,31 @@ module Yast
       '<h2>' + _('Services Manager') + '</h2>' +
         _('<p><b>Default Target:</b> %{default}</p>') % {:default => SystemdTarget.current_default} +
         _('<p><b>Enabled Services:</b><ul>%{services}</ul></p>') % {:services => list_of_services.join}
+    end
+
+    def export
+      {
+        Data::TARGET   => SystemdTarget.export,
+        Data::SERVICES => SystemdService.export,
+      }
+    end
+
+    def import(data)
+      SystemdTarget.import(data[Data::TARGET])
+      SystemdService.import(data[Data::SERVICES])
+    end
+
+    def reset
+      SystemdTarget.reset && SystemdService.reset
+    end
+
+    def read
+      SystemdTarget.read && SystemdService.read
+    end
+
+    def modified!
+      SystemdTarget.set_modified
+      SystemdService.set_modified
     end
 
     # Redraws the services dialog
@@ -253,10 +283,14 @@ module Yast
 
     publish({:function => :main_dialog, :type => "symbol"})
     publish({:function => :save, :type => "boolean"})
+    publish({:function => :read, :type => "boolean"})
     publish({:function => :summary, :type => "string"})
     publish({:function => :modified?, :type => "boolean"})
+    publish({:function => :modified!, :type => "void"})
+    publish({:function => :export, :type => "map <string, any>"})
+    publish({:function => :import, :type => "boolean"})
 
   end
 
-  ServicesManagerDialogs = ServicesManagerDialogsClass.new
+  ServicesManager = ServicesManagerClass.new
 end
