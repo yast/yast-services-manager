@@ -15,6 +15,12 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
+######################################################################
+#
+# IMPORTANT: Please do not change spec file in build service directly
+#            Use https://github.com/yast/yast-services-manager repo
+#
+######################################################################
 
 Name:           yast2-services-manager
 Version:        0.0.8
@@ -25,19 +31,19 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-services-manager.tar.bz2
 
 Requires:       yast2 >= 2.24.1
-Requires:       yast2-ruby-bindings >= 1.1.2
+Requires:       yast2-ruby-bindings >= 1.2.0
 
 BuildRequires:  ruby
 BuildRequires:  rubygem-mocha
 BuildRequires:  update-desktop-files
-BuildRequires:  yast2-ruby-bindings >= 1.1.2
+BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2 >= 2.24.1
 
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
 License:        GPL-2.0
 
-Url:            https://github.com/kobliha/yast-services-manager
+Url:            https://github.com/yast/yast-services-manager
 
 %description
 Provides user interface and libraries to configure running services and the default target.
@@ -49,7 +55,7 @@ Provides user interface and libraries to configure running services and the defa
 # Temporary fix: Disabling tests that do not work in openSUSE higher than 12.3
 echo 0%{?suse_version}
 %if 0%{?suse_version} > 0 && 0%{?suse_version} <= 1230
-rake test DESTDIR="$RPM_BUILD_ROOT"
+rake test
 %endif
 
 %install

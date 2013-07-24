@@ -4,7 +4,7 @@ require File.join(File.dirname(__FILE__), "../test_helper")
 
 require "test/unit"
 require "mocha/setup"
-require "ycp"
+require "yast"
 
 require "systemd_target"
 require "systemd_service"
