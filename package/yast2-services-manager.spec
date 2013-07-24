@@ -25,12 +25,12 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-services-manager.tar.bz2
 
 Requires:       yast2 >= 2.24.1
-Requires:       yast2-ruby-bindings >= 1.1.2
+Requires:       yast2-ruby-bindings >= 1.2.0
 
 BuildRequires:  ruby
 BuildRequires:  rubygem-mocha
 BuildRequires:  update-desktop-files
-BuildRequires:  yast2-ruby-bindings >= 1.1.2
+BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2 >= 2.24.1
 
 Summary:        YaST2 - Services Manager
