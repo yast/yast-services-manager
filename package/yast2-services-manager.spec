@@ -49,7 +49,7 @@ Provides user interface and libraries to configure running services and the defa
 # Temporary fix: Disabling tests that do not work in openSUSE higher than 12.3
 echo 0%{?suse_version}
 %if 0%{?suse_version} > 0 && 0%{?suse_version} <= 1230
-rake test DESTDIR="$RPM_BUILD_ROOT"
+rake test
 %endif
 
 %install
