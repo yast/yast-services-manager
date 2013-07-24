@@ -15,6 +15,12 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
+######################################################################
+#
+# IMPORTANT: Please do not change spec file in build service directly
+#            Use https://github.com/yast/yast-services-manager repo
+#
+######################################################################
 
 Name:           yast2-services-manager
 Version:        0.0.8
@@ -37,7 +43,7 @@ Summary:        YaST2 - Services Manager
 Group:          System/YaST
 License:        GPL-2.0
 
-Url:            https://github.com/kobliha/yast-services-manager
+Url:            https://github.com/yast/yast-services-manager
 
 %description
 Provides user interface and libraries to configure running services and the default target.
