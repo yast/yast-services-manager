@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-require "ycp"
+require "yast"
 
 module Yast
   class SystemdServiceClass < Module
