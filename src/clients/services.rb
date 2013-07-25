@@ -4,8 +4,7 @@
 module Yast
   class Services < Client
     def main
-      @target = "services-manager"
-      WFM.CallFunction(@target, WFM.Args)
+      WFM.CallFunction("services-manager", WFM.Args)
     end
   end
 end
