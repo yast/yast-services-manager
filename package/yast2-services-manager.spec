@@ -15,29 +15,35 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
+######################################################################
+#
+# IMPORTANT: Please do not change spec file in build service directly
+#            Use https://github.com/yast/yast-services-manager repo
+#
+######################################################################
 
 Name:           yast2-services-manager
-Version:        0.0.7
+Version:        0.0.8
 Release:        0
+BuildArch:      noarch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-services-manager.tar.bz2
 
+Requires:       yast2 >= 2.24.1
+Requires:       yast2-ruby-bindings >= 1.2.0
+
+BuildRequires:  ruby
+BuildRequires:  rubygem-mocha
+BuildRequires:  update-desktop-files
+BuildRequires:  yast2-ruby-bindings >= 1.2.0
+BuildRequires:  yast2 >= 2.24.1
+
+Summary:        YaST2 - Services Manager
 Group:          System/YaST
 License:        GPL-2.0
 
-BuildArchitectures: noarch
-
-Requires:       yast2 >= 2.24.1
-Requires:       yast2-ruby-bindings >= 1.1.2
-
-BuildRequires:  update-desktop-files
-BuildRequires:  yast2-ruby-bindings >= 1.1.2 yast2 >= 2.24.1
-BuildRequires:  ruby rubygem-mocha
-
-Summary:        YaST2 - Services Manager
-
-URL:            https://github.com/kobliha/yast-services-manager
+Url:            https://github.com/yast/yast-services-manager
 
 %description
 Provides user interface and libraries to configure running services and the default target.
@@ -46,15 +52,15 @@ Provides user interface and libraries to configure running services and the defa
 %setup -n yast2-services-manager
 
 %build
+# Temporary fix: Disabling tests that do not work in openSUSE higher than 12.3
+echo 0%{?suse_version}
+%if 0%{?suse_version} > 0 && 0%{?suse_version} <= 1230
 rake test
+%endif
 
 %install
 rake install DESTDIR="$RPM_BUILD_ROOT"
-[ -e "%{_prefix}/share/YaST2/data/devtools/NO_MAKE_CHECK" ] || Y2DIR="$RPM_BUILD_ROOT/usr/share/YaST2" rake test DESTDIR="$RPM_BUILD_ROOT"
-for f in `find $RPM_BUILD_ROOT/%{_prefix}/share/applications/YaST2/ -name "*.desktop"` ; do
-    d=${f##*/}
-    %suse_update_desktop_file -d ycc_${d%.desktop} ${d%.desktop}
-done
+%suse_update_desktop_file services-manager
 
 %clean
 rm -rf "$RPM_BUILD_ROOT"
@@ -64,5 +70,6 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_prefix}/share/YaST2/clients/*.rb
 %{_prefix}/share/YaST2/modules/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
+%{_prefix}/share/YaST2/schema/autoyast/rnc/*.rnc
 
 %changelog

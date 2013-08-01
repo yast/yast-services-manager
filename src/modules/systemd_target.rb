@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-require "ycp"
+require "yast"
 
 module Yast
   class SystemdTargetClass < Module
@@ -30,8 +30,8 @@ module Yast
       @modified
     end
 
-    def set_modified(modified)
-      @modified = modified
+    def set_modified(new_modified = true)
+      @modified = new_modified
     end
 
     def set_default(target)
@@ -63,7 +63,7 @@ module Yast
     end
 
     def all
-      return @targets if @targets
+      return @targets unless @targets.nil?
 
       @targets = {}
 
@@ -103,20 +103,30 @@ module Yast
       @targets
     end
 
+    def reset
+      @targets = nil
+      @default_target = nil
+      set_modified(false)
+      true
+    end
+
     def export
-      { DEFAULT_TARGET => current_default }
+      current_default
     end
 
     def import(data)
-      if data[DEFAULT_TARGET].nil?
-        Builtins.y2warning("Cannot import, target definition '#{DEFAULT_TARGET}' not present in #{data.inspect}")
-        return false
-      else
-        set_default(data[DEFAULT_TARGET])
+      if data.nil? || data == ''
+        Builtins.y2error("Incorrect data for import #{data}")
       end
 
+      set_default(data)
+
       # returns whether succesfully set
-      (current_default == data[DEFAULT_TARGET])
+      (current_default == data)
+    end
+
+    def read
+      (all.size > 0 && !current_default.nil?)
     end
 
   private
@@ -132,12 +142,17 @@ module Yast
 
     publish({:function => :all, :type => "map <string, map>"})
     publish({:function => :save, :type => "boolean"})
+    publish({:function => :reset, :type => "boolean"})
+    publish({:function => :read, :type => "boolean"})
 
     publish({:function => :current_default, :type => "string"})
     publish({:function => :set_default, :type => "boolean"})
 
     publish({:function => :set_modified, :type => "void"})
     publish({:function => :is_modified, :type => "boolean"})
+
+    publish({:function => :export, :type => "string"})
+    publish({:function => :import, :type => "boolean"})
   end
 
   SystemdTarget = SystemdTargetClass.new

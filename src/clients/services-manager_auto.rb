@@ -4,12 +4,13 @@ module Yast
   module Clients
     class ServicesManagerAuto < Client
       Yast.import('Wizard')
-      Yast.import('ServicesManagerDialogs')
+      Yast.import('ServicesManager')
 
       def configure_manually
         Wizard.CreateDialog
-        ret = (ServicesManagerDialogs.main_dialog == :next)
+        ret = ServicesManager.main_dialog
         UI.CloseDialog
+        ret
       end
 
       def main
@@ -25,22 +26,16 @@ module Yast
         params   = args[1] || {}
 
         case function
-          when 'Change' then configure_manually
-          when 'Summary' then ServicesManagerDialogs.summary
-          when 'Import'
-            # FIXME: TBD
-          when 'Export'
-            # FIXME: TBD
-          when 'Read'
-            # FIXME: TBD
-          when 'Write' then ServicesManagerDialogs.save(:force => true, :startstop => false)
-          when 'Reset'
-            # FIXME: TBD
-          when 'Packages'
-            auto_ret = {}
-          when 'GetModified' then ServicesManagerDialogs.modified?
-          when 'SetModified'
-            # FIXME: TBD
+          when 'Change'      then configure_manually
+          when 'Summary'     then ServicesManager.summary
+          when 'Import'      then ServicesManager.import(params)
+          when 'Export'      then ServicesManager.export
+          when 'Read'        then ServicesManager.read
+          when 'Write'       then ServicesManager.save(:force => true, :startstop => false)
+          when 'Reset'       then ServicesManager.reset
+          when 'Packages'    then {}
+          when 'GetModified' then ServicesManager.modified?
+          when 'SetModified' then ServicesManager.modified!
           else
             Builtins.y2error("Unknown Autoyast command: #{function}, #{params.inspect}")
             nil
