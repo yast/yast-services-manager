@@ -1,10 +1,4 @@
-require "fileutils"
-
-require File.join(File.dirname(__FILE__), "../test_helper")
-
-require "test/unit"
-require "mocha/setup"
-require "yast"
+require_relative 'test_helper'
 
 require "systemd_target"
 require "systemd_service"
