@@ -32,8 +32,9 @@ Source0:        yast2-services-manager.tar.bz2
 
 Requires:       yast2 >= 2.24.1
 Requires:       yast2-ruby-bindings >= 1.2.0
-Requires:       rubygem-simplecov
 
+BuildRequires:  rubygem-simplecov
+BuildRequires:  rubygem-simplecov-rcov
 BuildRequires:  ruby
 BuildRequires:  rubygem-mocha
 BuildRequires:  update-desktop-files
