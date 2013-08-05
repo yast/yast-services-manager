@@ -8,15 +8,20 @@ PACKAGE_ARCHIVE = './package/yast2-services-manager.tar.bz2'
 DOMAIN = 'services-manager'
 PACKAGE_NAME = 'yast2-' + DOMAIN
 DESTDIR = ENV['DESTDIR'] || '/'
-RNC_DESTINATION = '/usr/share/YaST2/schema/autoyast/rnc/'
+RNC_DESTINATION = YAST_DIR + '/schema/autoyast/rnc/'
+DOCDIR = '/usr/share/doc/packages/' + PACKAGE_NAME
 
+# Tells which files/dirs are used for build
+#   key -> files/dirs (if mentioned, they are in resulting package)
+#   val -> where they are installed (nil == not installed)
 FILES = {
   'Rakefile'     => nil,
   'src/clients'  => File.join(YAST_DIR, 'clients'),
   'src/modules'  => File.join(YAST_DIR, 'modules'),
-  'src/desktop'  => File.join(YAST_DESKTOP),
-  'test'         => File.join('test'),
+  'src/desktop'  => YAST_DESKTOP,
+  'test'         => nil,
   'config'       => RNC_DESTINATION,
+  'license'      => DOCDIR,
 }
 
 Rake::TaskManager.record_task_metadata = true
