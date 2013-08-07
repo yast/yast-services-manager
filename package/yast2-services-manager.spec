@@ -71,5 +71,9 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_prefix}/share/YaST2/modules/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
 %{_prefix}/share/YaST2/schema/autoyast/rnc/*.rnc
+# Only license comes here, the rest will be in 'doc' package
+%doc %dir %{_prefix}/share/doc/packages/yast2-services-manager/
+%doc %{_prefix}/share/doc/packages/yast2-services-manager/README
+%doc %{_prefix}/share/doc/packages/yast2-services-manager/COPYING
 
 %changelog
