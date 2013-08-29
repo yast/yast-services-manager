@@ -1,26 +1,29 @@
 require_relative 'test_helper'
 
-require "systemd_target"
-require "systemd_service"
-require "services_manager"
+include TestHelpers::Manager
 
-class ServicesManagerTest < Test::Unit::TestCase
-  def teardown
-    Yast::SCR.unstub
-  end
+describe Yast::ServicesManager do
 
-  def test_export
-    default_target = 'runlevel-800'
-    services_to_enable = ['a', 'b', 'c']
-    Yast::SystemdTarget.stubs(:export).returns(default_target)
-    Yast::SystemdService.stubs(:export).returns(services_to_enable)
+  it "can manage exporting systemd target and services at once" do
+    stub_with :default_target => 'runlevel-8000', :services => ['a', 'b', 'c'] do
+      data = Yast::ServicesManager.export
 
-    data = Yast::ServicesManager.export
+      data[Yast::ServicesManagerClass::TARGET].must_equal default_target
+      data[Yast::ServicesManagerClass::SERVICES].must_equal services
 
-    assert_equal(default_target, data[Yast::ServicesManagerClass::Data::TARGET])
-    services_to_enable.each do |service|
-      assert(data[Yast::ServicesManagerClass::Data::SERVICES].include?(service))
+      services.all? do |service|
+        data[Yast::ServicesManagerClass::SERVICES].member?(service)
+      end.must_equal(true)
     end
   end
 
+  it "can manage importing of data for systemd target and services" do
+  end
+
+  it "shows summary with default target and registered services" do
+    stub_with :default_target => 'runlevel333', :services => ['sshd', 'cups'] do
+      Yast::ServicesManager.summary.must_match default_target
+      services.each {|s| Yast::ServicesManager.summary.must_match s }
+    end
+  end
 end

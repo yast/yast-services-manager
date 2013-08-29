@@ -1,158 +1,138 @@
-# encoding: utf-8
-
 require "yast"
 
 module Yast
   class SystemdTargetClass < Module
-    DEFAULT_TARGET_PATH = '/etc/systemd/system/default.target'
-    SYSTEMD_TARGETS_DIR = '/usr/lib/systemd/system'
-    TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
     SYSTEMCTL_DEFAULT_OPTIONS = ' --no-legend --no-pager --no-ask-password '
-    TARGET_SUFFIX = '.target'
-    DEFAULT_TARGET = 'default'
+    TERM_OPTIONS              = ' LANG=C TERM=dumb COLUMNS=1024 '
+    TARGET_SUFFIX             = '.target'
+    DEFAULT_TARGET            = 'default'
+    DEFAULT_TARGET_PATH       = "/etc/systemd/system/#{DEFAULT_TARGET}#{TARGET_SUFFIX}"
+    SYSTEMD_TARGETS_DIR       = '/usr/lib/systemd/system'
 
     module Status
-      ENABLED  = 'enabled'
-      DISABLED = 'disabled'
+      ENABLED   = 'enabled'
+      DISABLED  = 'disabled'
       SUPPORTED = [ENABLED, DISABLED]
-
-      ACTIVE = 'active'
-      INACTIVE = 'inactive'
+      ACTIVE    = 'active'
+      LOADED    = 'loaded'
     end
+
+    attr_accessor :modified, :targets
 
     def initialize
-      Yast.import('FileUtils')
       textdomain 'services-manager'
-      set_modified(false)
     end
 
-    def is_modified
-      @modified
+    def default_target
+      return @default_target if @default_target
+      @default_target = File.basename(SCR::Read(path('.target.symlink'), DEFAULT_TARGET_PATH).to_s)
+      @default_target.chomp! TARGET_SUFFIX
     end
 
-    def set_modified(new_modified = true)
-      @modified = new_modified
-    end
-
-    def set_default(target)
-      if (current_default != target)
-        raise "Unknown target: #{target}" unless self.all.keys.include?(target)
-
-        @default_target = target
-        set_modified(true)
+    def default_target= new_default
+      raise "Unknown target: #{new_default}" unless all.keys.include?(new_default)
+      unless default_target == new_default
+        @default_target = new_default
+        self.modified = true
       end
-
-      current_default
-    end
-
-    def current_default
-      read_current if @default_target.nil?
       @default_target
     end
 
-    def save(params = {})
-      return true unless (is_modified || params[:force] == true)
-
-      success = (FileUtils.Exists(DEFAULT_TARGET_PATH) ?
-        SCR::Execute(path('.target.remove'), DEFAULT_TARGET_PATH) : true
-      ) && SCR::Execute(path('.target.symlink'), default_target_path, DEFAULT_TARGET_PATH)
-
-      set_modified(false)
-
+    def save params={}
+      return true unless (modified || params[:force])
+      if File.exists?(default_target_file)
+        SCR::Execute(path('.target.remove'), DEFAULT_TARGET_PATH)
+        success = !!SCR::Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_PATH)
+        self.modified = false
+      else
+        success = false
+      end
       success
     end
 
-    def all
-      return @targets unless @targets.nil?
+    private
 
+    def load_targets
       @targets = {}
 
       SCR.Execute(
         path('.target.bash_output'),
-        TERM_OPTIONS + 'systemctl list-unit-files --type target' + SYSTEMCTL_DEFAULT_OPTIONS
-      )["stdout"].each_line {
-        |line|
-        # Format: target_name#{target_suffix}      status
+        TERM_OPTIONS                              +
+        'systemctl list-unit-files --type target' +
+        SYSTEMCTL_DEFAULT_OPTIONS
+      )["stdout"].each_line do |line|
         target = line.split(/[\s]+/)
         if Status::SUPPORTED.include?(target[1])
-          target[0].chomp! TARGET_SUFFIX
+          target[0].chomp!(TARGET_SUFFIX)
           next if (target[0] == DEFAULT_TARGET)
-
-          @targets[target[0]] = {
-            'enabled'  => (target[1] == Status::ENABLED),
-          }
+          @targets[target[0]] = { :enabled  => (target[1] == Status::ENABLED) }
         end
-      }
+      end
 
       SCR.Execute(
         path('.target.bash_output'),
-        TERM_OPTIONS + 'systemctl --all --type target' + SYSTEMCTL_DEFAULT_OPTIONS
-      )["stdout"].each_line {
-        |line|
+        TERM_OPTIONS                    +
+        'systemctl --all --type target' +
+        SYSTEMCTL_DEFAULT_OPTIONS
+      )["stdout"].each_line do |line|
         target = line.split(/[\s]+/)
         target[0].chomp! TARGET_SUFFIX
-
         unless @targets[target[0]].nil?
-          @targets[target[0]]['load']        = target[1]
-          @targets[target[0]]['active']      = (target[2] == Status::ACTIVE)
-          @targets[target[0]]['description'] = target[4..-1].join(" ")
+          @targets[target[0]][:loaded]      = target[1]  == Status::LOADED
+          @targets[target[0]][:active]      = (target[2] == Status::ACTIVE)
+          @targets[target[0]][:description] = target[4..-1].join(" ")
         end
-      }
-
+      end
       Builtins.y2debug('All targets read: %1', @targets)
       @targets
     end
 
+    public
+
+    def all
+      targets ? targets : load_targets
+    end
+
     def reset
-      @targets = nil
+      @targets        = nil
       @default_target = nil
-      set_modified(false)
+      self.modified = false
       true
     end
 
     def export
-      current_default
+      default_target
     end
 
-    def import(data)
-      if data.nil? || data == ''
-        Builtins.y2error("Incorrect data for import #{data}")
+    def import new_target
+      if new_target.to_s.empty?
+        Builtins.y2error("New default target must not be empty string")
+        return nil
       end
-
-      set_default(data)
-
-      # returns whether succesfully set
-      (current_default == data)
+      self.default_target = new_target
     end
 
     def read
-      (all.size > 0 && !current_default.nil?)
+      default_target
+      load_targets
+      true
     end
 
-  private
+    private
 
-    def read_current
-      @default_target = File.basename(SCR::Read(path('.target.symlink'), DEFAULT_TARGET_PATH))
-      @default_target.chomp! TARGET_SUFFIX
+    def default_target_file
+      File.join(SYSTEMD_TARGETS_DIR, "#{default_target}#{TARGET_SUFFIX}")
     end
 
-    def default_target_path
-      File.join(SYSTEMD_TARGETS_DIR, current_default + TARGET_SUFFIX)
-    end
-
-    publish({:function => :all, :type => "map <string, map>"})
-    publish({:function => :save, :type => "boolean"})
-    publish({:function => :reset, :type => "boolean"})
-    publish({:function => :read, :type => "boolean"})
-
-    publish({:function => :current_default, :type => "string"})
-    publish({:function => :set_default, :type => "boolean"})
-
-    publish({:function => :set_modified, :type => "void"})
-    publish({:function => :is_modified, :type => "boolean"})
-
-    publish({:function => :export, :type => "string"})
-    publish({:function => :import, :type => "boolean"})
+    publish({:function => :all,             :type => "map <string, map>" })
+    publish({:function => :default_target,  :type => "string ()"         })
+    publish({:function => :export,          :type => "string ()"         })
+    publish({:function => :import,          :type => "string ()"         })
+    publish({:function => :modified,        :type => "boolean ()"        })
+    publish({:function => :modified=,       :type => "boolean (boolean)" })
+    publish({:function => :read,            :type => "boolean ()"        })
+    publish({:function => :reset,           :type => "boolean ()"        })
+    publish({:function => :save,            :type => "boolean ()"        })
   end
 
   SystemdTarget = SystemdTargetClass.new

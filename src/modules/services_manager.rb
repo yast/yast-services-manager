@@ -1,6 +1,5 @@
-# encoding: utf-8
-
 require "yast"
+require 'erb'
 
 module Yast
   class ServicesManagerClass < Module
@@ -22,47 +21,58 @@ module Yast
       SHOW_DETAILS   = :show_details
     end
 
-    module Data
-      TARGET = 'default_target'
-      SERVICES = 'services'
-    end
+    TARGET   = 'default_target'
+    SERVICES = 'services'
 
     def initialize
       textdomain 'services-manager'
     end
 
     def summary
-      list_of_services = SystemdService.export.collect do |service|
-        '<li>' + service + '</li>'
-      end
-
-      '<h2>' + _('Services Manager') + '</h2>' +
-        _('<p><b>Default Target:</b> %{default}</p>') % {:default => SystemdTarget.current_default} +
-        _('<p><b>Enabled Services:</b><ul>%{services}</ul></p>') % {:services => list_of_services.join}
+      ERB.new(summary_template).result(binding)
     end
+
+    private
+
+    def summary_template
+      <<-summary
+<h2><%= _('Services Manager') %></h2>
+<p><b><%= _('Default Target') %></b><%= SystemdTarget.export %></p>
+<p><b><%= _('Enabled Services') %></b></p>
+<ul>
+  <% SystemdService.export.each do |service| %>
+    <li><%= service %></li>
+  <% end %>
+</ul>
+      summary
+    end
+
+    public
 
     def export
       {
-        Data::TARGET   => SystemdTarget.export,
-        Data::SERVICES => SystemdService.export,
+        TARGET   => SystemdTarget.export,
+        SERVICES => SystemdService.export
       }
     end
 
     def import(data)
-      SystemdTarget.import(data[Data::TARGET])
-      SystemdService.import(data[Data::SERVICES])
+      SystemdTarget.import  data[TARGET]
+      SystemdService.import data[SERVICES]
     end
 
     def reset
-      SystemdTarget.reset && SystemdService.reset
+      SystemdTarget.reset
+      SystemdService.reset
     end
 
     def read
-      SystemdTarget.read && SystemdService.read
+      SystemdTarget.read
+      SystemdService.read
     end
 
     def modified!
-      SystemdTarget.set_modified
+      SystemdTarget.modified = true
       SystemdService.set_modified
     end
 
@@ -246,7 +256,7 @@ module Yast
 
     # Are there any unsaved changes?
     def modified?
-      SystemdTarget.is_modified || SystemdService.is_modified
+      SystemdTarget.modified || SystemdService.modified
     end
 
     # Main dialog function
@@ -281,14 +291,14 @@ module Yast
       returned
     end
 
-    publish({:function => :main_dialog, :type => "symbol"})
-    publish({:function => :save, :type => "boolean"})
-    publish({:function => :read, :type => "boolean"})
-    publish({:function => :summary, :type => "string"})
-    publish({:function => :modified?, :type => "boolean"})
-    publish({:function => :modified!, :type => "void"})
-    publish({:function => :export, :type => "map <string, any>"})
-    publish({:function => :import, :type => "boolean"})
+    publish({:function => :export,      :type => "map <string, any> ()"          })
+    publish({:function => :import,      :type => "boolean ()"                    })
+    publish({:function => :main_dialog, :type => "symbol ()"                     })
+    publish({:function => :modified?,   :type => "boolean ()"                    })
+    publish({:function => :modified!,   :type => "void ()"                       })
+    publish({:function => :read,        :type => "void ()"                       })
+    publish({:function => :save,        :type => "map <string, string> (boolean)"})
+    publish({:function => :summary,     :type => "string ()"                     })
 
   end
 

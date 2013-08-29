@@ -1,3 +1,4 @@
+__END__
 require_relative 'test_helper'
 
 require "systemd_service"
@@ -6,6 +7,7 @@ class SystemdServiceTest < Test::Unit::TestCase
   def teardown
     Yast::SCR.unstub
   end
+
 
   def test_all_known_services
     first_scr_call = {
