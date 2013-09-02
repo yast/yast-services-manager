@@ -1,27 +1,13 @@
 require_relative "test_helper"
 
-require "systemd_target"
-
-class SystemdTargetTest < Test::Unit::TestCase
-  def teardown
-    Yast::SCR.unstub
+describe Yast::SystemdTarget do
+  it "can discover the default target" do
+    skip "not done yet"
   end
+end
 
-  FIRST_SCR_CALL = {
-    'exit'   => 0,
-    'stderr' => '',
-    'stdout' => "target-1     enabled\n" +
-                "target-2     disabled\n" +
-                "target-3     disabled\n",
-  }
-
-  SECOND_SCR_CALL = {
-    'exit'   => 0,
-    'stderr' => '',
-    'stdout' => "target-1          loaded active   active     Basic target\n" +
-                "target-2          loaded active   active     Enhanced target\n" +
-                "target-3          loaded inactive dead       Super-enhanced target\n",
-  }
+__END__
+class SystemdTargetTest
 
   def test_all_known_targets
     Yast::SCR.stubs(:Execute).returns(FIRST_SCR_CALL, SECOND_SCR_CALL)

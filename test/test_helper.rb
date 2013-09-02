@@ -15,7 +15,7 @@ module TestHelpers
   module Manager
     attr_accessor :default_target, :services
 
-    def stub_with options
+    def stub_manager_with options
       self.default_target = options[:default_target]
       self.services = options[:services]
 

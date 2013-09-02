@@ -1,4 +1,4 @@
-require "yast"
+require 'yast'
 require 'erb'
 
 module Yast
@@ -13,7 +13,7 @@ module Yast
     Yast.import("SystemdTarget")
     Yast.import("SystemdService")
 
-    module IDs
+    module Id
       SERVICES_TABLE = :services_table
       TOGGLE_RUNNING = :start_stop
       TOGGLE_ENABLED = :enable_disable
@@ -71,7 +71,7 @@ module Yast
       SystemdService.read
     end
 
-    def modified!
+    def modify!
       SystemdTarget.modified = true
       SystemdService.set_modified
     end
@@ -91,15 +91,15 @@ module Yast
       }
       UI.CloseDialog
 
-      UI.ChangeWidget(Id(IDs::SERVICES_TABLE), :Items, table_items)
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, table_items)
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
     end
 
     def redraw_service(service)
       enabled = SystemdService.is_enabled(service)
 
       UI.ChangeWidget(
-        Id(IDs::SERVICES_TABLE),
+        Id(Id::SERVICES_TABLE),
         Cell(service, 1),
         (enabled ? _('Enabled') : _('Disabled'))
       )
@@ -109,14 +109,14 @@ module Yast
       # The current state matches the futural state
       if (enabled == running)
         UI.ChangeWidget(
-          Id(IDs::SERVICES_TABLE),
+          Id(Id::SERVICES_TABLE),
           Cell(service, 2),
           (running ? _('Active') : _('Inactive'))
         )
       # The current state differs the the futural state
       else
         UI.ChangeWidget(
-          Id(IDs::SERVICES_TABLE),
+          Id(Id::SERVICES_TABLE),
           Cell(service, 2),
           (running ? _('Active (will stop)') : _('Inactive (will start)'))
         )
@@ -130,21 +130,21 @@ module Yast
         Item(Id(target), label, (target == SystemdTarget.current_default))
       }
 
-      UI.ChangeWidget(Id(IDs::DEFAULT_TARGET), :Items, items)
+      UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, items)
     end
 
     # Fills the dialog contents
     def adjust_dialog
       contents = VBox(
         Left(ComboBox(
-          Id(IDs::DEFAULT_TARGET),
+          Id(Id::DEFAULT_TARGET),
           Opt(:notify),
           _('Default System &Target'),
           []
         )),
         VSpacing(1),
         Table(
-          Id(IDs::SERVICES_TABLE),
+          Id(Id::SERVICES_TABLE),
           Opt(:notify),
           Header(
             _('Service'),
@@ -155,11 +155,11 @@ module Yast
           []
         ),
         HBox(
-          PushButton(Id(IDs::TOGGLE_RUNNING), _('&Start/Stop')),
+          PushButton(Id(Id::TOGGLE_RUNNING), _('&Start/Stop')),
           HSpacing(1),
-          PushButton(Id(IDs::TOGGLE_ENABLED), _('&Enable/Disable')),
+          PushButton(Id(Id::TOGGLE_ENABLED), _('&Enable/Disable')),
           HStretch(),
-          PushButton(Id(IDs::SHOW_DETAILS), _('Show &Details'))
+          PushButton(Id(Id::SHOW_DETAILS), _('Show &Details'))
         )
       )
       caption = _('Services Manager')
@@ -176,7 +176,7 @@ module Yast
     #
     # @return Boolean if successful
     def toggle_running
-      service = UI.QueryWidget(Id(IDs::SERVICES_TABLE), :CurrentItem)
+      service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       Builtins.y2milestone('Toggling service running: %1', service)
       running = SystemdService.is_running(service)
 
@@ -192,25 +192,25 @@ module Yast
         )
       end
 
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
       success
     end
 
     # Toggles (enable/disable) whether the currently selected service should
     # be enabled or disabled while writing the configuration
     def toggle_enabled
-      service = UI.QueryWidget(Id(IDs::SERVICES_TABLE), :CurrentItem)
+      service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       Builtins.y2milestone('Toggling service status: %1', service)
       SystemdService.set_enabled(service, ! SystemdService.is_enabled(service))
 
       redraw_service(service)
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
       true
     end
 
     # Opens up a popup with details about the currently selected service
     def show_details
-      service = UI.QueryWidget(Id(IDs::SERVICES_TABLE), :CurrentItem)
+      service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       full_info = SystemdService.full_info(service)
       x_size = full_info.lines.collect{|line| line.size}.sort.last
       y_size = full_info.lines.count
@@ -222,12 +222,12 @@ module Yast
         x_size + 8, y_size + 6
       )
 
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
       true
     end
 
     def handle_dialog
-      new_default_target = UI.QueryWidget(Id(IDs::DEFAULT_TARGET), :Value)
+      new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
       Builtins.y2milestone("Setting new default target #{new_default_target}")
       SystemdTarget.set_default(new_default_target)
     end
@@ -273,13 +273,13 @@ module Yast
           when :abort
             break if Popup::ReallyAbort(modified?)
           # Default for double-click in the table
-          when IDs::TOGGLE_ENABLED, IDs::SERVICES_TABLE
+          when Id::TOGGLE_ENABLED, IDs::SERVICES_TABLE
             toggle_enabled
-          when IDs::TOGGLE_RUNNING
+          when Id::TOGGLE_RUNNING
             toggle_running
-          when IDs::DEFAULT_TARGET
+          when Id::DEFAULT_TARGET
             handle_dialog
-          when IDs::SHOW_DETAILS
+          when Id::SHOW_DETAILS
             show_details
           when :next
             break
@@ -295,7 +295,7 @@ module Yast
     publish({:function => :import,      :type => "boolean ()"                    })
     publish({:function => :main_dialog, :type => "symbol ()"                     })
     publish({:function => :modified?,   :type => "boolean ()"                    })
-    publish({:function => :modified!,   :type => "void ()"                       })
+    publish({:function => :modify!,     :type => "void ()"                       })
     publish({:function => :read,        :type => "void ()"                       })
     publish({:function => :save,        :type => "map <string, string> (boolean)"})
     publish({:function => :summary,     :type => "string ()"                     })
