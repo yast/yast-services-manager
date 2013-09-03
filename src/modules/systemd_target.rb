@@ -2,14 +2,14 @@ require "yast"
 
 module Yast
   class SystemdTargetClass < Module
-    SYSTEMCTL_DEFAULT_OPTIONS = ' --no-legend --no-pager --no-ask-password '
-    TERM_OPTIONS              = ' LANG=C TERM=dumb COLUMNS=1024 '
-    TARGET_SUFFIX             = '.target'
-    DEFAULT_TARGET            = 'default'
-    DEFAULT_TARGET_PATH       = "/etc/systemd/system/#{DEFAULT_TARGET}#{TARGET_SUFFIX}"
-    SYSTEMD_TARGETS_DIR       = '/usr/lib/systemd/system'
-    LIST_UNITS_COMMAND        = 'systemctl list-unit-files --type target'
-    LIST_TARGETS_COMMAND      = 'systemctl --all --type target'
+    LIST_UNITS_COMMAND   = 'systemctl list-unit-files --type target'
+    LIST_TARGETS_COMMAND = 'systemctl --all --type target'
+    COMMAND_OPTIONS      = ' --no-legend --no-pager --no-ask-password '
+    TERM_OPTIONS         = ' LANG=C TERM=dumb COLUMNS=1024 '
+    TARGET_SUFFIX        = '.target'
+    DEFAULT_TARGET       = 'default'
+    DEFAULT_TARGET_PATH  = "/etc/systemd/system/#{DEFAULT_TARGET}#{TARGET_SUFFIX}"
+    SYSTEMD_TARGETS_DIR  = '/usr/lib/systemd/system'
 
     module Status
       ENABLED   = 'enabled'
@@ -23,19 +23,21 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
+      self.targets = {}
     end
 
     def all
-      targets ? targets : load_targets
+      targets
     end
 
-    def default_target
-      return @default_target if @default_target
+    def default_target force=false
+      return @default_target if @default_target && !force
       @default_target = get_default_target
       @default_target.chomp! TARGET_SUFFIX
     end
 
     def default_target= new_default
+      read_targets
       raise "Unknown target: #{new_default}" unless all.keys.include?(new_default)
       if default_target != new_default
         @default_target = new_default
@@ -63,29 +65,32 @@ module Yast
 
     def save params={}
       return true unless (modified || params[:force])
-      if File.exists?(default_target_file)
-        SCR.Execute(path('.target.remove'), DEFAULT_TARGET_PATH)
-        success = !!(SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_PATH))
-        self.modified = false
-      else
-        success = false
-      end
-      success
+      remove_default_target_symlink if File.exists?(default_target_file)
+      create_default_target_symlink
     end
 
     def reset
-      @targets        = nil
-      @default_target = nil
+      read_targets
       self.modified = false
       true
     end
 
     def read
-      default_target
+      default_target(true)
       load_supported_targets && load_target_details
     end
 
+    alias_method :read_targets, :read
+
     private
+
+    def remove_default_target_symlink
+      SCR.Execute(path('.target.remove'), DEFAULT_TARGET_PATH)
+    end
+
+    def create_default_target_symlink
+      SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_PATH)
+    end
 
     def get_default_target
       File.basename(SCR.Read(path('.target.symlink'), DEFAULT_TARGET_PATH).to_s)
@@ -96,19 +101,18 @@ module Yast
     end
 
     def list_target_units
-      command = TERM_OPTIONS + LIST_UNITS_COMMAND + SYSTEMCTL_DEFAULT_OPTIONS
+      command = TERM_OPTIONS + LIST_UNITS_COMMAND + COMMAND_OPTIONS
       SCR.Execute(path('.target.bash_output'), command)
     end
 
     def list_targets_details
-      command = TERM_OPTIONS + LIST_TARGETS_COMMAND + SYSTEMCTL_DEFAULT_OPTIONS
+      command = TERM_OPTIONS + LIST_TARGETS_COMMAND + COMMAND_OPTIONS
       SCR.Execute(path('.target.bash_output'), command)
     end
 
     #TODO
     # Check for stderr and exit code
     def load_supported_targets
-      self.targets = {}
       output  = list_target_units
       stdout  = output.fetch 'stdout'
       stderr  = output.fetch 'stderr'
@@ -145,15 +149,15 @@ module Yast
       stderr.empty? && exit_code == 0
     end
 
-    publish({:function => :all,             :type => "map <string, map>" })
-    publish({:function => :default_target,  :type => "string ()"         })
-    publish({:function => :export,          :type => "string ()"         })
-    publish({:function => :import,          :type => "string ()"         })
-    publish({:function => :modified,        :type => "boolean ()"        })
-    publish({:function => :modified=,       :type => "boolean (boolean)" })
-    publish({:function => :read,            :type => "boolean ()"        })
-    publish({:function => :reset,           :type => "boolean ()"        })
-    publish({:function => :save,            :type => "boolean ()"        })
+    publish({:function => :all,            :type => "map <string, map>" })
+    publish({:function => :default_target, :type => "string ()"         })
+    publish({:function => :export,         :type => "string ()"         })
+    publish({:function => :import,         :type => "string ()"         })
+    publish({:function => :modified,       :type => "boolean ()"        })
+    publish({:function => :modified=,      :type => "boolean (boolean)" })
+    publish({:function => :read,           :type => "boolean ()"        })
+    publish({:function => :reset,          :type => "boolean ()"        })
+    publish({:function => :save,           :type => "boolean ()"        })
   end
 
   SystemdTarget = SystemdTargetClass.new

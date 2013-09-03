@@ -1,32 +1,37 @@
 require_relative "test_helper"
 
+include TestHelpers::Targets
+
 describe Yast::SystemdTarget do
-  it "can discover the default target" do
-    skip "not done yet"
-  end
-end
 
-__END__
-class SystemdTargetTest
+  Yast::SystemdTargetClass::DEFAULT_TARGET_PATH = TEST_TARGET_PATH.join('default.target').to_s
+  Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR = TEST_TARGETS_DIR.to_s
 
-  def test_all_known_targets
-    Yast::SCR.stubs(:Execute).returns(FIRST_SCR_CALL, SECOND_SCR_CALL)
-    assert_equal(3, Yast::SystemdTarget.all.keys.count)
+  attr_reader :system_target
+
+  before do
+    @system_target = Yast::SystemdTargetClass.new
   end
 
-  def test_current_default_target
-    default_target = 'multi-user-with-cookies'
-    default_target_path = File.join(
-      Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR,
-      default_target + Yast::SystemdTargetClass::TARGET_SUFFIX
-    )
-    Yast::SCR.stubs(:Read).returns(default_target_path)
-    assert_equal(default_target, Yast::SystemdTarget.current_default)
+  it "can set and save the default target" do
+    stub_system_target do
+      TEST_TARGETS.each do |target|
+        system_target.default_target = target
+        system_target.modified.must_equal true
+        system_target.default_target.must_equal target
+        system_target.save.must_equal true
+      end
+    end
   end
 
-  def test_export
-    default = 'target-2'
-    Yast::SystemdTarget.stubs(:current_default).returns(default)
-    assert_equal(default, Yast::SystemdTarget.export)
+  it "can reset the loaded and modified settings" do
+    stub_system_target do
+      TEST_TARGETS.each do |target|
+        system_target.default_target = target
+        system_target.modified.must_equal true
+        system_target.reset
+        system_target.modified.must_equal false
+      end
+    end
   end
 end
