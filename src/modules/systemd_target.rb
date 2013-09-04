@@ -24,6 +24,7 @@ module Yast
     def initialize
       textdomain 'services-manager'
       self.targets = {}
+      @default_target = ''
     end
 
     def all
@@ -31,9 +32,11 @@ module Yast
     end
 
     def default_target force=false
-      return @default_target if @default_target && !force
+      return @default_target if @default_target_set && !force
       target_file = get_default_target_filename
-      @default_target = target_file.empty? ? nil : target_file.chomp(TARGET_SUFFIX)
+      @default_target = target_file.chomp(TARGET_SUFFIX)
+      @default_target_set = true
+      @default_target
     end
 
     def default_target= new_default

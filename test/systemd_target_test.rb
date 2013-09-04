@@ -15,7 +15,7 @@ describe Yast::SystemdTarget do
 
   it "can set and save the default target" do
     stub_system_target do
-      system_target.default_target.must_equal nil
+      system_target.default_target.must_be_empty
       SUPPORTED_TEST_TARGETS.each do |target|
         system_target.default_target = target
         system_target.default_target.must_equal target
@@ -31,7 +31,7 @@ describe Yast::SystemdTarget do
 
   it "can reset the loaded and modified settings" do
     stub_system_target do
-      system_target.default_target.must_equal nil
+      system_target.default_target.must_be_empty
       SUPPORTED_TEST_TARGETS.each do |target|
         system_target.default_target = target
         system_target.default_target.must_equal target
@@ -39,7 +39,7 @@ describe Yast::SystemdTarget do
         system_target.modified.must_equal true
         system_target.reset
         system_target.modified.must_equal false
-        system_target.default_target.must_equal nil
+        system_target.default_target.must_be_empty
       end
     end
   end
