@@ -32,12 +32,13 @@ module Yast
 
     def default_target force=false
       return @default_target if @default_target && !force
-      @default_target = get_default_target
-      @default_target.chomp! TARGET_SUFFIX
+      target_file = get_default_target_filename
+      @default_target = target_file.empty? ? nil : target_file.chomp(TARGET_SUFFIX)
     end
 
     def default_target= new_default
       read_targets
+      #FIXME this does not seem to be correct raising exception here like that
       raise "Unknown target: #{new_default}" unless all.keys.include?(new_default)
       if default_target != new_default
         @default_target = new_default
@@ -92,7 +93,7 @@ module Yast
       SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_PATH)
     end
 
-    def get_default_target
+    def get_default_target_filename
       File.basename(SCR.Read(path('.target.symlink'), DEFAULT_TARGET_PATH).to_s)
     end
 

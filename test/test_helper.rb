@@ -36,16 +36,21 @@ module TestHelpers
     include FileUtils
     include Files
 
-    TEST_TARGETS = [
+    SUPPORTED_TEST_TARGETS = [
       'runlevel3',
       'multi-user'
     ]
 
+    UNSUPPORTED_TEST_TARGETS = [
+      'shutdown',
+      'final'
+    ]
+
     SAMPLE_CONTENT_FILES = {
       # LANG=C TERM=dumb COLUMNS=1024 systemctl --all --type target --no-legend --no-pager --no-ask-password
-      :targets      => 'target_list',
+      :targets      => 'targets',
       # LANG=C TERM=dumb COLUMNS=1024 systemctl list-unit-files --type target --no-legend --no-pager --no-ask-password
-      :target_units => 'target_unit_files_list'
+      :target_units => 'target_units'
     }
 
     TARGETS_DIR      = TMP.join 'targets'
@@ -68,7 +73,7 @@ module TestHelpers
     def setup_sample_files
       mkpath TEST_TARGET_PATH
       mkpath TEST_TARGETS_DIR
-      TEST_TARGETS.each do |target_file|
+      SUPPORTED_TEST_TARGETS.each do |target_file|
         cp SOURCE.join("#{target_file}.target"), TEST_TARGETS_DIR
       end
     end
