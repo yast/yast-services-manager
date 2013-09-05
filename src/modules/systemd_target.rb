@@ -153,15 +153,15 @@ module Yast
       stderr.empty? && exit_code == 0
     end
 
-    publish({:function => :all,            :type => "map <string, map>" })
-    publish({:function => :default_target, :type => "string ()"         })
-    publish({:function => :export,         :type => "string ()"         })
-    publish({:function => :import,         :type => "string ()"         })
-    publish({:function => :modified,       :type => "boolean ()"        })
-    publish({:function => :modified=,      :type => "boolean (boolean)" })
-    publish({:function => :read,           :type => "boolean ()"        })
-    publish({:function => :reset,          :type => "boolean ()"        })
-    publish({:function => :save,           :type => "boolean ()"        })
+    publish({:function => :all,            :type => "map <string, map> ()" })
+    publish({:function => :default_target, :type => "string ()"            })
+    publish({:function => :export,         :type => "string ()"            })
+    publish({:function => :import,         :type => "string ()"            })
+    publish({:function => :modified,       :type => "boolean ()"           })
+    publish({:function => :modified=,      :type => "boolean (boolean)"    })
+    publish({:function => :read,           :type => "boolean ()"           })
+    publish({:function => :reset,          :type => "boolean ()"           })
+    publish({:function => :save,           :type => "boolean ()"           })
   end
 
   SystemdTarget = SystemdTargetClass.new

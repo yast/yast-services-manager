@@ -71,32 +71,24 @@ module Yast
       SystemdService.read
     end
 
-    def modify!
-      SystemdTarget.modified = true
-      SystemdService.set_modified
-    end
-
     # Redraws the services dialog
     def redraw_services
       UI.OpenDialog(Label(_('Reading services status...')))
-
-      table_items = SystemdService.all.collect {
-        |service, service_def|
+      table_items = SystemdService.all.each do |service, attributes|
         Item(Id(service),
           service,
-          service_def['enabled'] ? _('Enabled') : _('Disabled'),
-          service_def['active'] ? _('Active') : _('Inactive'),
-          service_def['description']
+          attributes[:enabled] ? _('Enabled') : _('Disabled'),
+          attributes[:active] ? _('Active') : _('Inactive'),
+          attributes[:description]
         )
-      }
+      end
       UI.CloseDialog
-
       UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, table_items)
       UI.SetFocus(Id(Id::SERVICES_TABLE))
     end
 
     def redraw_service(service)
-      enabled = SystemdService.is_enabled(service)
+      enabled = SystemdService.enabled?(service)
 
       UI.ChangeWidget(
         Id(Id::SERVICES_TABLE),
@@ -104,7 +96,7 @@ module Yast
         (enabled ? _('Enabled') : _('Disabled'))
       )
 
-      running = SystemdService.is_running(service)
+      running = SystemdService.active?(service)
 
       # The current state matches the futural state
       if (enabled == running)
@@ -124,12 +116,10 @@ module Yast
     end
 
     def redraw_system_targets
-      items = SystemdTarget.all.collect {
-        |target, target_def|
-        label = target_def['description'] || target
-        Item(Id(target), label, (target == SystemdTarget.current_default))
-      }
-
+      items = SystemdTarget.all.each do |target, target_def|
+        label = target_def[:description] || target
+        Item(Id(target), label, (target == SystemdTarget.default_target))
+      end
       UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, items)
     end
 
@@ -178,17 +168,17 @@ module Yast
     def toggle_running
       service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       Builtins.y2milestone('Toggling service running: %1', service)
-      running = SystemdService.is_running(service)
+      running = SystemdService.active?(service)
 
-      success = (running ? Service::Stop(service) : Service::Start(service))
+      success = (running ? Service.Stop(service) : Service.Start(service))
 
       if success
-        SystemdService.set_running(service, (! running))
+        SystemdService.switch(service)
         redraw_service(service)
       else
         Popup::ErrorDetails(
           (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
-          SystemdService.full_info(service)
+          SystemdService.status(service)
         )
       end
 
@@ -201,7 +191,7 @@ module Yast
     def toggle_enabled
       service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       Builtins.y2milestone('Toggling service status: %1', service)
-      SystemdService.set_enabled(service, ! SystemdService.is_enabled(service))
+      SystemdService.toggle(service)
 
       redraw_service(service)
       UI.SetFocus(Id(Id::SERVICES_TABLE))
@@ -211,7 +201,7 @@ module Yast
     # Opens up a popup with details about the currently selected service
     def show_details
       service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
-      full_info = SystemdService.full_info(service)
+      full_info = SystemdService.status(service)
       x_size = full_info.lines.collect{|line| line.size}.sort.last
       y_size = full_info.lines.count
 
@@ -229,7 +219,7 @@ module Yast
     def handle_dialog
       new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
       Builtins.y2milestone("Setting new default target #{new_default_target}")
-      SystemdTarget.set_default(new_default_target)
+      SystemdTarget.default_target = new_default_target
     end
 
     # Saves the current configuration
