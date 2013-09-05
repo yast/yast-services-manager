@@ -217,7 +217,7 @@
       SCR.Execute(path('.target.bash_output'), command)
     end
 
-    def list_services
+    def list_services_details
       command = TERM_OPTIONS + SERVICES_DETAILS_COMMAND + COMMAND_OPTIONS
       SCR.Execute(path('.target.bash_output'), command)
     end
@@ -230,7 +230,7 @@
       stdout.each_line do |line|
         service, status = line.split(/[\s]+/)
         service.chomp! SERVICE_SUFFIX
-        if Status::SUPPORTED_STATES.include?(status)
+        if Status::SUPPORTED_STATES.member?(status)
           services[service] = DEFAULT_SERVICE_SETTINGS.clone
           services[service][:enabled] = status == Status::ENABLED
         end
@@ -239,7 +239,7 @@
     end
 
     def load_services_units
-      command_output = list_services
+      command_output = list_services_details
       stdout = command_output.fetch 'stdout'
       stderr = command_output.fetch 'stderr'
       exit_code = command_output.fetch 'exit'

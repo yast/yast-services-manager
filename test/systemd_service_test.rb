@@ -1,7 +1,32 @@
-__END__
 require_relative 'test_helper'
 
-require "systemd_service"
+include TestHelpers::Services
+
+describe Yast::SystemdService do
+  attr_reader :systemd_service
+
+  before do
+    @systemd_service = Yast::SystemdServiceClass.new
+  end
+
+  it "returns all supported services" do
+    systemd_service.services.must_be_empty
+    systemd_service.errors.must_be_empty
+    systemd_service.modified.must_equal false
+    stub_systemd_service do
+      systemd_service.read
+      systemd_service.all.wont_be_empty
+    end
+  end
+
+  it "does not include unsupported services" do
+    puts get_services_units :accept => :unsupported
+  end
+
+
+end
+
+__END__
 
 class SystemdServiceTest < Test::Unit::TestCase
   def teardown
