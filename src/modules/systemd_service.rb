@@ -104,38 +104,31 @@
       end
     end
 
+    # Change the global modified status
+    # Reverting modified to false also requires to set the flag for all services
     def modified= required_status
-      reset_services if required_status == false
+      read if required_status == false
       @modified = required_status
     end
 
     # Reads all services' data
     #
-    # @return Hash list of services
+    # @return [Hash] map of services
     def read
       load_services
       load_services_units
       services
     end
 
+    # Resets the global status of the object
+    #
+    # @return [Boolean]
     def reset
       self.errors = []
       self.modified = false
       true
     end
 
-    def reset_services
-      services.each_key { |service| services[service][:modified] = false }
-    end
-
-    def exists? service
-      exists = !!services[service]
-      if exists && block_given?
-        yield
-      else
-        exists
-      end
-    end
 
     # Returns only enabled services, the rest is expected to be disabled
     def export
@@ -169,10 +162,10 @@
     # Saves the current configuration in memory
     # Supported parameters:
     # - :force (boolean) to force writing even if not marked as modified, default is false
-    # - :switch (boolean) to start enabled or stop disabled services, default is true
+    # - :switch (boolean) to start or stop services, default is true
     #
-    # @param <Hash> params
-    # @return <boolean> if successful
+    # @param [Hash] params
+    # @return [Boolean]
     def save(force: false, switch: true)
       return false unless errors.empty?
       # Set the services enabled/disabled first
@@ -182,12 +175,25 @@
       # Might start or stop some services that would cause system instability
       switch_services(force) if switch
       return false unless errors.empty?
+      self.modified = false
       true
     end
 
+    # Switch the :active attribute of a service
+    #
+    # @param [String] service name
+    # @return [Boolean]
     def switch service
+      active?(service) ? deactivate(service) : activate(service)
+    end
+
+    # Starts or stops the service
+    #
+    # @param [String] service name
+    # @return [Boolean]
+    def switch! service
       if enabled?(service)
-        running?(service) ? Yast::Service.Stop(service) : Yast::Service.Start(service)
+        active?(service) ? Yast::Service.Stop(service) : Yast::Service.Start(service)
       else
         false
       end
@@ -197,11 +203,23 @@
       services[service][:modified] = false
     end
 
+    # Toggle the active attribute of the service
+    #
+    # @param [String] service name
+    # @return [Boolean]
     def toggle service
+      enabled?(service) ? disable(service) : enable(service)
+    end
+
+    # Enable or disable the service
+    #
+    # @param [String] service name
+    # @return [Boolean]
+    def toggle! service
       enabled?(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
     end
 
-    # Returns full information about the service
+    # Returns full information about the service as returned from systemctl command
     #
     # @param String service name
     # @return String full unformatted information
@@ -211,6 +229,33 @@
     end
 
     private
+
+    # Helper method to simplify checking for SCR output and also for
+    # using in methods where the return value is boolean dependend on
+    # the #errors collection
+    #
+    # @param [String] external input
+    # @return [Boolean]
+    def check_errors message=''
+      errors << message unless message.empty?
+      yield
+      errors.empty? ? true : false
+    end
+
+    # Helper method to avoid if-else branching
+    # When passed a block, this will be executed only if the service exists
+    # Whitout block it returns the boolean value
+    #
+    # @params [String] service name
+    # @return [Boolean]
+    def exists? service
+      exists = !!services[service]
+      if exists && block_given?
+        yield
+      else
+        exists
+      end
+    end
 
     def list_services_units
       command = TERM_OPTIONS + SERVICE_UNITS_COMMAND + COMMAND_OPTIONS
@@ -224,46 +269,44 @@
 
     def load_services
       command_output = list_services_units
-      stdout = command_output.fetch 'stdout'
-      stderr = command_output.fetch 'stderr'
-      exit_code = command_output.fetch 'exit'
-      stdout.each_line do |line|
-        service, status = line.split(/[\s]+/)
-        service.chomp! SERVICE_SUFFIX
-        if Status::SUPPORTED_STATES.member?(status)
-          services[service] = DEFAULT_SERVICE_SETTINGS.clone
-          services[service][:enabled] = status == Status::ENABLED
+      check_errors(command_output['stderr']) do
+        command_output['stdout'].each_line do |line|
+          service, status = line.split(/[\s]+/)
+          service.chomp! SERVICE_SUFFIX
+          if Status::SUPPORTED_STATES.member?(status)
+            services[service] = DEFAULT_SERVICE_SETTINGS.clone
+            services[service][:enabled] = status == Status::ENABLED
+          end
         end
+        Builtins.y2milestone('Services loaded: %1', services.keys)
       end
-      Builtins.y2milestone('Services loaded: %1', services.keys)
     end
 
     def load_services_units
       command_output = list_services_details
-      stdout = command_output.fetch 'stdout'
-      stderr = command_output.fetch 'stderr'
-      exit_code = command_output.fetch 'exit'
-      stdout.each_line do |line|
-        service, loaded, active, _, *description = line.split(/[\s]+/)
-        service.chomp! SERVICE_SUFFIX
-        exists?(service) do
-          services[service][:loaded] = loaded == Status::LOADED
-          services[service][:active] = active == Status::ACTIVE
-          services[service][:description] = description.join(' ')
+      check_errors(command_output.fetch 'stderr') do
+        command_output['stdout'].each_line do |line|
+          service, loaded, active, _, *description = line.split(/[\s]+/)
+          service.chomp! SERVICE_SUFFIX
+          exists?(service) do
+            services[service][:loaded] = loaded == Status::LOADED
+            services[service][:active] = active == Status::ACTIVE
+            services[service][:description] = description.join(' ')
+          end
         end
+        Builtins.y2debug("Services details loaded: #{services}")
       end
-      Builtins.y2debug("Services details loaded: #{services}")
     end
 
     def switch_services force=false
       services_switched = []
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified] || force
-        if switch(service_name)
+        if switch! service_name
           reset_service(service_name)
           services_switched << service_name
         else
-          change  = running?(service_name) ? 'stop' : 'start'
+          change  = active?(service_name) ? 'stop' : 'start'
           status  = enabled?(service_name) ? 'enabled' : 'disabled'
           message = _("Could not %{change} %{service} which is currently %{status}. ") %
             { :change => change, :service => service_name, :status => status }
@@ -279,7 +322,7 @@
       services_toggled = []
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified] || force
-        if toggle(service_name)
+        if toggle! service_name
           reset_service(service_name)
           services_toggled << service_name
         else

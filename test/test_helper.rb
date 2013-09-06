@@ -28,10 +28,10 @@ module TestHelpers
     include Files
 
     SAMPLE_CONTENT_FILES = {
-      # LANG=C TERM=dumb COLUMNS=1024 systemctl --all --type service
+      # LANG=C TERM=dumb COLUMNS=1024 systemctl --all --type service \
       # --no-legend --no-pager --no-ask-password
       :services => 'services',
-      # LANG=C TERM=dumb COLUMNS=1024 systemctl list-unit-files
+      # LANG=C TERM=dumb COLUMNS=1024 systemctl list-unit-files \
       # --type service --no-legend --no-pager --no-ask-password
       :service_units => 'service_units',
       # systemctl status foo_bar.service --no-legend --no-pager --no-ask-password
@@ -44,6 +44,22 @@ module TestHelpers
           systemd_service.stub :status, read_status do
             yield
           end
+        end
+      end
+    end
+
+    def stub_switch
+      Yast::Service.stub :Start, true do
+        Yast::Service.stub :Stop, true do
+          yield
+        end
+      end
+    end
+
+    def stub_toggle
+      Yast::Service.stub :Enable, true do
+        Yast::Service.stub :Disable, true do
+          yield
         end
       end
     end
@@ -78,6 +94,18 @@ module TestHelpers
         end
       end
       accept == :all ? services : services[accept]
+    end
+
+    def supported_services
+      get_services_units :accept => :supported
+    end
+
+    def unsupported_services
+      get_services_units :accept => :unsupported
+    end
+
+    def all_services
+      get_services_units
     end
   end
 
