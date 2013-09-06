@@ -160,20 +160,17 @@
     end
 
     # Saves the current configuration in memory
-    # Supported parameters:
-    # - :force (boolean) to force writing even if not marked as modified, default is false
-    # - :switch (boolean) to start or stop services, default is true
     #
-    # @param [Hash] params
+    # @param [Hash] force switching the service at runtime if required instant change
     # @return [Boolean]
-    def save(force: false, switch: true)
+    def save(switch: false)
       return false unless errors.empty?
       # Set the services enabled/disabled first
-      toggle_services(force)
+      toggle_services
       return false unless errors.empty?
       # Then try to adjust services run (active/inactive)
       # Might start or stop some services that would cause system instability
-      switch_services(force) if switch
+      switch_services if switch
       return false unless errors.empty?
       self.modified = false
       true
@@ -298,10 +295,10 @@
       end
     end
 
-    def switch_services force=false
+    def switch_services
       services_switched = []
       services.each do |service_name, service_attributes|
-        next unless service_attributes[:modified] || force
+        next unless service_attributes[:modified]
         if switch! service_name
           reset_service(service_name)
           services_switched << service_name
@@ -318,10 +315,10 @@
       services_switched
     end
 
-    def toggle_services force=false
+    def toggle_services
       services_toggled = []
       services.each do |service_name, service_attributes|
-        next unless service_attributes[:modified] || force
+        next unless service_attributes[:modified]
         if toggle! service_name
           reset_service(service_name)
           services_toggled << service_name
