@@ -69,7 +69,7 @@ module Yast
 
     def save params={}
       return true unless (modified || params[:force])
-      remove_default_target_symlink if File.exists?(default_target_file)
+      remove_default_target_symlink
       create_default_target_symlink
     end
 
@@ -89,7 +89,11 @@ module Yast
     private
 
     def remove_default_target_symlink
-      SCR.Execute(path('.target.remove'), DEFAULT_TARGET_PATH)
+      if Mode.normal
+        SCR.Execute(path('.target.remove'), DEFAULT_TARGET_PATH) if File.exists?(default_target_file)
+      elsif Mode.installation
+        SCR.Execute(path('.target.remove'), "/mnt/#{DEFAULT_TARGET_PATH}") if File.exists?(default_target_file)
+      end
     end
 
     def create_default_target_symlink

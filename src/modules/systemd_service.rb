@@ -1,5 +1,8 @@
  module Yast
   class SystemdServiceClass < Module
+    Yast.import("Service")
+    Yast.import("Mode")
+
     SERVICE_UNITS_COMMAND    = 'systemctl list-unit-files --type service'
     SERVICES_DETAILS_COMMAND = 'systemctl --all --type service'
     SERVICES_STATUS_COMMAND  = 'systemctl status'
@@ -27,15 +30,13 @@
     attr_reader   :services, :modified
     attr_accessor :errors
 
+    alias_method :all, :services
+
     def initialize
       textdomain 'services-manager'
       @services = {}
       @errors   = []
       @modified = false
-    end
-
-    def all
-      services
     end
 
     # Sets whether service should be running after writing the configuration
@@ -126,13 +127,12 @@
     def reset
       self.errors = []
       self.modified = false
-      true
     end
 
 
     # Returns only enabled services, the rest is expected to be disabled
     def export
-      services.keys.select { |service_name, service_attributes| enabled?(service_name) }
+      services.keys.select { |service_name| enabled?(service_name) }
     end
 
     def import imported_services=[]
@@ -176,7 +176,7 @@
       true
     end
 
-    # Switch the :active attribute of a service
+    # Activates the service in cache
     #
     # @param [String] service name
     # @return [Boolean]
@@ -200,7 +200,7 @@
       services[service][:modified] = false
     end
 
-    # Toggle the active attribute of the service
+    # Enables the service in cache
     #
     # @param [String] service name
     # @return [Boolean]

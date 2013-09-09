@@ -74,7 +74,7 @@ module Yast
     # Redraws the services dialog
     def redraw_services
       UI.OpenDialog(Label(_('Reading services status...')))
-      table_items = SystemdService.all.each do |service, attributes|
+      SystemdService.all.each do |service, attributes|
         Item(Id(service),
           service,
           attributes[:enabled] ? _('Enabled') : _('Disabled'),
@@ -83,7 +83,7 @@ module Yast
         )
       end
       UI.CloseDialog
-      UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, table_items)
+      UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, SystemdService.all)
       UI.SetFocus(Id(Id::SERVICES_TABLE))
     end
 
@@ -116,11 +116,11 @@ module Yast
     end
 
     def redraw_system_targets
-      items = SystemdTarget.all.each do |target, target_def|
+      SystemdTarget.all.each do |target, target_def|
         label = target_def[:description] || target
         Item(Id(target), label, (target == SystemdTarget.default_target))
       end
-      UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, items)
+      UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, SystemdTarget.all)
     end
 
     # Fills the dialog contents
@@ -263,7 +263,7 @@ module Yast
           when :abort
             break if Popup::ReallyAbort(modified?)
           # Default for double-click in the table
-          when Id::TOGGLE_ENABLED, IDs::SERVICES_TABLE
+          when Id::TOGGLE_ENABLED, Id::SERVICES_TABLE
             toggle_enabled
           when Id::TOGGLE_RUNNING
             toggle_running
