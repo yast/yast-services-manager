@@ -41,68 +41,66 @@ describe Yast::SystemdService do
 
   it "can activate and deactivate services" do
     stub_systemd_service do
-      stub_switch do
-        systemd_service.read
-        systemd_service.services.keys.each do |service|
-          systemd_service.activate(service).must_equal true
-          systemd_service.active?(service).must_equal true
-          systemd_service.deactivate(service).must_equal true
-          systemd_service.active?(service).must_equal false
-        end
-        systemd_service.modified.must_equal true
-        systemd_service.activate('some_random_nonexisting_service').must_equal false
-        systemd_service.activate('some_other_nonexisting_service').must_equal false
-        systemd_service.save.must_equal true
-        systemd_service.modified.must_equal false
+      systemd_service.read
+      systemd_service.services.keys.each do |service|
+        systemd_service.activate(service).must_equal true
+        systemd_service.active?(service).must_equal true
+        systemd_service.deactivate(service).must_equal true
+        systemd_service.active?(service).must_equal false
       end
+      systemd_service.modified.must_equal true
+      systemd_service.activate('some_random_nonexisting_service').must_equal false
+      systemd_service.activate('some_other_nonexisting_service').must_equal false
+      systemd_service.save.must_equal true
+      systemd_service.modified.must_equal false
     end
   end
 
   it "can enable and disable services" do
     stub_systemd_service do
-      stub_toggle do
-        systemd_service.read
-        systemd_service.services.keys.each do |service|
-          systemd_service.enable(service).must_equal true
-          systemd_service.enabled?(service).must_equal true
-          systemd_service.disable(service).must_equal true
-          systemd_service.enabled?(service).must_equal false
-        end
+      systemd_service.read
+      systemd_service.services.keys.each do |service|
+        systemd_service.enable(service).must_equal true
+        systemd_service.enabled?(service).must_equal true
+        systemd_service.disable(service).must_equal true
+        systemd_service.enabled?(service).must_equal false
+      end
+      systemd_service.modified.must_equal true
+      systemd_service.enable('nonexisting_service').must_equal false
+      systemd_service.disable('nonexisting_service').must_equal false
+      systemd_service.save.must_equal true
+      systemd_service.modified.must_equal false
+    end
+  end
+
+  it "is able to reset a toggled service" do
+    stub_systemd_service do
+      systemd_service.read
+      systemd_service.services.keys.each do |service|
+        origin_enabled = systemd_service.enabled?(service)
+        systemd_service.toggle(service).must_equal true
+        systemd_service.enabled?(service).must_equal(!origin_enabled)
         systemd_service.modified.must_equal true
-        systemd_service.enable('nonexisting_service').must_equal false
-        systemd_service.disable('nonexisting_service').must_equal false
-        systemd_service.save.must_equal true
+        systemd_service.reset
         systemd_service.modified.must_equal false
+        systemd_service.enabled?(service).must_equal(origin_enabled)
       end
     end
   end
 
-  it "is able to reset the changes done" do
+  it "is able to reset a switched service" do
     stub_systemd_service do
-      stub_toggle do
-        systemd_service.read
-        systemd_service.services.keys.each do |service|
-          origin_enabled = systemd_service.enabled?(service)
-          systemd_service.toggle(service).must_equal true
-          systemd_service.enabled?(service).must_equal(!origin_enabled)
-          systemd_service.modified.must_equal true
-          systemd_service.reset
-          systemd_service.modified.must_equal false
-          systemd_service.enabled?(service).must_equal(origin_enabled)
-        end
-      end
-      stub_switch do
-        systemd_service.read
-        systemd_service.services.keys.each do |service|
-          origin_active = systemd_service.active?(service)
-          systemd_service.switch(service).must_equal true
-          systemd_service.active?(service).must_equal(!origin_active)
-          systemd_service.modified.must_equal true
-          systemd_service.reset
-          systemd_service.modified.must_equal false
-          systemd_service.active?(service).must_equal(origin_active)
-        end
+      systemd_service.read
+      systemd_service.services.keys.each do |service|
+        origin_active = systemd_service.active?(service)
+        systemd_service.switch(service).must_equal true
+        systemd_service.active?(service).must_equal(!origin_active)
+        systemd_service.modified.must_equal true
+        systemd_service.reset
+        systemd_service.modified.must_equal false
+        systemd_service.active?(service).must_equal(origin_active)
       end
     end
   end
+
 end

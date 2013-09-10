@@ -42,7 +42,11 @@ module TestHelpers
       systemd_service.stub :list_services_units, read_services_units do
         systemd_service.stub :list_services_details, read_services_details do
           systemd_service.stub :status, read_status do
-            yield
+            stub_switch do
+              stub_toggle do
+                yield
+              end
+            end
           end
         end
       end
