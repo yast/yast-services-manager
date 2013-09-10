@@ -1,13 +1,12 @@
 require_relative "test_helper"
 
 include TestHelpers::Targets
+# replace /etc/systemd/system/default.target with test/tmp/targets/etc/default.target
+Yast::SystemdTargetClass::DEFAULT_TARGET_SYMLINK = TEST_TARGET_PATH.join('default.target').to_s
+# replace /usr/lib/systemd/system with test/tmp/targets/lib
+Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR = TEST_TARGETS_DIR.to_s
 
 describe Yast::SystemdTarget do
-
-  # replace /etc/systemd/system/default.target with test/tmp/targets/etc/default.target
-  Yast::SystemdTargetClass::DEFAULT_TARGET_PATH = TEST_TARGET_PATH.join('default.target').to_s
-  # replace /usr/lib/systemd/system with test/tmp/targets/lib
-  Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR = TEST_TARGETS_DIR.to_s
 
   attr_reader :systemd_target
 
@@ -18,7 +17,7 @@ describe Yast::SystemdTarget do
   it "can set and save supported default target" do
     stub_systemd_target do
       systemd_target.default_target.must_be_empty
-      supported_target = 'runlevel2'
+      supported_target = 'runlevel3'
       systemd_target.default_target = supported_target
       systemd_target.default_target.must_equal supported_target
       systemd_target.modified.must_equal true

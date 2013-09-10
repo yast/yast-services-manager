@@ -132,15 +132,10 @@ module TestHelpers
     include FileUtils
     include Files
 
-    SUPPORTED_TEST_TARGETS = [
-      'runlevel3',
-      'multi-user'
-    ]
+    # Make sure you have a physical copy of target file in dir test/files/*.target
+    # Otherwise the tests fail
+    TEST_TARGETS = ['runlevel3', 'multi-user']
 
-    UNSUPPORTED_TEST_TARGETS = [
-      'shutdown',
-      'final'
-    ]
 
     SAMPLE_CONTENT_FILES = {
       # LANG=C TERM=dumb COLUMNS=1024 systemctl --all --type target --no-legend --no-pager --no-ask-password
@@ -169,7 +164,7 @@ module TestHelpers
     def setup_sample_files
       mkpath TEST_TARGET_PATH
       mkpath TEST_TARGETS_DIR
-      SUPPORTED_TEST_TARGETS.each do |target_file|
+      TEST_TARGETS.each do |target_file|
         cp SOURCE.join("#{target_file}.target"), TEST_TARGETS_DIR
       end
     end

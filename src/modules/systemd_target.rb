@@ -8,8 +8,8 @@ module Yast
     TERM_OPTIONS         = ' LANG=C TERM=dumb COLUMNS=1024 '
     TARGET_SUFFIX        = '.target'
     DEFAULT_TARGET       = 'default'
-    DEFAULT_TARGET_PATH  = "/etc/systemd/system/#{DEFAULT_TARGET}#{TARGET_SUFFIX}"
     SYSTEMD_TARGETS_DIR  = '/usr/lib/systemd/system'
+    DEFAULT_TARGET_SYMLINK  = "/etc/systemd/system/#{DEFAULT_TARGET}#{TARGET_SUFFIX}"
 
     module Status
       ENABLED   = 'enabled'
@@ -21,14 +21,12 @@ module Yast
 
     attr_accessor :modified, :targets
 
+    alias_method :all, :targets
+
     def initialize
       textdomain 'services-manager'
       self.targets = {}
       @default_target = ''
-    end
-
-    def all
-      targets
     end
 
     def default_target force=false
@@ -89,19 +87,16 @@ module Yast
     private
 
     def remove_default_target_symlink
-      if Mode.normal
-        SCR.Execute(path('.target.remove'), DEFAULT_TARGET_PATH) if File.exists?(default_target_file)
-      elsif Mode.installation
-        SCR.Execute(path('.target.remove'), "/mnt/#{DEFAULT_TARGET_PATH}") if File.exists?(default_target_file)
-      end
+      SCR.Execute(path('.target.remove'), DEFAULT_TARGET_SYMLINK)
     end
 
     def create_default_target_symlink
-      SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_PATH)
+      SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_SYMLINK)
+      SCR.Read(path('.target.size'), DEFAULT_TARGET_SYMLINK) > 0
     end
 
     def get_default_target_filename
-      File.basename(SCR.Read(path('.target.symlink'), DEFAULT_TARGET_PATH).to_s)
+      File.basename(SCR.Read(path('.target.symlink'), DEFAULT_TARGET_SYMLINK).to_s)
     end
 
     def default_target_file
