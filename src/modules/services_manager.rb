@@ -74,7 +74,7 @@ module Yast
     # Redraws the services dialog
     def redraw_services
       UI.OpenDialog(Label(_('Reading services status...')))
-      SystemdService.all.each do |service, attributes|
+      services = SystemdService.all.collect do |service, attributes|
         Item(Id(service),
           service,
           attributes[:enabled] ? _('Enabled') : _('Disabled'),
@@ -83,7 +83,7 @@ module Yast
         )
       end
       UI.CloseDialog
-      UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, SystemdService.all)
+      UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, services)
       UI.SetFocus(Id(Id::SERVICES_TABLE))
     end
 
@@ -116,11 +116,11 @@ module Yast
     end
 
     def redraw_system_targets
-      SystemdTarget.all.each do |target, target_def|
+      targets = SystemdTarget.all.collect do |target, target_def|
         label = target_def[:description] || target
         Item(Id(target), label, (target == SystemdTarget.default_target))
       end
-      UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, SystemdTarget.all)
+      UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, targets)
     end
 
     # Fills the dialog contents
@@ -253,6 +253,7 @@ module Yast
     #
     # @return :next or :abort
     def main_dialog
+      ServicesManager.read
       adjust_dialog
 
       while true
