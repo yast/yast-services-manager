@@ -21,6 +21,7 @@ describe Yast::ServicesManager do
   end
 
   it "shows summary with default target and registered services" do
+    skip "this belongs to UI test suite"
     stub_manager_with :default_target => 'runlevel333', :services => ['sshd', 'cups'] do
       Yast::ServicesManager.summary.must_match default_target
       services.each {|s| Yast::ServicesManager.summary.must_match s }

@@ -30,6 +30,7 @@ BuildArch:      noarch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-services-manager.tar.bz2
 
+Requires:       ruby >= 2.0.0
 Requires:       yast2 >= 2.24.1
 Requires:       yast2-ruby-bindings >= 1.2.0
 
