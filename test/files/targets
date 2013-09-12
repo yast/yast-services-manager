@@ -1,0 +1,28 @@
+basic.target               loaded active   active Basic System
+cryptsetup.target          loaded active   active Encrypted Volumes
+emergency.target           loaded inactive dead   Emergency Mode
+getty.target               loaded active   active Login Prompts
+graphical.target           loaded inactive dead   Graphical Interface
+local-fs-pre.target        loaded active   active Local File Systems (Pre)
+local-fs.target            loaded active   active Local File Systems
+mail-transfer-agent.target not-found inactive dead   mail-transfer-agent.target
+multi-user.target          loaded active   active Multi-User System
+network.target             loaded active   active Network
+nss-lookup.target          loaded active   active Host and Network Name Lookups
+nss-user-lookup.target     loaded inactive dead   User and Group Name Lookups
+null.target                not-found inactive dead   null.target
+paths.target               loaded active   active Paths
+remote-fs-pre.target       loaded active   active Remote File Systems (Pre)
+remote-fs.target           loaded active   active Remote File Systems
+rescue.target              loaded inactive dead   Rescue Mode
+rpcbind.target             loaded inactive dead   RPC Port Mapper
+shutdown.target            loaded inactive dead   Shutdown
+slices.target              loaded active   active Slices
+sockets.target             loaded active   active Sockets
+sound.target               loaded active   active Sound Card
+swap.target                loaded active   active Swap
+sysinit.target             loaded active   active System Initialization
+syslog.target              not-found inactive dead   syslog.target
+time-sync.target           loaded active   active System Time Synchronized
+timers.target              loaded active   active Timers
+umount.target              loaded inactive dead   Unmount All Filesystems
