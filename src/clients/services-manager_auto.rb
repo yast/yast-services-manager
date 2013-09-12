@@ -1,5 +1,3 @@
-# encoding: utf-8
-
 module Yast
   module Clients
     class ServicesManagerAuto < Client
@@ -35,7 +33,7 @@ module Yast
           when 'Reset'       then ServicesManager.reset
           when 'Packages'    then {}
           when 'GetModified' then ServicesManager.modified?
-          when 'SetModified' then ServicesManager.modified!
+          when 'SetModified' then ServicesManager.modify!
           else
             Builtins.y2error("Unknown Autoyast command: #{function}, #{params.inspect}")
             nil

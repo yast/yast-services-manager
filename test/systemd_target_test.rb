@@ -1,46 +1,67 @@
 require_relative "test_helper"
 
-require "systemd_target"
+include TestHelpers::Targets
+# replace /etc/systemd/system/default.target with test/tmp/targets/etc/default.target
+Yast::SystemdTargetClass::DEFAULT_TARGET_SYMLINK = TEST_TARGET_PATH.join('default.target').to_s
+# replace /usr/lib/systemd/system with test/tmp/targets/lib
+Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR = TEST_TARGETS_DIR.to_s
 
-class SystemdTargetTest < Test::Unit::TestCase
-  def teardown
-    Yast::SCR.unstub
+describe Yast::SystemdTarget do
+
+  attr_reader :systemd_target
+
+  before do
+    @systemd_target = Yast::SystemdTargetClass.new
   end
 
-  FIRST_SCR_CALL = {
-    'exit'   => 0,
-    'stderr' => '',
-    'stdout' => "target-1     enabled\n" +
-                "target-2     disabled\n" +
-                "target-3     disabled\n",
-  }
-
-  SECOND_SCR_CALL = {
-    'exit'   => 0,
-    'stderr' => '',
-    'stdout' => "target-1          loaded active   active     Basic target\n" +
-                "target-2          loaded active   active     Enhanced target\n" +
-                "target-3          loaded inactive dead       Super-enhanced target\n",
-  }
-
-  def test_all_known_targets
-    Yast::SCR.stubs(:Execute).returns(FIRST_SCR_CALL, SECOND_SCR_CALL)
-    assert_equal(3, Yast::SystemdTarget.all.keys.count)
+  it "can set and save supported default target" do
+    stub_systemd_target do
+      systemd_target.default_target.must_be_empty
+      supported_target = 'runlevel3'
+      systemd_target.default_target = supported_target
+      systemd_target.default_target.must_equal supported_target
+      systemd_target.modified.must_equal true
+      systemd_target.save.must_equal true
+    end
   end
 
-  def test_current_default_target
-    default_target = 'multi-user-with-cookies'
-    default_target_path = File.join(
-      Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR,
-      default_target + Yast::SystemdTargetClass::TARGET_SUFFIX
-    )
-    Yast::SCR.stubs(:Read).returns(default_target_path)
-    assert_equal(default_target, Yast::SystemdTarget.current_default)
+  it "fails when trying to set an unsupported target" do
+    stub_systemd_target do
+      unsupported_target = 'shutdown'
+      proc { systemd_target.default_target = unsupported_target }.must_raise RuntimeError
+    end
   end
 
-  def test_export
-    default = 'target-2'
-    Yast::SystemdTarget.stubs(:current_default).returns(default)
-    assert_equal(default, Yast::SystemdTarget.export)
+  it "can reset the modified target" do
+    stub_systemd_target do
+      systemd_target.default_target.must_be_empty
+      supported_target = 'multi-user'
+      systemd_target.default_target = supported_target
+      systemd_target.default_target.must_equal supported_target
+      systemd_target.default_target.wont_equal nil
+      systemd_target.modified.must_equal true
+      systemd_target.reset
+      systemd_target.modified.must_equal false
+      systemd_target.default_target.must_be_empty
+    end
+  end
+
+  it "includes supported targets" do
+    stub_systemd_target do
+      systemd_target.read
+      systemd_target.targets.wont_be_empty
+      %w(runlevel4 runlevel3).each do |target|
+        systemd_target.targets.keys.must_include(target)
+      end
+    end
+  end
+
+  it "does not include unsupported targets" do
+    stub_systemd_target do
+      systemd_target.read
+      %w(runlevel80 final).each do |target|
+        systemd_target.targets.keys.wont_include(target)
+      end
+    end
   end
 end

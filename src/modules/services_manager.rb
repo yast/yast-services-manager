@@ -1,6 +1,5 @@
-# encoding: utf-8
-
-require "yast"
+require 'yast'
+require 'erb'
 
 module Yast
   class ServicesManagerClass < Module
@@ -14,7 +13,7 @@ module Yast
     Yast.import("SystemdTarget")
     Yast.import("SystemdService")
 
-    module IDs
+    module Id
       SERVICES_TABLE = :services_table
       TOGGLE_RUNNING = :start_stop
       TOGGLE_ENABLED = :enable_disable
@@ -22,91 +21,94 @@ module Yast
       SHOW_DETAILS   = :show_details
     end
 
-    module Data
-      TARGET = 'default_target'
-      SERVICES = 'services'
-    end
+    TARGET   = 'default_target'
+    SERVICES = 'services'
 
     def initialize
       textdomain 'services-manager'
     end
 
     def summary
-      list_of_services = SystemdService.export.collect do |service|
-        '<li>' + service + '</li>'
-      end
-
-      '<h2>' + _('Services Manager') + '</h2>' +
-        _('<p><b>Default Target:</b> %{default}</p>') % {:default => SystemdTarget.current_default} +
-        _('<p><b>Enabled Services:</b><ul>%{services}</ul></p>') % {:services => list_of_services.join}
+      ERB.new(summary_template).result(binding)
     end
+
+    private
+
+    def summary_template
+      <<-summary
+<h2><%= _('Services Manager') %></h2>
+<p><b><%= _('Default Target') %></b><%= SystemdTarget.export %></p>
+<p><b><%= _('Enabled Services') %></b></p>
+<ul>
+  <% SystemdService.export.each do |service| %>
+    <li><%= service %></li>
+  <% end %>
+</ul>
+      summary
+    end
+
+    public
 
     def export
       {
-        Data::TARGET   => SystemdTarget.export,
-        Data::SERVICES => SystemdService.export,
+        TARGET   => SystemdTarget.export,
+        SERVICES => SystemdService.export
       }
     end
 
     def import(data)
-      SystemdTarget.import(data[Data::TARGET])
-      SystemdService.import(data[Data::SERVICES])
+      SystemdTarget.import  data[TARGET]
+      SystemdService.import data[SERVICES]
     end
 
     def reset
-      SystemdTarget.reset && SystemdService.reset
+      SystemdTarget.reset
+      SystemdService.reset
     end
 
     def read
-      SystemdTarget.read && SystemdService.read
-    end
-
-    def modified!
-      SystemdTarget.set_modified
-      SystemdService.set_modified
+      SystemdTarget.read
+      SystemdService.read
     end
 
     # Redraws the services dialog
     def redraw_services
       UI.OpenDialog(Label(_('Reading services status...')))
-
-      table_items = SystemdService.all.collect {
-        |service, service_def|
+      services = SystemdService.all.collect do |service, attributes|
         Item(Id(service),
           service,
-          service_def['enabled'] ? _('Enabled') : _('Disabled'),
-          service_def['active'] ? _('Active') : _('Inactive'),
-          service_def['description']
+          attributes[:enabled] ? _('Enabled') : _('Disabled'),
+          attributes[:active] ? _('Active') : _('Inactive'),
+          attributes[:description]
         )
-      }
+      end
       UI.CloseDialog
-
-      UI.ChangeWidget(Id(IDs::SERVICES_TABLE), :Items, table_items)
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, services)
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
     end
 
     def redraw_service(service)
-      enabled = SystemdService.is_enabled(service)
+      enabled = SystemdService.enabled?(service)
 
       UI.ChangeWidget(
-        Id(IDs::SERVICES_TABLE),
+        Id(Id::SERVICES_TABLE),
         Cell(service, 1),
         (enabled ? _('Enabled') : _('Disabled'))
       )
 
-      running = SystemdService.is_running(service)
+      running = SystemdService.active?(service)
 
       # The current state matches the futural state
       if (enabled == running)
         UI.ChangeWidget(
-          Id(IDs::SERVICES_TABLE),
+          Id(Id::SERVICES_TABLE),
           Cell(service, 2),
           (running ? _('Active') : _('Inactive'))
         )
       # The current state differs the the futural state
       else
         UI.ChangeWidget(
-          Id(IDs::SERVICES_TABLE),
+          Id(Id::SERVICES_TABLE),
           Cell(service, 2),
           (running ? _('Active (will stop)') : _('Inactive (will start)'))
         )
@@ -114,27 +116,25 @@ module Yast
     end
 
     def redraw_system_targets
-      items = SystemdTarget.all.collect {
-        |target, target_def|
-        label = target_def['description'] || target
-        Item(Id(target), label, (target == SystemdTarget.current_default))
-      }
-
-      UI.ChangeWidget(Id(IDs::DEFAULT_TARGET), :Items, items)
+      targets = SystemdTarget.all.collect do |target, target_def|
+        label = target_def[:description] || target
+        Item(Id(target), label, (target == SystemdTarget.default_target))
+      end
+      UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, targets)
     end
 
     # Fills the dialog contents
     def adjust_dialog
       contents = VBox(
         Left(ComboBox(
-          Id(IDs::DEFAULT_TARGET),
+          Id(Id::DEFAULT_TARGET),
           Opt(:notify),
           _('Default System &Target'),
           []
         )),
         VSpacing(1),
         Table(
-          Id(IDs::SERVICES_TABLE),
+          Id(Id::SERVICES_TABLE),
           Opt(:notify),
           Header(
             _('Service'),
@@ -145,11 +145,11 @@ module Yast
           []
         ),
         HBox(
-          PushButton(Id(IDs::TOGGLE_RUNNING), _('&Start/Stop')),
+          PushButton(Id(Id::TOGGLE_RUNNING), _('&Start/Stop')),
           HSpacing(1),
-          PushButton(Id(IDs::TOGGLE_ENABLED), _('&Enable/Disable')),
+          PushButton(Id(Id::TOGGLE_ENABLED), _('&Enable/Disable')),
           HStretch(),
-          PushButton(Id(IDs::SHOW_DETAILS), _('Show &Details'))
+          PushButton(Id(Id::SHOW_DETAILS), _('Show &Details'))
         )
       )
       caption = _('Services Manager')
@@ -166,42 +166,42 @@ module Yast
     #
     # @return Boolean if successful
     def toggle_running
-      service = UI.QueryWidget(Id(IDs::SERVICES_TABLE), :CurrentItem)
+      service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       Builtins.y2milestone('Toggling service running: %1', service)
-      running = SystemdService.is_running(service)
+      running = SystemdService.active?(service)
 
-      success = (running ? Service::Stop(service) : Service::Start(service))
+      success = (running ? Service.Stop(service) : Service.Start(service))
 
       if success
-        SystemdService.set_running(service, (! running))
+        SystemdService.switch(service)
         redraw_service(service)
       else
         Popup::ErrorDetails(
           (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
-          SystemdService.full_info(service)
+          SystemdService.status(service)
         )
       end
 
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
       success
     end
 
     # Toggles (enable/disable) whether the currently selected service should
     # be enabled or disabled while writing the configuration
     def toggle_enabled
-      service = UI.QueryWidget(Id(IDs::SERVICES_TABLE), :CurrentItem)
+      service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       Builtins.y2milestone('Toggling service status: %1', service)
-      SystemdService.set_enabled(service, ! SystemdService.is_enabled(service))
+      SystemdService.toggle(service)
 
       redraw_service(service)
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
       true
     end
 
     # Opens up a popup with details about the currently selected service
     def show_details
-      service = UI.QueryWidget(Id(IDs::SERVICES_TABLE), :CurrentItem)
-      full_info = SystemdService.full_info(service)
+      service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
+      full_info = SystemdService.status(service)
       x_size = full_info.lines.collect{|line| line.size}.sort.last
       y_size = full_info.lines.count
 
@@ -212,14 +212,14 @@ module Yast
         x_size + 8, y_size + 6
       )
 
-      UI.SetFocus(Id(IDs::SERVICES_TABLE))
+      UI.SetFocus(Id(Id::SERVICES_TABLE))
       true
     end
 
     def handle_dialog
-      new_default_target = UI.QueryWidget(Id(IDs::DEFAULT_TARGET), :Value)
+      new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
       Builtins.y2milestone("Setting new default target #{new_default_target}")
-      SystemdTarget.set_default(new_default_target)
+      SystemdTarget.default_target = new_default_target
     end
 
     # Saves the current configuration
@@ -246,13 +246,14 @@ module Yast
 
     # Are there any unsaved changes?
     def modified?
-      SystemdTarget.is_modified || SystemdService.is_modified
+      SystemdTarget.modified || SystemdService.modified
     end
 
     # Main dialog function
     #
     # @return :next or :abort
     def main_dialog
+      ServicesManager.read
       adjust_dialog
 
       while true
@@ -263,13 +264,13 @@ module Yast
           when :abort
             break if Popup::ReallyAbort(modified?)
           # Default for double-click in the table
-          when IDs::TOGGLE_ENABLED, IDs::SERVICES_TABLE
+          when Id::TOGGLE_ENABLED, Id::SERVICES_TABLE
             toggle_enabled
-          when IDs::TOGGLE_RUNNING
+          when Id::TOGGLE_RUNNING
             toggle_running
-          when IDs::DEFAULT_TARGET
+          when Id::DEFAULT_TARGET
             handle_dialog
-          when IDs::SHOW_DETAILS
+          when Id::SHOW_DETAILS
             show_details
           when :next
             break
@@ -281,14 +282,14 @@ module Yast
       returned
     end
 
-    publish({:function => :main_dialog, :type => "symbol"})
-    publish({:function => :save, :type => "boolean"})
-    publish({:function => :read, :type => "boolean"})
-    publish({:function => :summary, :type => "string"})
-    publish({:function => :modified?, :type => "boolean"})
-    publish({:function => :modified!, :type => "void"})
-    publish({:function => :export, :type => "map <string, any>"})
-    publish({:function => :import, :type => "boolean"})
+    publish({:function => :export,      :type => "map <string, any> ()"          })
+    publish({:function => :import,      :type => "boolean ()"                    })
+    publish({:function => :main_dialog, :type => "symbol ()"                     })
+    publish({:function => :modified?,   :type => "boolean ()"                    })
+    publish({:function => :modify!,     :type => "void ()"                       })
+    publish({:function => :read,        :type => "void ()"                       })
+    publish({:function => :save,        :type => "map <string, string> (boolean)"})
+    publish({:function => :summary,     :type => "string ()"                     })
 
   end
 

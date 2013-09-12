@@ -1,308 +1,354 @@
-# encoding: utf-8
-
-require "yast"
-
-module Yast
+ module Yast
   class SystemdServiceClass < Module
-    TERM_OPTIONS = ' LANG=C TERM=dumb COLUMNS=1024 '
-    SERVICE_SUFFIX = '.service'
-    SYSTEMCTL_DEFAULT_OPTIONS = ' --no-legend --no-pager --no-ask-password '
+    Yast.import("Service")
+    Yast.import("Mode")
+
+    SERVICE_UNITS_COMMAND    = 'systemctl list-unit-files --type service'
+    SERVICES_DETAILS_COMMAND = 'systemctl --all --type service'
+    SERVICES_STATUS_COMMAND  = 'systemctl status'
+    COMMAND_OPTIONS          = ' --no-legend --no-pager --no-ask-password '
+    TERM_OPTIONS             = ' LANG=C TERM=dumb COLUMNS=1024 '
+    SERVICE_SUFFIX           = '.service'
+
+    DEFAULT_SERVICE_SETTINGS = {
+      :enabled     => false,  # Whether the service has been enabled
+      :modified    => false,  # Whether the service has been changed (got enabled/disabled)
+      :active      => false,  # The high-level unit activation state, i.e. generalization of SUB
+      :loaded      => false,  # Reflects whether the unit definition was properly loaded
+      :description => nil     # English description of the service
+    }
 
     module Status
-      ACTIVE = 'active'
+      LOADED   = 'loaded'
+      ACTIVE   = 'active'
       INACTIVE = 'inactive'
-
-      ENABLED = 'enabled'
+      ENABLED  = 'enabled'
       DISABLED = 'disabled'
-
       SUPPORTED_STATES = [ENABLED, DISABLED]
     end
 
+    attr_reader   :services, :modified
+    attr_accessor :errors
+
+    alias_method :all, :services
+
     def initialize
       textdomain 'services-manager'
-      @services = nil
-      clear_errors
-      set_modified(false)
-    end
-
-    # TODO: move single-service creation and handling into a separate class
-    def default_service
-      {
-        'enabled'     => false,
-        'modified'    => false,
-        'active'      => false,
-        'load'        => '',
-        'description' => '',
-      }
-    end
-
-    def reset
-      initialize
-      true
-    end
-
-    def read
-      (all.size > 0)
-    end
-
-    # Returns hash of all services read using systemctl
-    #
-    # @return Hash
-    # @struct {
-    #     'service_name'  => {
-    #       'load'        => Reflects whether the unit definition was properly loaded
-    #       'active'      => The high-level unit activation state, i.e. generalization of SUB
-    #       'description' => English description of the service
-    #       'enabled'     => (Boolean) whether the service has been enabled
-    #       'modified'    => (Boolean) whether the service (enabled) has been changed
-    #     }
-    #   }
-    def all
-      return @services unless @services.nil?
-
       @services = {}
-
-      SCR.Execute(
-        path('.target.bash_output'),
-        TERM_OPTIONS + 'systemctl list-unit-files --type service' + SYSTEMCTL_DEFAULT_OPTIONS
-      )['stdout'].each_line {
-        |line|
-        service_def = line.split(/[\s]+/)
-        # only enabled or disabled services can be handled
-        # static and masked are ignored here
-        if Status::SUPPORTED_STATES.include?(service_def[1])
-          service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
-          @services[service_def[0]] = default_service
-          @services[service_def[0]]['enabled'] = (service_def[1] == Status::ENABLED)
-        end
-      }
-
-      SCR.Execute(
-        path('.target.bash_output'),
-        TERM_OPTIONS + 'systemctl --all --type service' + SYSTEMCTL_DEFAULT_OPTIONS
-      )['stdout'].each_line {
-        |line|
-        service_def = line.split(/[\s]+/)
-        service_def[0].slice!(-8..-1) if (service_def[0].slice(-8..-1) == SERVICE_SUFFIX)
-
-        unless @services[service_def[0]].nil?
-          @services[service_def[0]]['load']        = service_def[1]
-          @services[service_def[0]]['active']      = (service_def[2] == Status::ACTIVE)
-          @services[service_def[0]]['description'] = service_def[4..-1].join(" ")
-        end
-      }
-      Builtins.y2debug('All services read: %1', @services)
-
-      @services
-    end
-
-    def exists?(service)
-      !all()[service].nil?
-    end
-
-    # Returns only enabled services, the rest is expected to be disabled
-    def export
-      all.collect {
-        |service_name, service_def|
-        (is_enabled(service_name) ? service_name : nil)
-      }.compact
-    end
-
-    def import(data)
-      if data == nil
-        Builtins.y2error("Incorrect data for import: #{data.inspect}")
-        return false
-      end
-
-      ret = true
-
-      # All imported will be enabled
-      data.each do |service|
-        if exists?(service)
-          Builtins.y2milestone("Enabling service #{service}")
-          set_enabled(service, true)
-        else
-          Builtins.y2error("Service #{service} doesn't exist on this system")
-          ret = false
-        end
-      end
-
-      # All the rest will be disabled
-      services_to_disable = all.collect{|service, service_def| service} - data
-      services_to_disable.each do |service|
-        Builtins.y2milestone("Disabling service #{service}")
-        set_enabled(service, false)
-      end
-
-      ret
-    end
-
-    def reset_modified(services)
-      # Reset ('modified' of) all saved services
-      services.each {
-        |service|
-        @services[service]['modified'] = false
-      }
-    end
-
-    def enable_disable_services(force)
-      enableddisabled = []
-
-      all.each {
-        |service, service_def|
-        if service_def['modified'] || force
-          if (SystemdService.is_enabled(service) ? Service::Enable(service) : Service::Disable(service))
-            enableddisabled << service
-          else
-            error = {
-              'message' => SystemdService.is_enabled(service) ?
-                _('Could not enable service %{service}') % {:service => service}
-                :
-                _('Could not disable service %{service}') % {:service => service},
-              'details' => full_info(service),
-            }
-            @errors << error
-            Builtins.y2error("Runtime error: %1", error)
-          end
-        end
-      }
-
-      enableddisabled
-    end
-
-    def start_stop_services(force)
-      all.each {
-        |service, service_def|
-        if service_def['modified'] || force
-          unless (SystemdService.is_enabled(service) ? Service::Start(service) : Service::Stop(service))
-            error = {
-              'message' => SystemdService.is_enabled(service) ?
-                _('Could not start service %{service}') % {:service => service}
-                :
-                _('Could not stop service %{service}') % {:service => service},
-              'details' => full_info(service),
-            }
-            @errors << error
-            Builtins.y2error("Runtime error: %1", error)
-          end
-        end
-      }
-    end
-
-    # Saves the current configuration in memory.
-    # Supported parameters:
-    # - :force (boolean) to force writing even if not marked as modified, default is false
-    # - :startstop (boolean) to start enabled or stop disabled services, default is true
-    #
-    # @param <Hash> params
-    # @return <boolean> if successful
-    def save(params = {})
-      force = (params[:force].nil? ? false : params[:force])
-      startstop = (params[:startstop].nil? ? true : params[:startstop])
-      clear_errors
-
-      # At first, only adjust services startup (enabled/disabled)
-      changed_services = enable_disable_services(force)
-
-      # Then try to adjust services run (active/inactive)
-      # Might start or stop some services that would cause system instability
-      start_stop_services(force) if startstop
-
-      reset_modified(changed_services)
-
-      @errors.size == 0
-    end
-
-    # Returns full information about the service
-    #
-    # @param String service name
-    # @return String full unformatted information
-    def full_info(service)
-      SCR.Execute(
-        path('.target.bash_output'),
-        TERM_OPTIONS + "systemctl status #{service}#{SERVICE_SUFFIX}" + " 2>&1"
-      )['stdout']
-    end
-
-    # Sets that configuration has been modified
-    def set_modified(new_status = true)
-      @modified = new_status
-    end
-
-    # Returns whether configuration has been modified
-    # @return (Boolean) whether modified
-    def is_modified
-      @modified
-    end
-
-    # Enables a given service (in memoery only, use save() later)
-    #
-    # @param String service name
-    # @param Boolean new service status
-    def set_enabled(service, new_status)
-      @services[service]['enabled']  = new_status
-      @services[service]['modified'] = true
-      set_modified(true)
-    end
-
-    # Returns whether the given service has been enabled
-    #
-    # @param String service
-    # @return Boolean enabled
-    def is_enabled(service)
-      @services[service]['enabled']
+      @errors   = []
+      @modified = false
     end
 
     # Sets whether service should be running after writing the configuration
     #
     # @param String service name
     # @param Boolean running
-    def set_running(service, new_running)
-      @services[service]['active'] = new_running
+    def activate service
+      exists?(service) do
+        services[service][:active]   = true
+        services[service][:modified] = true
+        self.modified = true
+      end
+    end
+
+    # Sets whether service should be running after writing the configuration
+    #
+    # @param String service name
+    # @param Boolean running
+    def deactivate service
+      exists?(service) do
+        services[service][:active]   = false
+        services[service][:modified] = true
+        self.modified = true
+      end
     end
 
     # Returns the current setting whether service should be running
     #
     # @param String service name
     # @return Boolean running
-    def is_running(service)
-      @services[service]['active']
+    def active? service
+      exists?(service) { services[service][:active] }
     end
 
-    # Return all errors that have happened since last errors cleanup
+    # Enables a given service (in memory only, use save() later)
     #
-    # @return list <map <string, string> > errors
-    # @struct [
-    #   { 'message' => error message, 'details' => some details },
-    #   ...
-    # ]
-    def errors
-      @errors
+    # @param String service name
+    # @param Boolean new service status
+    def enable service
+      exists?(service) do
+        services[service][:enabled]  = true
+        services[service][:modified] = true
+        self.modified = true
+      end
     end
 
-    # Frees all stored errors
-    def clear_errors
-      @errors = []
+    # Disables a given service (in memory only, use save() later)
+    #
+    # @param String service name
+    # @param Boolean new service status
+    def disable service
+      exists?(service) do
+        services[service][:enabled]  = false
+        services[service][:modified] = true
+        self.modified = true
+      end
     end
 
-    publish({:function => :all, :type => "map <string, map>"})
-    publish({:function => :save, :type => "boolean"})
-    publish({:function => :reset, :type => "boolean"})
+    # Returns whether the given service has been enabled
+    #
+    # @param String service
+    # @return Boolean enabled
+    def enabled? service
+      exists?(service) do
+        services[service][:enabled]
+      end
+    end
 
-    publish({:function => :set_modified, :type => "void"})
-    publish({:function => :is_modified, :type => "boolean"})
+    # Change the global modified status
+    # Reverting modified to false also requires to set the flag for all services
+    def modified= required_status
+      read if required_status == false
+      @modified = required_status
+    end
 
-    publish({:function => :set_enabled, :type => "void"})
-    publish({:function => :is_enabled, :type => "boolean"})
+    # Reads all services' data
+    #
+    # @return [Hash] map of services
+    def read
+      load_services
+      load_services_units
+      services
+    end
 
-    publish({:function => :set_running, :type => "void"})
-    publish({:function => :is_running, :type => "boolean"})
+    # Resets the global status of the object
+    #
+    # @return [Boolean]
+    def reset
+      self.errors = []
+      self.modified = false
+    end
 
-    publish({:function => :errors, :type => "list <map <string, string> >"})
-    publish({:function => :clear_errors, :type => "boolean"})
 
-    publish({:function => :export, :type => "list <string>"})
-    publish({:function => :import, :type => "boolean"})
+    # Returns only enabled services, the rest is expected to be disabled
+    def export
+      services.keys.select { |service_name| enabled?(service_name) }
+    end
+
+    def import imported_services=[]
+      if imported_services.empty?
+        Builtins.y2error("No data for import provided.")
+        return false
+      end
+      non_existent_services = []
+      # All imported will be enabled
+      imported_services.each do |service|
+        if exists?(service)
+          Builtins.y2milestone("Enabling service #{service}")
+          enable(service)
+        else
+          non_existent_services << service
+          Builtins.y2error("Service #{service} doesn't exist on this system")
+        end
+      end
+      # All the rest will be disabled
+      (services.keys - imported_services).each do |service|
+        Builtins.y2milestone("Disabling service #{service}")
+        disable(service)
+      end
+      non_existent_services.empty?
+    end
+
+    # Saves the current configuration in memory
+    #
+    # @param [Hash] force switching the service at runtime if required instant change
+    # @return [Boolean]
+    def save(switch: false)
+      return false unless errors.empty?
+      # Set the services enabled/disabled first
+      toggle_services
+      return false unless errors.empty?
+      # Then try to adjust services run (active/inactive)
+      # Might start or stop some services that would cause system instability
+      switch_services if switch
+      return false unless errors.empty?
+      self.modified = false
+      true
+    end
+
+    # Activates the service in cache
+    #
+    # @param [String] service name
+    # @return [Boolean]
+    def switch service
+      active?(service) ? deactivate(service) : activate(service)
+    end
+
+    # Starts or stops the service
+    #
+    # @param [String] service name
+    # @return [Boolean]
+    def switch! service
+      if enabled?(service)
+        active?(service) ? Yast::Service.Stop(service) : Yast::Service.Start(service)
+      else
+        false
+      end
+    end
+
+    def reset_service service
+      services[service][:modified] = false
+    end
+
+    # Enables the service in cache
+    #
+    # @param [String] service name
+    # @return [Boolean]
+    def toggle service
+      enabled?(service) ? disable(service) : enable(service)
+    end
+
+    # Enable or disable the service
+    #
+    # @param [String] service name
+    # @return [Boolean]
+    def toggle! service
+      enabled?(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
+    end
+
+    # Returns full information about the service as returned from systemctl command
+    #
+    # @param String service name
+    # @return String full unformatted information
+    def status service
+      command = "#{TERM_OPTIONS}#{SERVICES_STATUS_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
+      SCR.Execute(path('.target.bash_output'), command)['stdout']
+    end
+
+    private
+
+    # Helper method to simplify checking for SCR output and also for
+    # using in methods where the return value is boolean dependend on
+    # the #errors collection
+    #
+    # @param [String] external input
+    # @return [Boolean]
+    def check_errors message=''
+      errors << message unless message.empty?
+      yield
+      errors.empty? ? true : false
+    end
+
+    # Helper method to avoid if-else branching
+    # When passed a block, this will be executed only if the service exists
+    # Whitout block it returns the boolean value
+    #
+    # @params [String] service name
+    # @return [Boolean]
+    def exists? service
+      exists = !!services[service]
+      if exists && block_given?
+        yield
+      else
+        exists
+      end
+    end
+
+    def list_services_units
+      command = TERM_OPTIONS + SERVICE_UNITS_COMMAND + COMMAND_OPTIONS
+      SCR.Execute(path('.target.bash_output'), command)
+    end
+
+    def list_services_details
+      command = TERM_OPTIONS + SERVICES_DETAILS_COMMAND + COMMAND_OPTIONS
+      SCR.Execute(path('.target.bash_output'), command)
+    end
+
+    def load_services
+      command_output = list_services_units
+      check_errors(command_output['stderr']) do
+        command_output['stdout'].each_line do |line|
+          service, status = line.split(/[\s]+/)
+          service.chomp! SERVICE_SUFFIX
+          if Status::SUPPORTED_STATES.member?(status)
+            services[service] = DEFAULT_SERVICE_SETTINGS.clone
+            services[service][:enabled] = status == Status::ENABLED
+          end
+        end
+        Builtins.y2milestone('Services loaded: %1', services.keys)
+      end
+    end
+
+    def load_services_units
+      command_output = list_services_details
+      check_errors(command_output.fetch 'stderr') do
+        command_output['stdout'].each_line do |line|
+          service, loaded, active, _, *description = line.split(/[\s]+/)
+          service.chomp! SERVICE_SUFFIX
+          exists?(service) do
+            services[service][:loaded] = loaded == Status::LOADED
+            services[service][:active] = active == Status::ACTIVE
+            services[service][:description] = description.join(' ')
+          end
+        end
+        Builtins.y2debug("Services details loaded: #{services}")
+      end
+    end
+
+    def switch_services
+      services_switched = []
+      services.each do |service_name, service_attributes|
+        next unless service_attributes[:modified]
+        if switch! service_name
+          reset_service(service_name)
+          services_switched << service_name
+        else
+          change  = active?(service_name) ? 'stop' : 'start'
+          status  = enabled?(service_name) ? 'enabled' : 'disabled'
+          message = _("Could not %{change} %{service} which is currently %{status}. ") %
+            { :change => change, :service => service_name, :status => status }
+          message << status(service_name)
+          errors << message
+          Builtins.y2error("Error: %1", message)
+        end
+      end
+      services_switched
+    end
+
+    def toggle_services
+      services_toggled = []
+      services.each do |service_name, service_attributes|
+        next unless service_attributes[:modified]
+        if toggle! service_name
+          reset_service(service_name)
+          services_toggled << service_name
+        else
+          change  = enabled?(service_name) ? 'enable' : 'disable'
+          message = _("Could not %{change} %{service}. ") %
+            { :change => change, :service => service_name }
+          message << status(service_name)
+          errors << message
+          Builtins.y2error("Error: %1", message)
+        end
+      end
+      services_toggled
+    end
+
+    publish({:function => :active?,   :type => "boolean ()"           })
+    publish({:function => :activate,  :type => "string (boolean)"     })
+    publish({:function => :all,       :type => "map <string, map> ()" })
+    publish({:function => :disable,   :type => "string (boolean)"     })
+    publish({:function => :enable,    :type => "string (boolean)"     })
+    publish({:function => :enabled?,  :type => "boolean ()"           })
+    publish({:function => :errors,    :type => "list ()"              })
+    publish({:function => :export,    :type => "list <string>"        })
+    publish({:function => :import,    :type => "boolean ()"           })
+    publish({:function => :modified,  :type => "boolean ()"           })
+    publish({:function => :modified=, :type => "boolean (boolean)"    })
+    publish({:function => :read,      :type => "map <string, map> ()" })
+    publish({:function => :reset,     :type => "boolean ()"           })
+    publish({:function => :save,      :type => "boolean ()"           })
+    publish({:function => :status,    :type => "string (string)"      })
   end
 
   SystemdService = SystemdServiceClass.new
