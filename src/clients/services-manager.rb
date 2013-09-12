@@ -1,7 +1,7 @@
 require 'erb'
 
 class ServicesManagerClient < Yast::Client
-  Yast.import 'ServicesManager'
+  Yast.import "ServicesManager"
   Yast.import "UI"
   Yast.import "Wizard"
   Yast.import "Service"
@@ -74,7 +74,7 @@ class ServicesManagerClient < Yast::Client
     # TODO: report errors
     UI.CloseDialog
     # Writing has failed, user can decide whether to continue or leave
-    unless success
+    if !success
       success = ! Popup::ContinueCancel(
         _("Writing the configuration have failed.\nWould you like to continue editing?")
       )
