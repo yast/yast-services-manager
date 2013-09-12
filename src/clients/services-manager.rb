@@ -1,3 +1,5 @@
+require 'erb'
+
 class ServicesManagerClient < Yast::Client
   Yast.import 'ServicesManager'
   Yast.import "UI"

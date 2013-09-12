@@ -1,5 +1,4 @@
 require 'yast'
-require 'erb'
 
 module Yast
   class ServicesManagerClass < Module
@@ -55,6 +54,5 @@ module Yast
     publish({:function => :save,        :type => "map <string, string> (boolean)"})
 
   end
-
   ServicesManager = ServicesManagerClass.new
 end
