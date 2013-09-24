@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sun Sep 15 08:49:56 UTC 2013 - tchvatal@suse.com
+
+- Fix the ruby dep and drop clean section as it is useless. 
+
+-------------------------------------------------------------------
 Fri Sep 13 14:42:38 UTC 2013 - vmoravec@suse.com
 
 - 0.0.9

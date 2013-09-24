@@ -15,6 +15,7 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
+
 ######################################################################
 #
 # IMPORTANT: Please do not change spec file in build service directly
@@ -30,19 +31,19 @@ BuildArch:      noarch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Source0:        yast2-services-manager.tar.bz2
 
-Requires:       ruby >= 2.0.0
+Requires:       ruby >= 2.0
 Requires:       yast2 >= 2.24.1
 Requires:       yast2-ruby-bindings >= 1.2.0
 
 BuildRequires:  ruby
 BuildRequires:  rubygem-mocha
 BuildRequires:  update-desktop-files
-BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2 >= 2.24.1
+BuildRequires:  yast2-ruby-bindings >= 1.2.0
 
 Summary:        YaST2 - Services Manager
-Group:          System/YaST
 License:        GPL-2.0
+Group:          System/YaST
 
 Url:            https://github.com/yast/yast-services-manager
 
@@ -60,11 +61,8 @@ rake test
 %endif
 
 %install
-rake install DESTDIR="$RPM_BUILD_ROOT"
+rake install DESTDIR="%{buildroot}"
 %suse_update_desktop_file services-manager
-
-%clean
-rm -rf "$RPM_BUILD_ROOT"
 
 %files
 %defattr(-,root,root)
