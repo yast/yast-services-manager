@@ -4,6 +4,7 @@ module Yast
     Yast.import 'Linuxrc'
     Yast.import 'Mode'
     Yast.import 'Pkg'
+    Yast.import "Popup"
     Yast.import 'ProductFeatures'
     Yast.import 'ServicesManager'
     Yast.import 'Wizard'
@@ -19,15 +20,40 @@ module Yast
     module Target
       GRAPHICAL = 'graphical'
       MULTIUSER = 'multi-user'
-      RESCUE    = 'rescue'
+      SUPPORTED = [ GRAPHICAL, MULTIUSER ]
+    end
+
+    module Warnings
+      attr_accessor :warnings
+
+      def inspect_warnings selected_target
+        self.warnings = []
+        if Linuxrc.vnc && selected_target != Target::GRAPHICAL
+          warnings << _('VNC needs graphical system to be available')
+        end
+      end
+    end
+
+    module Elements
+      def item text
+        "<li>#{text}</li>"
+      end
+
+      def list *items
+        "<ul>#{items.map { |i| item(i) }}</ul>"
+      end
+
+      def para text
+        "<p>" + _(text) + "</p>"
+      end
     end
 
     def initialize
       args = WFM.Args
       function = args.shift.to_s
       case function
-        when 'MakeProposal' then Proposal.create
-        when 'AskUser'      then Dialog.show
+        when 'MakeProposal' then Proposal.new.create
+        when 'AskUser'      then Dialog.new.show
         when 'Description'  then DESCRIPTION
         when 'Write'        then write
         else  unknown_function
@@ -42,22 +68,21 @@ module Yast
       Builtins.y2milestone("Not writing yet, will be done in inst_finish")
     end
 
-    class Dialog
-      def self.show
-        new.show
-      end
+    class Dialog < Client
+      include Warnings
+      include Elements
 
-      attr_reader   :original_target, :available_targets
-      attr_accessor :dialog
+      attr_accessor :dialog, :available_targets
 
       def initialize
-        @original_target = SystemdTarget.default_target
-        @available_targets = SystemdTarget.targets.keys.sort
+        self.available_targets = SystemdTarget.targets.keys.reject do |target|
+          !Target::SUPPORTED.include?(target)
+        end
       end
 
       def show
         create_dialog
-        show_dialog
+        {'workflow_sequence' => show_dialog}
       end
 
       private
@@ -66,18 +91,25 @@ module Yast
         while true do
           case UI.UserInput
           when :next, :ok
-            UI.QueryWidget(Id(:selected_target), :CurrentButton)
+            selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton).to_s
+            Builtins.y2milestone "Target selected by user: #{selected_target}"
+            inspect_warnings(selected_target)
+            if !warnings.empty?
+              next unless Popup.YesNo(warnings.join)
+            end
+            SystemdTarget.default_target = selected_target unless selected_target.empty?
+            Wizard.CloseDialog
+            break :next
           when :cancel
-            break
+            break :cancel
           end
         end
-        result = :ok
-        { 'workflow_sequence' => result }
       end
 
       def generate_target_buttons
         available_targets.inject(VBox()) do |vbox, target_name|
           vbox.params << Left(RadioButton(Id(target_name), target_name))
+          vbox
         end
       end
 
@@ -86,38 +118,62 @@ module Yast
         Wizard.CreateDialog
         Wizard.SetTitleIcon "yast-services-manager"
         Wizard.SetContentsButtons(
-          caption, generate_target_buttons, help, Label.BackButton, Label.OkButton
+          caption,
+          generate_content,
+          help,
+          Label.BackButton,
+          Label.OKButton
         )
-        Wizard.SetAbortButton :cancel, Label.CancelButton
+        Wizard.SetAbortButton(:cancel, Label.CancelButton)
         Wizard.HideBackButton
       end
 
       def help
+        header = para "Selecting the Default Systemd Target"
+
+        intro = para "Systemd is a system and service manager for Linux. " +
+         "It consists of units whose job is to activate services and other units."
+
+        default = para "Default target unit is activated on boot " +
+          "by default. Usually it is a symlink located in path" +
+          "/etc/systemd/system/default.target . See more on systemd man page."
+
+      # TODO is rescue target needed for installation proposal?
+      # rescuee = para "Rescue target is a special target unit for setting up " +
+      #   "the base system and a rescue shell (similar to runlevel 1)"
+
+        multiuser = para "Multi-User target is for setting up a non-graphical " +
+          "multi-user system with network suitable for server (similar to runlevel 3)."
+
+        graphical = para "Graphical target for setting up a graphical login screen " +
+          "with network which is typical for workstations (similar to runlevel 5)."
+
+        recommendation = para "When you are not sure what would be the best option " +
+           "for you then go with graphical target."
+
+        header + intro + multiuser + graphical + recommendation
       end
 
       def generate_content
-        VBox(RadioButtonGroup(Id(:selected_target),Frame(_('Available Targets'),
-          HSquash(MarginBox(0.5, 0.5, generate_target_buttons))))
+        VBox(RadioButtonGroup(Id(:selected_target), Frame(_('Available Targets'),
+          HSquash(MarginBox(0.5, 0.5, generate_target_buttons)))))
       end
 
     end
 
-    class Proposal
-      def self.create
-        new.proposal
-      end
+    class Proposal < Client
+      include Warnings
+      include Elements
 
       attr_accessor :default_target
-      attr_reader   :warnings
 
       def initialize
-        @warnings = []
         @default_target = ProductFeatures.GetFeature('globals', 'runlevel')
         change_default_target
-        update_warnings
+        inspect_warnings(default_target)
       end
 
-      def proposal
+      def create
         proposal = { 'preformatted_proposal' => list(default_target) }
         return proposal if warnings.empty?
         proposal.update 'warning_level' => :warning
@@ -125,14 +181,6 @@ module Yast
       end
 
       private
-
-      def item text
-        "<li>#{text}</li>"
-      end
-
-      def list *items
-        "<ul>#{items.map { |i| item(i) }}</ul>"
-      end
 
       def change_default_target
         detect_target unless Mode.autoinst
@@ -153,12 +201,6 @@ module Yast
           self.default_target = Target::GRAPHICAL
         elsif Linuxrc.usessh
           self.default_target = Target::MULTIUSER
-        end
-      end
-
-      def update_warnings
-        if Linuxrc.vnc && default_target != Target::GRAPHICAL
-          warnings << _('VNC needs graphical system to be available')
         end
       end
 
