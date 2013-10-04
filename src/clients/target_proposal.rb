@@ -1,5 +1,5 @@
 module Yast
-  class ServicesManagerProposal < Client
+  class TargetProposal < Client
     Yast.import 'Arch'
     Yast.import 'Linuxrc'
     Yast.import 'Mode'
@@ -10,6 +10,8 @@ module Yast
     Yast.import 'Wizard'
 
     extend FastGettext::Translation
+
+    textdomain 'services-manager'
 
     DESCRIPTION = {
       'id'              => 'services-manager',
@@ -56,12 +58,8 @@ module Yast
         when 'AskUser'      then Dialog.new.show
         when 'Description'  then DESCRIPTION
         when 'Write'        then write
-        else  unknown_function
+        else  Builtins.y2error("Unknown function: %1", function)
       end
-    end
-
-    def unknown_function
-      Builtins.y2error("Unknown function: %1", function)
     end
 
     def write
@@ -71,6 +69,8 @@ module Yast
     class Dialog < Client
       include Warnings
       include Elements
+
+      textdomain 'services-manager'
 
       attr_accessor :dialog, :available_targets
 
@@ -138,7 +138,7 @@ module Yast
           "by default. Usually it is a symlink located in path" +
           "/etc/systemd/system/default.target . See more on systemd man page."
 
-      # TODO is rescue target needed for installation proposal?
+      # FIXME is rescue target needed for installation proposal?
       # rescuee = para "Rescue target is a special target unit for setting up " +
       #   "the base system and a rescue shell (similar to runlevel 1)"
 
@@ -165,10 +165,12 @@ module Yast
       include Warnings
       include Elements
 
+      textdomain 'services-manager'
+
       attr_accessor :default_target
 
       def initialize
-        @default_target = ProductFeatures.GetFeature('globals', 'runlevel')
+        self.default_target = ProductFeatures.GetFeature('globals', 'runlevel')
         change_default_target
         inspect_warnings(default_target)
       end
@@ -209,7 +211,4 @@ module Yast
 
   ServicesManagerProposal.new
 end
-# TODO
-# How to set the default target after detection has not been successful and target is nil?
-# Is this still usefule and where is it being set? ProductFeatures.GetFeature('globals', 'runlevel')
 42

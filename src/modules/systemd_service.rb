@@ -37,6 +37,7 @@
       @services = {}
       @errors   = []
       @modified = false
+      read
     end
 
     # Sets whether service should be running after writing the configuration
