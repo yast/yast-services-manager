@@ -9,16 +9,6 @@ module Yast
     Yast.import 'ServicesManager'
     Yast.import 'Wizard'
 
-    extend FastGettext::Translation
-
-    textdomain 'services-manager'
-
-    DESCRIPTION = {
-      'id'              => 'services-manager',
-      'menu_title'      => N_("&Default systemd target and services"),
-      'rich_text_title' => N_("Default systemd target and services")
-    }
-
     module Target
       GRAPHICAL = 'graphical'
       MULTIUSER = 'multi-user'
@@ -51,15 +41,24 @@ module Yast
     end
 
     def initialize
+      textdomain 'services-manager'
       args = WFM.Args
       function = args.shift.to_s
       case function
         when 'MakeProposal' then Proposal.new.create
         when 'AskUser'      then Dialog.new.show
-        when 'Description'  then DESCRIPTION
+        when 'Description'  then description
         when 'Write'        then write
         else  Builtins.y2error("Unknown function: %1", function)
       end
+    end
+
+    def description
+      {
+        'id'              => 'services-manager',
+        'menu_title'      => _("&Default systemd target and services"),
+        'rich_text_title' => _("Default systemd target and services")
+      }
     end
 
     def write
@@ -70,11 +69,10 @@ module Yast
       include Warnings
       include Elements
 
-      textdomain 'services-manager'
-
       attr_accessor :dialog, :available_targets
 
       def initialize
+        textdomain 'services-manager'
         self.available_targets = SystemdTarget.targets.keys.reject do |target|
           !Target::SUPPORTED.include?(target)
         end
@@ -165,11 +163,10 @@ module Yast
       include Warnings
       include Elements
 
-      textdomain 'services-manager'
-
       attr_accessor :default_target
 
       def initialize
+        textdomain 'services-manager'
         self.default_target = ProductFeatures.GetFeature('globals', 'runlevel')
         change_default_target
         inspect_warnings(default_target)

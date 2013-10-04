@@ -1,6 +1,5 @@
 module Yast
   class ServicesProposal < Client
-    textdomain "services-manager"
 
     Yast.import "SystemdServices"
     Yast.import "Progress"
@@ -13,6 +12,7 @@ module Yast
     Yast.import "SuSEFirewall"
 
     def initialize
+      textdomain "services-manager"
       args = WFM.Args
       function = args.shift.to_s
       case function
