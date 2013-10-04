@@ -206,6 +206,6 @@ module Yast
     end
   end
 
-  ServicesManagerProposal.new
+  TargetProposal.new
 end
 42
