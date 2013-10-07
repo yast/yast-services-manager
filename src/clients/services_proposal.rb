@@ -1,20 +1,22 @@
 module Yast
-  class ServicesProposal < Client
+  import "SystemdServices"
+  import "Progress"
+  import "ProductControl"
+  import "ProductFeatures"
+  import "Service"
+  import "Linuxrc"
+  import "Report"
+  import "Package"
+  import "SuSEFirewall"
 
-    Yast.import "SystemdServices"
-    Yast.import "Progress"
-    Yast.import "ProductControl"
-    Yast.import "ProductFeatures"
-    Yast.import "Service"
-    Yast.import "Linuxrc"
-    Yast.import "Report"
-    Yast.import "Package"
-    Yast.import "SuSEFirewall"
+  class ServicesProposal < Client
 
     def initialize
       textdomain "services-manager"
       args = WFM.Args
       function = args.shift.to_s
+      #TODO implement behaviour if force_reset parameter provided
+      force_reset = !!args.shift.to_s
       case function
         when 'MakeProposal' then Proposal.new.create
         when 'AskUser'      then ask_user
@@ -50,7 +52,7 @@ module Yast
         @settings = []
         @default_services = ProductFeatures.GetFeature('globals', 'services_proposal')
         @default_services = [] if default_services.to_s.empty?
-        Builtins.y2error("Missing services_proposal") unless default_services.empty?
+        Builtins.y2error("Missing services_proposal") if default_services.empty?
       end
 
       def create

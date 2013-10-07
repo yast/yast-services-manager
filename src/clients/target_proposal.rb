@@ -1,14 +1,14 @@
 module Yast
-  class TargetProposal < Client
-    Yast.import 'Arch'
-    Yast.import 'Linuxrc'
-    Yast.import 'Mode'
-    Yast.import 'Pkg'
-    Yast.import "Popup"
-    Yast.import 'ProductFeatures'
-    Yast.import 'ServicesManager'
-    Yast.import 'Wizard'
+  import 'Arch'
+  import 'Linuxrc'
+  import 'Mode'
+  import 'Pkg'
+  import "Popup"
+  import 'ProductFeatures'
+  import 'ServicesManager'
+  import 'Wizard'
 
+  class TargetProposal < Client
     module Target
       GRAPHICAL = 'graphical'
       MULTIUSER = 'multi-user'
@@ -16,13 +16,14 @@ module Yast
     end
 
     module Warnings
-      attr_accessor :warnings
+      attr_reader :warnings
 
-      def inspect_warnings selected_target
-        self.warnings = []
+      def detect_warnings selected_target
+        @warnings = []
         if Linuxrc.vnc && selected_target != Target::GRAPHICAL
           warnings << _('VNC needs graphical system to be available')
         end
+        warnings << _("\nDo you want to proceed?") unless warnings.empty?
       end
     end
 
@@ -36,7 +37,7 @@ module Yast
       end
 
       def para text
-        "<p>" + _(text) + "</p>"
+        "<p>#{text}</p>"
       end
     end
 
@@ -44,6 +45,8 @@ module Yast
       textdomain 'services-manager'
       args = WFM.Args
       function = args.shift.to_s
+      #TODO implement behaviour if force_reset parameter provided
+      force_reset = !!args.shift.to_s
       case function
         when 'MakeProposal' then Proposal.new.create
         when 'AskUser'      then Dialog.new.show
@@ -73,8 +76,8 @@ module Yast
 
       def initialize
         textdomain 'services-manager'
-        self.available_targets = SystemdTarget.targets.keys.reject do |target|
-          !Target::SUPPORTED.include?(target)
+        self.available_targets = SystemdTarget.targets.keys.select do |target|
+          Target::SUPPORTED.include?(target)
         end
       end
 
@@ -86,35 +89,35 @@ module Yast
       private
 
       def show_dialog
-        while true do
-          case UI.UserInput
-          when :next, :ok
-            selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton).to_s
-            Builtins.y2milestone "Target selected by user: #{selected_target}"
-            inspect_warnings(selected_target)
-            if !warnings.empty?
-              next unless Popup.YesNo(warnings.join)
-            end
-            SystemdTarget.default_target = selected_target unless selected_target.empty?
-            Wizard.CloseDialog
-            break :next
-          when :cancel
-            break :cancel
+        case UI.UserInput
+        when :next, :ok
+          selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton).to_s
+          Builtins.y2milestone "Target selected by user: #{selected_target}"
+          detect_warnings(selected_target)
+          if !warnings.empty?
+            return show_dialog unless Popup.YesNo(warnings.join)
           end
+          Builtins.y2milestone "Setting systemd default target to '#{selected_target}'"
+          SystemdTarget.default_target = selected_target unless selected_target.empty?
+          Wizard.CloseDialog
+          :next
+        when :cancel
+          :cancel
         end
       end
 
       def generate_target_buttons
-        available_targets.inject(VBox()) do |vbox, target_name|
-          vbox.params << Left(RadioButton(Id(target_name), target_name))
-          vbox
+        Builtins.y2milestone "Available targets: #{available_targets}"
+        radio_buttons = available_targets.map do |target_name|
+          Left(RadioButton(Id(target_name), target_name))
         end
+        VBox(*radio_buttons)
       end
 
       def create_dialog
         caption = _("Set Default Systemd Target")
         Wizard.CreateDialog
-        Wizard.SetTitleIcon "yast-services-manager"
+        Wizard.SetTitleIcon "yast-runlevel"
         Wizard.SetContentsButtons(
           caption,
           generate_content,
@@ -127,34 +130,41 @@ module Yast
       end
 
       def help
-        header = para "Selecting the Default Systemd Target"
+        header = para _("Selecting the Default Systemd Target")
 
-        intro = para "Systemd is a system and service manager for Linux. " +
-         "It consists of units whose job is to activate services and other units."
+        intro = para _("Systemd is a system and service manager for Linux. " +
+         "It consists of units whose job is to activate services and other units.")
 
-        default = para "Default target unit is activated on boot " +
+        default = para _("Default target unit is activated on boot " +
           "by default. Usually it is a symlink located in path" +
-          "/etc/systemd/system/default.target . See more on systemd man page."
+          "/etc/systemd/system/default.target . See more on systemd man page.")
 
       # FIXME is rescue target needed for installation proposal?
       # rescuee = para "Rescue target is a special target unit for setting up " +
       #   "the base system and a rescue shell (similar to runlevel 1)"
 
-        multiuser = para "Multi-User target is for setting up a non-graphical " +
-          "multi-user system with network suitable for server (similar to runlevel 3)."
+        multiuser = para _("Multi-User target is for setting up a non-graphical " +
+          "multi-user system with network suitable for server (similar to runlevel 3).")
 
-        graphical = para "Graphical target for setting up a graphical login screen " +
-          "with network which is typical for workstations (similar to runlevel 5)."
+        graphical = para _("Graphical target for setting up a graphical login screen " +
+          "with network which is typical for workstations (similar to runlevel 5).")
 
-        recommendation = para "When you are not sure what would be the best option " +
-           "for you then go with graphical target."
+        recommendation = para _("When you are not sure what would be the best option " +
+           "for you then go with graphical target.")
 
         header + intro + multiuser + graphical + recommendation
       end
 
       def generate_content
-        VBox(RadioButtonGroup(Id(:selected_target), Frame(_('Available Targets'),
-          HSquash(MarginBox(0.5, 0.5, generate_target_buttons)))))
+        VBox(
+          RadioButtonGroup(
+            Id(:selected_target),
+            Frame(
+              _('Available Targets'),
+              HSquash(MarginBox(0.5, 0.5, generate_target_buttons))
+            )
+          )
+        )
       end
 
     end
@@ -169,7 +179,7 @@ module Yast
         textdomain 'services-manager'
         self.default_target = ProductFeatures.GetFeature('globals', 'runlevel')
         change_default_target
-        inspect_warnings(default_target)
+        detect_warnings(default_target)
       end
 
       def create
