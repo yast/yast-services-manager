@@ -139,10 +139,6 @@ module Yast
           "by default. Usually it is a symlink located in path" +
           "/etc/systemd/system/default.target . See more on systemd man page.")
 
-      # FIXME is rescue target needed for installation proposal?
-      # rescuee = para "Rescue target is a special target unit for setting up " +
-      #   "the base system and a rescue shell (similar to runlevel 1)"
-
         multiuser = para _("Multi-User target is for setting up a non-graphical " +
           "multi-user system with network suitable for server (similar to runlevel 3).")
 

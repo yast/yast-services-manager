@@ -58,15 +58,47 @@ module Yast
       def create
         SuSEFirewall.Read
         default_services.each_with_index do |service, index|
-          if !service['service_names']
-            Builtins.y2error("Invalid service in %1, ignoring..", service)
+
+          if !service['service_names'] || service['service_names'].to_s.empty?
+            Builtins.y2error "Invalid service in #{service}, ignoring.."
             next
           end
-          service_name = service['service_names']
-          # TODO
-          # finish creating the proposal
-          # look into the #ReadCurrentConfiguration method in Runlevel#Client#services_proposal
+
+          services = service['service_names'].to_s.split(',').map(&:strip)
+          if services.empty?
+            Builtins.y2error "No services found in #{service}"
+            next
+          end
+
+          if service['firewall_plugins'] && service['firewall_plugins'].to_s.empty?
+            Builtins.y2error "Invalid item for 'firewall_plugins' in service #{service}, ignoring.."
+            next
+          end
+          firewall_plugins = service['firewall_plugins'].to_s.split(',').map(&:strip)
+
+          enabled_by_default = service['enabled_by_default'].to_s
+          case enabled_by_default
+            when 'false' then false
+            when 'true'  then true
+            else Builtins.y2error "Invalid entry in 'enabled_by_default': #{enabled_by_default}"
+          end
+
+          label = services.join(', ')
+          label_id = service['label_id'].to_s
+          if label_id.empty?
+            Builtins.y2error "Missing label_id, using label '#{label}'"
+          else
+            tmp_label = ProductControl.GetTranslatedText(label_id)
+            #TODO next is on line 246 in services_proposal Runlevel
+          end
         end
+        {
+          'preformatted_proposal' => get_proposal_summary, #TODO
+          'warning_level'         => :warning,
+          'warning'               => nil,
+          'links'                 => get_proposal_links, #TODO
+          'help'                  => get_help_text #TODO
+        }
       end
     end
   end
