@@ -182,7 +182,7 @@ module Yast
         proposal = { 'preformatted_proposal' => list(default_target) }
         return proposal if warnings.empty?
         proposal.update 'warning_level' => :warning
-        proposal.update 'warning'       => list(warnings)
+        proposal.update 'warning'       => list(*warnings)
       end
 
       private
