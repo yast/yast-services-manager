@@ -39,8 +39,31 @@ module Yast
       }
     end
 
+    def protected_service? service_name
+      return false if Linuxrc.vnc    && service_name == "xinetd"
+      return false if Linuxrc.usessh && service_name == "sshd"
+      true
+    end
+
     def write
-      # TODO
+      proposal.proposed_services.each_with_index do |service, index|
+        firewall_plugins = service['firewall_plugins']
+        packages = service['packages']
+        services = service['services']
+
+        if service['enabled']
+          Builtins.y2mileston "Service #{service} should not be enabled"
+          services.each do |serv|
+            Builtins.y2warning "#{serv} must not be stopped now" if protected_service?(serv)
+            if Service.Status(serv).to_i.zero? || Service.Enabled(serv)
+              Builtins.y2milestone "Stopping and disabling service #{serv}"
+              Service.RunInitScriptWithTimeOut(serv, 'stop')
+              Service.Disable(serv)
+            end
+          end
+          next
+        end
+      end
     end
 
     def ask_user service_id
