@@ -1,3 +1,5 @@
+require 'services-manager/ui_elements'
+
 module Yast
   import "SystemdServices"
   import "Progress"
@@ -10,28 +12,6 @@ module Yast
   import "SuSEFirewall"
 
   class ServicesProposal < Client
-
-    module Elements
-      def item text
-        "<li>#{text}</li>"
-      end
-
-      def list *items
-        "<ul>#{items.map { |i| item(i) }}</ul>"
-      end
-
-      def italics words
-        "<i>#{words}</i>"
-      end
-
-      def bold words
-        "<b>#{words}</b>"
-      end
-
-      def ahref link, text
-        "<a href=\"#{link}\">#{text}</a>"
-      end
-    end
 
     def initialize
       textdomain "services-manager"
@@ -65,7 +45,7 @@ module Yast
 
     def ask_user service_id
       Builtins.y2milestone "Services Proposal wanted to change with id %1", service_id
-      if service_id.match /\Atoggle_service_\d+$/
+      if service_id.match /\Atoggle_service_\d+\z/
         Builtins.y2milestone "User requested #{service_id}"
         toggle_service(service_id)
       else
@@ -102,7 +82,7 @@ module Yast
     end
 
     class Proposal < Client
-      include Elements
+      include UIElements
 
       textdomain "services-manager"
 
@@ -196,15 +176,15 @@ module Yast
             next
           end
 
-          services = service['service_names'].to_s.split(',').map(&:strip)
+          services = service['service_names'].to_s.split
           if services.empty?
             Builtins.y2error "No services_names found in #{service}"
             next
           end
 
-          firewall_plugins = service['firewall_plugins'].to_s.split(',').map(&:strip)
+          firewall_plugins = service['firewall_plugins'].to_s.split
           if firewall_plugins.empty?
-            Builtins.y2error "Invalid entry for 'firewall_plugins' in service #{service}, ignoring.."
+            Builtins.y2error "Empty entry for 'firewall_plugins' in service #{service}, ignoring.."
             next
           end
 
@@ -223,7 +203,7 @@ module Yast
             end
           end
 
-          packages = service['packages'].to_s.split(',').map(&:strip)
+          packages = service['packages'].to_s.split
 
           service_specs = {
             'label'              => label,
@@ -240,13 +220,11 @@ module Yast
       end
 
       def detect_status services
-        services.each do |service|
-          if !Service.Status(service).to_i.zero? || !Service.Enabled(service)
-            Builtins.y2milestone "Service #{service} is not running or it's disabled."
-            return false
-          end
+        stopped_service = services.find do |service|
+          !Service.Status(service).to_i.zero? || !Service.Enabled(service)
         end
-        true
+        Builtins.y2milestone "Service #{service} is not running or it's disabled." if stopped_service
+        return !stopped_service
       end
     end
   end
