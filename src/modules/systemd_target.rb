@@ -26,7 +26,7 @@ module Yast
     def initialize
       textdomain 'services-manager'
       self.targets = {}
-      read
+      read_targets
     end
 
     def default_target force=false

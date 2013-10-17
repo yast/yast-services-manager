@@ -12,7 +12,6 @@ module Yast
   import "SuSEFirewall"
 
   class ServicesProposal < Client
-
     def initialize
       textdomain "services-manager"
       args = WFM.Args
@@ -240,7 +239,7 @@ module Yast
           end
 
           handle_missing_packages(proposed_service)
-          success = manage_services(proposed_service)
+          success = manage_service(proposed_service)
         end
         SuSEFirewall.Write
         success
@@ -268,7 +267,7 @@ module Yast
         end
       end
 
-      def manage_services proposed_service
+      def manage_service proposed_service
         success = true
         proposed_service['services'].each do |service|
           Builtins.y2milestone "Enabling service #{service}"
