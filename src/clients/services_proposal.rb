@@ -26,9 +26,20 @@ module Yast
         when 'MakeProposal' then proposal.read
         when 'AskUser'      then ask_user(service_id)
         when 'Description'  then description
-        when 'Write'        then write
+        when 'Write'        then Writer.new(proposal).write
         else  Builtins.y2error("Unknown function: %1", function)
       end
+    end
+
+    def ask_user service_id
+      Builtins.y2milestone "Services proposal wanted to change with id %1", service_id
+      if service_id.match /\Atoggle_service_\d+\z/
+        Builtins.y2milestone "User requested #{service_id}"
+        toggle_service(service_id)
+      else
+        Builtins.y2warning "Service id #{service_id} is unknown"
+      end
+      {'workflow_sequence' => :next}
     end
 
     def description
@@ -39,48 +50,10 @@ module Yast
       }
     end
 
-    def protected_service? service_name
-      return false if Linuxrc.vnc    && service_name == "xinetd"
-      return false if Linuxrc.usessh && service_name == "sshd"
-      true
-    end
-
-    def write
-      proposal.proposed_services.each_with_index do |service, index|
-        firewall_plugins = service['firewall_plugins']
-        packages = service['packages']
-        services = service['services']
-
-        if service['enabled']
-          Builtins.y2mileston "Service #{service} should not be enabled"
-          services.each do |serv|
-            Builtins.y2warning "#{serv} must not be stopped now" if protected_service?(serv)
-            if Service.Status(serv).to_i.zero? || Service.Enabled(serv)
-              Builtins.y2milestone "Stopping and disabling service #{serv}"
-              Service.RunInitScriptWithTimeOut(serv, 'stop')
-              Service.Disable(serv)
-            end
-          end
-          next
-        end
-      end
-    end
-
-    def ask_user service_id
-      Builtins.y2milestone "Services Proposal wanted to change with id %1", service_id
-      if service_id.match /\Atoggle_service_\d+\z/
-        Builtins.y2milestone "User requested #{service_id}"
-        toggle_service(service_id)
-      else
-        Builtins.y2warning "Service id #{service_id} is unknown"
-      end
-      {'workflow_sequence' => :next}
-    end
-
     private
 
     def toggle_service service_id
-      id = service_id.match(/\Atoggle_service_(\d+)$/)[1]
+      id = service_id.match(/\Atoggle_service_(\d+)\z/)[1]
       if !id
         Builtins.y2error "Failed to get id from #{service_id}"
         return false
@@ -165,6 +138,7 @@ module Yast
               firewall = 'closed'
               link     = ahref("toggle_service_#{index}", "(enable)")
             end
+
             message = _(
               "Service %service will be %toggled and port in firewall will be %switched %link" %
               :service => italic(service['label']),
@@ -179,6 +153,7 @@ module Yast
               toggled = bold('disabled')
               link    = ahref("toggled_service_#{index}", "(enable)")
             end
+
             message = _(
               "Service %service will be %toggled %link" %
               :service => service['label'],
@@ -194,51 +169,44 @@ module Yast
       def load_services_details
         default_services.each_with_index do |service, index|
 
-          if service['service_names'].to_s.empty?
-            Builtins.y2error "Missing entry service_names in #{service}, ignoring.."
-            next
-          end
-
-          services = service['service_names'].to_s.split
-          if services.empty?
-            Builtins.y2error "No services_names found in #{service}"
+          service_names = service['service_names'].to_s.split
+          if service_names.empty?
+            Builtins.y2error "No entry in service_names in #{service}, ignoring.."
             next
           end
 
           firewall_plugins = service['firewall_plugins'].to_s.split
-          if firewall_plugins.empty?
-            Builtins.y2error "Empty entry for 'firewall_plugins' in service #{service}, ignoring.."
-            next
+          if service['firewall_plugins'] && firewall_plugins.empty?
+            Builtins.y2warning "No entries for 'firewall_plugins' in service #{service}"
           end
 
           enabled_by_default = service['enabled_by_default'].to_s == 'true'
-
-          label = services.join(', ')
           label_id = service['label_id'].to_s
+          label = ProductControl.GetTranslatedText(label_id).to_s
+
           if label_id.empty?
+            label = service_names.join(', ')
             Builtins.y2error "Missing label_id, using label '#{label}'"
-          else
-            tmp_label = ProductControl.GetTranslatedText(label_id).to_s
-            if tmp_label.empty?
-              Builtins.y2error "Unable to translate label_id in #{service}"
-            else
-              label = tmp_label
-            end
+          end
+
+          if label.empty?
+            label = service_names.join(', ')
+            Builtins.y2error "Unable to translate label_id in #{service}"
           end
 
           packages = service['packages'].to_s.split
 
           service_specs = {
             'label'              => label,
-            'services'           => services,
+            'services'           => service_names,
             'firewall_plugins'   => firewall_plugins,
-            'enabled'            => enabled_by_default || detect_status(services),
+            'enabled'            => enabled_by_default || detect_status(service_names),
             'enabled_by_default' => enabled_by_default,
             'packages'           => packages
           }
 
           self.proposed_services << service_specs
-          self.links    << "toggle_service_#{index}"
+          self.links << "toggle_service_#{index}"
         end
       end
 
@@ -250,5 +218,119 @@ module Yast
         return !stopped_service
       end
     end
+
+    class Writer < Client
+      textdomain "services-manager"
+
+      attr_reader :proposal
+
+      def initialize proposal
+        @proposal = proposal
+      end
+
+      def write
+        success = true
+        proposal.proposed_services.each do |proposed_service|
+          service_names = proposed_service['services']
+
+          if proposed_service['enabled']
+            Builtins.y2milestone "Service #{proposed_service} should not be enabled"
+            stop_and_disable_services(service_names)
+            next
+          end
+
+          handle_missing_packages(proposed_service)
+          success = manage_services(proposed_service)
+        end
+        SuSEFirewall.Write
+        success
+      end
+
+      private
+
+      def handle_missing_packages service
+        missing_packages = service['packages'].select do |package|
+          installed = Package.Installed(package)
+          available = Package.Available(package)
+          Report.Error _("Package %1 is not available" % package) if !installed && !available
+          !installed
+        end
+
+        if !missing_packages.empty?
+          Builtins.y2milestone "Packages to be installed: #{missing_packages}"
+          installed = Package.DoInstall(missing_packages)
+          if installed
+            Builtins.y2milestone "Required packages for #{service} have been installed"
+          else
+            Report.Error _("Installation of required packages has failed; \n" +
+                           "enabling and starting the services may also fail")
+          end
+        end
+      end
+
+      def manage_services proposed_service
+        success = true
+        proposed_service['services'].each do |service|
+          Builtins.y2milestone "Enabling service #{service}"
+
+          enabled = Service.Enable(service)
+          if enabled
+            Builtins.y2milestone "Service #{service} has been enabled"
+          else
+            Report.Error _("Cannot enable service %1" % service)
+            success = false
+            next
+          end
+
+          started = Service.Start(service)
+          if started
+            Builtins.y2milestone "Service #{service} has been started"
+          else
+            success = false
+            next
+          end
+
+          firewall_plugins = service['firewall_plugins']
+          if SuSEFirewall.IsEnabled && !firewall_plugins.empty?
+            Builtins.y2milestone "Firewall plugins: #{firewall_plugins}"
+            open_firewall_ports(firewall_plugins)
+          end
+        end
+        success
+      end
+
+      def stop_and_disable_services services
+        services.each do |service|
+          Builtins.y2warning "#{service} must not be stopped now" if protected_service?(service)
+          if Service.Status(service).to_i.zero? || Service.Enabled(service)
+            Builtins.y2milestone "Stopping and disabling service #{service}"
+            Service.RunInitScriptWithTimeOut(service, 'stop')
+            Service.Disable(service)
+          end
+        end
+      end
+
+      def open_firewall_ports plugins
+        plugins = plugins.map { |p| "service:#{p}" }
+        interfaces = SuSEFirewall.GetAllKnowInterfaces.map do |interface|
+          interface['id'] unless interface['id'].to_s.empty?
+        end.compact
+        Builtins.y2milestone "Available firewall interfaces: #{interfaces}"
+        zones = if interfaces.empty?
+          SuSEFirewall.GetKnownFirewallZones
+        else
+          SuSEFirewall.GetZonesOfInterfacesWithAnyFeatureSupported(interfaces)
+        end
+        Builtins.y2milestone "Found firewall zones #{zones}"
+        SuSEFirewall.SetServicesForZones(plugins, zones, true)
+      end
+
+      def protected_service? service_name
+        return false if Linuxrc.vnc    && service_name == "xinetd"
+        return false if Linuxrc.usessh && service_name == "sshd"
+        true
+      end
+    end
+
   end
 end
