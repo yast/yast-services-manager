@@ -18,5 +18,9 @@ module UIElements
   def ahref link, text
     "<a href=\"#{link}\">#{text}</a>"
   end
+
+  def para text
+    "<p>#{text}</p>"
+  end
 end
 

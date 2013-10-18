@@ -330,6 +330,7 @@ module Yast
         true
       end
     end
-
   end
 end
+Yast::ServicesProposal.new
+42

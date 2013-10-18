@@ -56,4 +56,4 @@ module Yast
 end
 
 Yast::ServicesManagerAuto.new
-42
+"https://github.com/yast/yast-ruby-bindings/issues/81"

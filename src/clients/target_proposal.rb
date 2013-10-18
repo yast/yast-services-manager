@@ -1,3 +1,5 @@
+require 'services-manager/ui_elements'
+
 module Yast
   import 'Arch'
   import 'Linuxrc'
@@ -24,20 +26,6 @@ module Yast
           warnings << _('VNC needs graphical system to be available')
         end
         warnings << _("\nDo you want to proceed?") unless warnings.empty?
-      end
-    end
-
-    module Elements
-      def item text
-        "<li>#{text}</li>"
-      end
-
-      def list *items
-        "<ul>#{items.map { |i| item(i) }}</ul>"
-      end
-
-      def para text
-        "<p>#{text}</p>"
       end
     end
 
@@ -70,7 +58,7 @@ module Yast
 
     class Dialog < Client
       include Warnings
-      include Elements
+      include UIElements
 
       attr_accessor :dialog, :available_targets
 
@@ -167,7 +155,7 @@ module Yast
 
     class Proposal < Client
       include Warnings
-      include Elements
+      include UIElements
 
       attr_accessor :default_target
 
