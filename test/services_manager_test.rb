@@ -1,24 +1,23 @@
 require_relative 'test_helper'
 
-include TestHelpers::Manager
+module Yast
+  include TestHelpers::Manager
 
-describe Yast::ServicesManager do
+  describe Yast::ServicesManager do
+    context "Autoyast API" do
+      it "exports systemd target and services" do
+        SystemdService.stub(:default_target).and_return('some_target')
+        SystemdTarget.stub(:services).and_return(['a', 'b'])
 
-  it "can manage exporting systemd target and services at once" do
-    stub_manager_with :default_target => 'runlevel-8000', :services => ['a', 'b', 'c'] do
-      data = Yast::ServicesManager.export
+        data = Yast::ServicesManager.export
+        expect(data['default_target']).to eq('some_target')
+        expect(data['services']).to eq(['a', 'b'])
 
-      data[Yast::ServicesManagerClass::TARGET].must_equal default_target
-      data[Yast::ServicesManagerClass::SERVICES].must_equal services
+      end
 
-      services.all? do |service|
-        data[Yast::ServicesManagerClass::SERVICES].member?(service)
-      end.must_equal(true)
+      it "can manage importing of data for systemd target and services" do
+      end
     end
-  end
-
-  it "can manage importing of data for systemd target and services" do
-  end
 
   it "shows summary with default target and registered services" do
     skip "this belongs to UI test suite"

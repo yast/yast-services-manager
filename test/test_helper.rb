@@ -1,9 +1,6 @@
-#! /usr/bin/env ruby
-
-require 'minitest/autorun'
-require 'minitest/spec'
 require 'pathname'
 require 'fileutils'
+require 'rspec'
 
 ENV["Y2DIR"] = File.expand_path("../../src", __FILE__)
 
