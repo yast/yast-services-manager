@@ -1,8 +1,8 @@
  module Yast
-  class SystemdServiceClass < Module
-    Yast.import("Service")
-    Yast.import("Mode")
+  import "Service"
+  import "Mode"
 
+  class SystemdServiceClass < Module
     SERVICE_UNITS_COMMAND    = 'systemctl list-unit-files --type service'
     SERVICES_DETAILS_COMMAND = 'systemctl --all --type service'
     SERVICES_STATUS_COMMAND  = 'systemctl status'
@@ -162,17 +162,16 @@
 
     # Saves the current configuration in memory
     #
-    # @param [Hash] force switching the service at runtime if required instant change
     # @return [Boolean]
-    def save(switch: false)
-      return false unless errors.empty?
+    def save
+      return unless errors.empty?
       # Set the services enabled/disabled first
       toggle_services
-      return false unless errors.empty?
+      return unless errors.empty?
       # Then try to adjust services run (active/inactive)
       # Might start or stop some services that would cause system instability
-      switch_services if switch
-      return false unless errors.empty?
+      switch_services
+      return unless errors.empty?
       self.modified = false
       true
     end

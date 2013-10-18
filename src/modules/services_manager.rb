@@ -1,10 +1,10 @@
 require 'yast'
 
 module Yast
-  class ServicesManagerClass < Module
-    Yast.import "SystemdTarget"
-    Yast.import "SystemdService"
+  import "SystemdTarget"
+  import "SystemdService"
 
+  class ServicesManagerClass < Module
     TARGET   = 'default_target'
     SERVICES = 'services'
 
@@ -37,8 +37,8 @@ module Yast
     # Saves the current configuration
     #
     # @return Boolean if successful
-    def save(params = {})
-      SystemdTarget.save(params) && SystemdService.save(params)
+    def save
+      SystemdTarget.save && SystemdService.save
     end
 
     # Are there any unsaved changes?
