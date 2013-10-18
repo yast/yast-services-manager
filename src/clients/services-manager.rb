@@ -1,5 +1,3 @@
-require 'erb'
-
 class ServicesManagerClient < Yast::Client
   Yast.import "ServicesManager"
   Yast.import "UI"
@@ -80,10 +78,6 @@ class ServicesManagerClient < Yast::Client
       )
     end
     success
-  end
-
-  def summary
-    ERB.new(summary_template).result(binding)
   end
 
   # Fills the dialog contents
@@ -237,18 +231,6 @@ class ServicesManagerClient < Yast::Client
     true
   end
 
-  def summary_template
-    <<-summary
-<h2><%= _('Services Manager') %></h2>
-<p><b><%= _('Default Target') %></b><%= SystemdTarget.export %></p>
-<p><b><%= _('Enabled Services') %></b></p>
-<ul>
-<% SystemdService.export.each do |service| %>
-  <li><%= service %></li>
-<% end %>
-</ul>
-    summary
-  end
 end
 
 ServicesManagerClient.new.main
