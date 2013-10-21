@@ -325,12 +325,11 @@ module Yast
       end
 
       def protected_service? service_name
-        return false if Linuxrc.vnc    && service_name == "xinetd"
-        return false if Linuxrc.usessh && service_name == "sshd"
-        true
+        return true if Linuxrc.vnc    && service_name == "xinetd"
+        return true if Linuxrc.usessh && service_name == "sshd"
+        false
       end
     end
   end
 end
 Yast::ServicesProposal.new
-42

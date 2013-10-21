@@ -19,7 +19,7 @@ module Yast
       }
     end
 
-    def import(data)
+    def import data
       SystemdTarget.import  data[TARGET]
       SystemdService.import data[SERVICES]
     end

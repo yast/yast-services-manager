@@ -117,8 +117,8 @@ module Yast
       output  = list_target_units
       stdout  = output.fetch 'stdout'
       stderr  = output.fetch 'stderr'
-      errors << stderr unless stderr.to_s.empty?
       exit_code = output.fetch 'exit'
+      errors << stderr if exit_code.to_i != 0 && !stderr.to_s.empty?
       stdout.each_line do |line|
         target, status = line.split(/[\s]+/)
         if Status::SUPPORTED.include?(status)
@@ -134,11 +134,12 @@ module Yast
     #TODO
     # Check for stderr and exit code
     def load_target_details
+      Builtins.y2milestone errors
       output  = list_targets_details
       stdout  = output.fetch 'stdout'
       stderr  = output.fetch 'stderr'
-      errors << stderr unless stderr.to_s.empty?
       exit_code = output.fetch 'exit'
+      errors << stderr if exit_code.to_i != 0 && !stderr.to_s.empty?
       unknown_targets = []
       stdout.each_line do |line|
         target, loaded, active, _, *description = line.split(/[\s]+/)
@@ -151,6 +152,8 @@ module Yast
           unknown_targets << target
         end
       end
+      Builtins.y2milestone "ERRORS"
+      Builtins.y2milestone errors
       errors << "Targets #{unknown_targets.join(',')} not found among unit files. " +
           "No details loaded for those." unless unknown_targets.empty?
       Builtins.y2milestone 'Targets loaded: %1', targets

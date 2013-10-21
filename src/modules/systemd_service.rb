@@ -164,14 +164,14 @@
     #
     # @return [Boolean]
     def save
-      return unless errors.empty?
+      return false unless errors.empty?
       # Set the services enabled/disabled first
       toggle_services
-      return unless errors.empty?
+      return false unless errors.empty?
       # Then try to adjust services run (active/inactive)
       # Might start or stop some services that would cause system instability
       switch_services
-      return unless errors.empty?
+      return false unless errors.empty?
       self.modified = false
       true
     end
