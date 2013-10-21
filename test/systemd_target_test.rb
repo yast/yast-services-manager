@@ -1,39 +1,45 @@
 require_relative "test_helper"
 
-include TestHelpers::Targets
-# replace /etc/systemd/system/default.target with test/tmp/targets/etc/default.target
-Yast::SystemdTargetClass::DEFAULT_TARGET_SYMLINK = TEST_TARGET_PATH.join('default.target').to_s
-# replace /usr/lib/systemd/system with test/tmp/targets/lib
-Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR = TEST_TARGETS_DIR.to_s
 
-describe Yast::SystemdTarget do
+module Yast
+  describe Yast::SystemdTarget do
+    attr_reader :systemd_target
 
-  attr_reader :systemd_target
+    before do
+      @target = Yast::SystemdTargetClass.new
+      target.stub(:list_target_units).and_return({
+        'stdout' => "multi-user.target         enabled\n" +
+                    "graphical.target          disabled",
+        'stderr' => '',
+        'exit'   => 0
+      })
 
-  before do
-    @systemd_target = Yast::SystemdTargetClass.new
-  end
+      target.stub(:list_target_details).and_return({
+        'stdout' => "multi-user.target  loaded active   active Multi-User System\n" +
+                    "graphical.target  loaded active   active Graphical Interface",
+        'stderr' => '',
+        'exit'   => 0
+      })
+      target.stub(:remove_default_target_symlink)
+      target.stub(:create_default_target_symlink)
+      target.stub(:get_default_target_filename)
+      target.stub(:default_target_file)
+    end
 
-  it "can set and save supported default target" do
-    stub_systemd_target do
-      systemd_target.default_target.must_be_empty
-      supported_target = 'runlevel3'
+    it "can set supported target" do
+      supported_target = 'graphical'
       systemd_target.default_target = supported_target
       systemd_target.default_target.must_equal supported_target
       systemd_target.modified.must_equal true
       systemd_target.save.must_equal true
     end
-  end
 
-  it "fails when trying to set an unsupported target" do
-    stub_systemd_target do
+    it "fails when trying to set an unsupported target" do
       unsupported_target = 'shutdown'
       proc { systemd_target.default_target = unsupported_target }.must_raise RuntimeError
     end
-  end
 
-  it "can reset the modified target" do
-    stub_systemd_target do
+    it "can reset the modified target" do
       systemd_target.default_target.must_be_empty
       supported_target = 'multi-user'
       systemd_target.default_target = supported_target
@@ -44,20 +50,16 @@ describe Yast::SystemdTarget do
       systemd_target.modified.must_equal false
       systemd_target.default_target.must_be_empty
     end
-  end
 
-  it "includes supported targets" do
-    stub_systemd_target do
+    it "includes supported targets" do
       systemd_target.read
       systemd_target.targets.wont_be_empty
       %w(runlevel4 runlevel3).each do |target|
         systemd_target.targets.keys.must_include(target)
       end
     end
-  end
 
-  it "does not include unsupported targets" do
-    stub_systemd_target do
+    it "does not include unsupported targets" do
       systemd_target.read
       %w(runlevel80 final).each do |target|
         systemd_target.targets.keys.wont_include(target)

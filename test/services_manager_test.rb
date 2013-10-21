@@ -1,9 +1,10 @@
+#!/usr/bin/env rspec
+
 require_relative 'test_helper'
 
 module Yast
-  include TestHelpers::Manager
 
-  describe Yast::ServicesManager do
+  describe ServicesManager do
     context "Autoyast API" do
       it "exports systemd target and services" do
         SystemdService.stub(:default_target).and_return('some_target')
@@ -15,15 +16,24 @@ module Yast
 
       end
 
-      it "can manage importing of data for systemd target and services" do
+      it "imports data for systemd target and services" do
+        data = {
+          'default_target' => 'multi-user',
+          'services'       => ['x', 'y', 'z']
+        }
+        expect(SystemdService).to receive(:import)
+        expect(SystemdTarget).to receive(:import)
+        ServicesManager.import(data)
       end
     end
 
-  it "shows summary with default target and registered services" do
-    skip "this belongs to UI test suite"
-    stub_manager_with :default_target => 'runlevel333', :services => ['sshd', 'cups'] do
-      Yast::ServicesManager.summary.must_match default_target
-      services.each {|s| Yast::ServicesManager.summary.must_match s }
+    context "Global public API" do
+      public_methods = [ :save, :read, :modified?, :reset ]
+      public_methods.each do |method|
+        expect(SystemdService).to receive(method)
+        expect(SystemdTarget).to receive(method)
+        ServicesManager.send :method
+      end
     end
   end
 end

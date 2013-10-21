@@ -15,6 +15,8 @@ module TestHelpers
     'stdout' => ''
   }
 
+  # Test fixtures files for target and services
+  # In format as it's expected from the systemctl commands
   module Files
     SOURCE = Pathname.new(File.expand_path('../files', __FILE__))
     TMP    = Pathname.new(File.expand_path('../tmp', __FILE__))
@@ -131,7 +133,7 @@ module TestHelpers
 
     # Make sure you have a physical copy of target file in dir test/files/*.target
     # Otherwise the tests fail
-    TEST_TARGETS = ['runlevel3', 'multi-user']
+    TEST_TARGETS = ['graphical', 'multi-user']
 
 
     SAMPLE_CONTENT_FILES = {
