@@ -20,23 +20,32 @@ module Yast
     end
 
     attr_accessor :modified, :targets
-    attr_reader   :errors
+    attr_reader   :errors, :default_target
 
     alias_method :all, :targets
 
     def initialize
       textdomain 'services-manager'
-      self.targets = {}
-      set_default_target(get_default_target_filename.chomp(TARGET_SUFFIX))
-      @errors = []
+      @errors  = []
+      @targets = {}
+      read_targets
     end
+
+    def read_targets
+      find_default_target
+      load_supported_targets
+      load_target_details
+    end
+
+    alias_method :read, :read_targets
 
     def valid?
       errors.empty?
     end
 
     def default_target= new_default
-      set_default_target(new_default)
+      errors << _("Target #{new_default} not found") unless targets.keys.include?(new_default)
+      @default_target = new_default
       self.modified = true
     end
 
@@ -59,28 +68,20 @@ module Yast
 
     def save
       return true unless modified
-      remove_default_target_symlink
-      create_default_target_symlink
+      return false unless valid?
+      remove_default_target_symlink && create_default_target_symlink
     end
 
     def reset
+      errors.clear
       read_targets
       self.modified = false
-      true
     end
-
-    def read
-      load_supported_targets && load_target_details
-    end
-
-    alias_method :read_targets, :read
 
     private
 
-    def set_default_target new_default
-      read_targets
-      errors << _("Target #{new_default} not found") unless targets.keys.include?(new_default)
-      @default_target = new_default
+    def find_default_target
+      @default_target = get_default_target_filename.chomp(TARGET_SUFFIX)
     end
 
     def remove_default_target_symlink
@@ -110,8 +111,6 @@ module Yast
       SCR.Execute(path('.target.bash_output'), command)
     end
 
-    #TODO
-    # Check for stderr and exit code
     def load_supported_targets
       self.targets = {}
       output  = list_target_units
@@ -128,13 +127,9 @@ module Yast
         end
       end
       Builtins.y2milestone "Loaded supported targets: %1", targets.keys
-      stderr.empty? && exit_code == 0
     end
 
-    #TODO
-    # Check for stderr and exit code
     def load_target_details
-      Builtins.y2milestone errors
       output  = list_targets_details
       stdout  = output.fetch 'stdout'
       stderr  = output.fetch 'stderr'
@@ -152,12 +147,10 @@ module Yast
           unknown_targets << target
         end
       end
-      Builtins.y2milestone "ERRORS"
-      Builtins.y2milestone errors
+
       errors << "Targets #{unknown_targets.join(',')} not found among unit files. " +
           "No details loaded for those." unless unknown_targets.empty?
       Builtins.y2milestone 'Targets loaded: %1', targets
-      stderr.empty? && exit_code == 0
     end
 
     publish({:function => :all,            :type => "map <string, map> ()" })

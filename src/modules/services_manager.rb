@@ -38,7 +38,9 @@ module Yast
     #
     # @return Boolean if successful
     def save
-      SystemdTarget.save && SystemdService.save
+      target_saved = SystemdTarget.save
+      services_saved = SystemdService.save
+      !!(target_saved && services_saved)
     end
 
     # Are there any unsaved changes?

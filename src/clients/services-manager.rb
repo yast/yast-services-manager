@@ -65,10 +65,10 @@ class ServicesManagerClient < Yast::Client
     input
   end
 
-  def save params={}
+  def save
     Builtins.y2milestone('Writing configuration')
     UI.OpenDialog(Label(_('Writing configuration...')))
-    success = ServicesManager.save(params)
+    success = ServicesManager.save
     # TODO: report errors
     UI.CloseDialog
     # Writing has failed, user can decide whether to continue or leave
