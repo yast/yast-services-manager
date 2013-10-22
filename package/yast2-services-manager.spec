@@ -28,53 +28,47 @@ Release:        0
 BuildArch:      noarch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Source0:        yast2-services-manager.tar.bz2
+Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby >= 2.0.0
-Requires:       yast2 >= 2.24.1
+Requires:       yast2 >= 3.0.5
 Requires:       yast2-ruby-bindings >= 1.2.0
 
 BuildRequires:  ruby
-BuildRequires:  rubygem-mocha
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
-BuildRequires:  yast2 >= 2.24.1
+BuildRequires:  yast2 >= 3.0.5
 
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
-License:        GPL-2.0
+License:        GPL-2.0+
 
 Url:            https://github.com/yast/yast-services-manager
 
 %description
-Provides user interface and libraries to configure running services and the default target.
+Provides user interface and libraries to configure systemd
+services and targets.
 
 %prep
-%setup -n yast2-services-manager
+%setup -n %{name}-%{version}
 
 %build
-# Temporary fix: Disabling tests that do not work in openSUSE higher than 12.3
-echo 0%{?suse_version}
-%if 0%{?suse_version} > 0 && 0%{?suse_version} <= 1230
-rake test
-%endif
+%yast_build
 
 %install
-rake install DESTDIR="$RPM_BUILD_ROOT"
+%yast_install
 %suse_update_desktop_file services-manager
-
-%clean
-rm -rf "$RPM_BUILD_ROOT"
 
 %files
 %defattr(-,root,root)
-%{_prefix}/share/YaST2/clients/*.rb
-%{_prefix}/share/YaST2/modules/*.rb
-%{_prefix}/share/applications/YaST2/services-manager.desktop
-%{_prefix}/share/YaST2/schema/autoyast/rnc/*.rnc
-# Only license comes here, the rest will be in 'doc' package
-%doc %dir %{_prefix}/share/doc/packages/yast2-services-manager/
-%doc %{_prefix}/share/doc/packages/yast2-services-manager/README
-%doc %{_prefix}/share/doc/packages/yast2-services-manager/COPYING
+%{yast_clientdir}/*.rb
+%{yast_moduledir}/*.rb
+%{yast_desktopdir}/*.desktop
+%{yast_schemadir}/autoyast/rnc/services-manager.rnc
+%dir %{_datadir}/YaST2/lib/
+%{_datadir}/YaST2/lib/services-manager/
+
+%dir %{yast_docdir}
+%doc %{yast_docdir}/COPYING
 
 %changelog
