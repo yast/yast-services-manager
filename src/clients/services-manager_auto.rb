@@ -7,10 +7,14 @@ module Yast
   class ServicesManagerAuto < Client
     textdomain 'services-manager'
 
-    def initialize
-      args = WFM.Args
-      Builtins.y2milestone "Autoyast client called with args #{args}"
+    attr_reader :args
 
+    def initialize
+      @args = WFM.Args
+      Builtins.y2milestone "Autoyast client called with args #{args}"
+    end
+
+    def call
       if args.size == 0
         Bultins.y2error("missing autoyast command")
         return
@@ -55,4 +59,4 @@ module Yast
   end
 end
 
-Yast::ServicesManagerAuto.new
+Yast::ServicesManagerAuto.new.call

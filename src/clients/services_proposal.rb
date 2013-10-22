@@ -12,14 +12,19 @@ module Yast
   import "SuSEFirewall"
 
   class ServicesProposal < Client
+    attr_reader :args, :proposal
+
     def initialize
       textdomain "services-manager"
-      args = WFM.Args
+      @args = WFM.Args
+      @proposal = Proposal.new
+    end
+
+    def call
       function = args.shift.to_s
       service_id = args['chosen_id'].to_s
       #TODO implement behaviour if force_reset parameter provided
       force_reset = !!args['force_reset']
-      proposal = Proposal.new
 
       case function
         when 'MakeProposal' then proposal.read
@@ -332,4 +337,5 @@ module Yast
     end
   end
 end
-Yast::ServicesProposal.new
+
+Yast::ServicesProposal.new.call

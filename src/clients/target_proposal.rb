@@ -18,7 +18,7 @@ module Yast
     end
 
     module Warnings
-      attr_reader :warnings
+      attr_reader :warnings, :args
 
       def detect_warnings selected_target
         @warnings = []
@@ -31,7 +31,10 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
-      args = WFM.Args
+      @args = WFM.Args
+    end
+
+    def call
       function = args.shift.to_s
       #TODO implement behaviour if force_reset parameter provided
       force_reset = !!args.shift.to_s
@@ -199,7 +202,5 @@ module Yast
 
     end
   end
-
-  TargetProposal.new
 end
-42
+TargetProposal.new.call
