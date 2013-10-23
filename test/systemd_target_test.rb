@@ -1,5 +1,6 @@
-require_relative "test_helper"
+#!/usr/bin/env rspec
 
+require_relative "test_helper"
 
 module Yast
   describe Yast::SystemdTarget do
