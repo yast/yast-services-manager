@@ -8,8 +8,11 @@ module Yast
     TARGET   = 'default_target'
     SERVICES = 'services'
 
+    attr_reader :errors
+
     def initialize
       textdomain 'services-manager'
+      @errors = []
     end
 
     def export
@@ -39,7 +42,9 @@ module Yast
     # @return Boolean if successful
     def save
       target_saved = SystemdTarget.save
+      errors << SystemdTarget.errors
       services_saved = SystemdService.save
+      errors << SystemdService.errors
       !!(target_saved && services_saved)
     end
 

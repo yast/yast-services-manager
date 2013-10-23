@@ -67,9 +67,19 @@ module Yast
     end
 
     def save
-      return true unless modified
-      return false unless valid?
-      remove_default_target_symlink && create_default_target_symlink
+      Builtins.y2milestone('Saving default target...')
+      if !modified
+        Builtins.y2milestone("Nothing to do, unchanged default target '#{default_target}'")
+        return true
+      end
+
+      if !valid?
+        Builtins.y2error("Invalid default target '#{default_target}'; aborting saving")
+        return false
+      end
+      removed = remove_default_target_symlink
+      created = create_default_target_symlink
+      removed && created
     end
 
     def reset
@@ -85,12 +95,26 @@ module Yast
     end
 
     def remove_default_target_symlink
-      SCR.Execute(path('.target.remove'), DEFAULT_TARGET_SYMLINK)
+      Builtins.y2milestone("Removing default target symlink..")
+      removed = SCR.Execute(path('.target.remove'), DEFAULT_TARGET_SYMLINK)
+      if removed
+        Builtins.y2milestone "#{DEFAULT_TARGET_SYMLINK} has been removed"
+      else
+        Builtins.y2error "Removing of #{DEFAULT_TARGET_SYMLINK} has failed"
+      end
+      removed
     end
 
     def create_default_target_symlink
+      Builtins.y2milestone("Creating new default target symlink for #{default_target_file}")
       SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_SYMLINK)
-      SCR.Read(path('.target.size'), DEFAULT_TARGET_SYMLINK) > 0
+      created = SCR.Read(path('.target.size'), DEFAULT_TARGET_SYMLINK) > 0
+      if created
+        Builtins.y2milestone("Symlink has been created")
+      else
+        Builtins.y2error("Default target unit file '#{default_target}' is empty")
+      end
+      created
     end
 
     def get_default_target_filename
@@ -148,8 +172,8 @@ module Yast
         end
       end
 
-      errors << "Targets #{unknown_targets.join(',')} not found among unit files. " +
-          "No details loaded for those." unless unknown_targets.empty?
+      Builtins.y2warning "Targets #{unknown_targets.join(', ')} not found among unit files. " +
+          "No details loaded for those targets." unless unknown_targets.empty?
       Builtins.y2milestone 'Targets loaded: %1', targets
     end
 

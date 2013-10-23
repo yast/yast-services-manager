@@ -46,7 +46,8 @@
     # @param Boolean running
     def activate service
       exists?(service) do
-        services[service][:active]   = true
+        services[service][:active]  = true
+        Builtins.y2milestone "Service #{service} has been marked for activation"
         services[service][:modified] = true
         self.modified = true
       end
@@ -113,6 +114,12 @@
       @modified = required_status
     end
 
+    def modified_services
+      services.select do |name, attributes|
+        attributes[:modified]
+      end
+    end
+
     # Reads all services' data
     #
     # @return [Hash] map of services
@@ -164,6 +171,8 @@
     #
     # @return [Boolean]
     def save
+      Builtins.y2milestone "Saving systemd services..."
+      return true unless modified
       return false unless errors.empty?
       # Set the services enabled/disabled first
       toggle_services
@@ -190,7 +199,13 @@
     # @return [Boolean]
     def switch! service
       if enabled?(service)
-        active?(service) ? Yast::Service.Stop(service) : Yast::Service.Start(service)
+        if active?(service)
+          Builtins.y2milestone "Stopping service '#{service}' ..."
+          Yast::Service.Stop(service)
+        else
+          Builtins.y2milestone "Starting service '#{service}' ..."
+          Yast::Service.Start(service)
+        end
       else
         false
       end

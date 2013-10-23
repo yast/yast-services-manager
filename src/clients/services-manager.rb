@@ -66,15 +66,15 @@ class ServicesManagerClient < Yast::Client
   end
 
   def save
-    Builtins.y2milestone('Writing configuration')
+    Builtins.y2milestone('Writing configuration...')
     UI.OpenDialog(Label(_('Writing configuration...')))
     success = ServicesManager.save
-    # TODO: report errors
     UI.CloseDialog
-    # Writing has failed, user can decide whether to continue or leave
     if !success
       success = ! Popup::ContinueCancel(
-        _("Writing the configuration have failed.\nWould you like to continue editing?")
+        _("Writing the configuration have failed.\n" +
+          ServicesManager.errors.join("\n")          +
+          "Would you like to continue editing?")
       )
     end
     success
@@ -158,7 +158,7 @@ class ServicesManagerClient < Yast::Client
       UI.ChangeWidget(
         Id(Id::SERVICES_TABLE),
         Cell(service, 2),
-        (running ? _('Active (will stop)') : _('Inactive (will start)'))
+        (running ? _('Active (will start)') : _('Inactive (will stop)'))
       )
     end
   end
@@ -173,7 +173,7 @@ class ServicesManagerClient < Yast::Client
 
   def handle_dialog
     new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
-    Builtins.y2milestone("Setting new default target #{new_default_target}")
+    Builtins.y2milestone("Setting new default target '#{new_default_target}'")
     SystemdTarget.default_target = new_default_target
   end
 
@@ -200,20 +200,21 @@ class ServicesManagerClient < Yast::Client
   # @return Boolean if successful
   def toggle_running
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
-    Builtins.y2milestone('Toggling service running: %1', service)
-    running = SystemdService.active?(service)
+    Builtins.y2milestone("Setting the service '#{service}' to " +
+      "#{SystemdService.services[service][:active] ? 'inactive' : 'active'}")
+    success = SystemdService.switch(service)
 
-    success = (running ? Service.Stop(service) : Service.Start(service))
-
-    if success
-      SystemdService.switch(service)
-      redraw_service(service)
-    else
-      Popup::ErrorDetails(
-        (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
-        SystemdService.status(service)
-      )
-    end
+    redraw_service(service) if success
+   #else
+   #  Popup::ErrorDetails(
+   #    if SystemdService.active?(service)
+   #      Message::CannotStopService(service)
+   #    else
+   #      Message::CannotStartService(service)),
+   #    end
+   #    SystemdService.status(service)
+   #  )
+   #end
 
     UI.SetFocus(Id(Id::SERVICES_TABLE))
     success
