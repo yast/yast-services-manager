@@ -174,6 +174,7 @@ module Yast
         return proposal if warnings.empty?
         proposal.update 'warning_level' => :warning
         proposal.update 'warning'       => list(*warnings)
+        proposal
       end
 
       private
@@ -203,4 +204,4 @@ module Yast
     end
   end
 end
-TargetProposal.new.call
+Yast::TargetProposal.new.call

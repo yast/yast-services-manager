@@ -43,3 +43,5 @@ module Yast
     end
   end
 end
+
+Yast::SystemdTargetFinish.new.call
