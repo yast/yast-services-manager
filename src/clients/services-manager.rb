@@ -49,9 +49,9 @@ class ServicesManagerClient < Yast::Client
           break if Popup::ReallyAbort(ServicesManager.modified?)
         # Default for double-click in the table
         when Id::TOGGLE_ENABLED, Id::SERVICES_TABLE
-          toggle_enabled
+          toggle_service
         when Id::TOGGLE_RUNNING
-          toggle_running
+          switch_service
         when Id::DEFAULT_TARGET
           handle_dialog
         when Id::SHOW_DETAILS
@@ -73,8 +73,8 @@ class ServicesManagerClient < Yast::Client
     if !success
       success = ! Popup::ContinueCancel(
         _("Writing the configuration have failed.\n" +
-          ServicesManager.errors.join("\n")          +
-          "Would you like to continue editing?")
+        ServicesManager.errors.join("\n")            +
+        "Would you like to continue editing?")
       )
     end
     success
@@ -195,26 +195,16 @@ class ServicesManagerClient < Yast::Client
     true
   end
 
-  # Toggles (starts/stops) the currently selected service
+  # Switches (starts/stops) the currently selected service
   #
   # @return Boolean if successful
-  def toggle_running
+  def switch_service
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
     Builtins.y2milestone("Setting the service '#{service}' to " +
       "#{SystemdService.services[service][:active] ? 'inactive' : 'active'}")
-    success = SystemdService.switch(service)
 
+    success = SystemdService.switch(service)
     redraw_service(service) if success
-   #else
-   #  Popup::ErrorDetails(
-   #    if SystemdService.active?(service)
-   #      Message::CannotStopService(service)
-   #    else
-   #      Message::CannotStartService(service)),
-   #    end
-   #    SystemdService.status(service)
-   #  )
-   #end
 
     UI.SetFocus(Id(Id::SERVICES_TABLE))
     success
@@ -222,7 +212,7 @@ class ServicesManagerClient < Yast::Client
 
   # Toggles (enable/disable) whether the currently selected service should
   # be enabled or disabled while writing the configuration
-  def toggle_enabled
+  def toggle_service
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
     Builtins.y2milestone('Toggling service status: %1', service)
     SystemdService.toggle(service)

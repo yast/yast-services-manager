@@ -173,15 +173,35 @@
     # @return [Boolean]
     def save
       Builtins.y2milestone "Saving systemd services..."
-      return true unless modified
-      return false unless errors.empty?
+
+      if !modified
+        Builtins.y2milestone "No service has been changed, nothing to do..."
+        return true
+      end
+
+      Builtins.y2milestone "Modified services: #{modified_services}"
+
+      if !errors.empty?
+        Builtins.y2error "Not saving the changes due to errors: " + errors.join(', ')
+        return false
+      end
+
       # Set the services enabled/disabled first
       toggle_services
-      return false unless errors.empty?
+      if !errors.empty?
+        Builtins.y2error "There were some errors during saving: " + errors.join(', ')
+        return false
+      end
+
       # Then try to adjust services run (active/inactive)
       # Might start or stop some services that would cause system instability
       switch_services
-      return false unless errors.empty?
+      if !errors.empty?
+        Builtins.y2error "There were some errors during saving: " + errors.join(', ')
+        return false
+      end
+
+      modified_services.keys.each { |service_name| reset_service(service_name) }
       self.modified = false
       true
     end
@@ -198,17 +218,11 @@
     #
     # @param [String] service name
     # @return [Boolean]
-    def switch! service
-      if enabled?(service)
-        if active?(service)
-          Builtins.y2milestone "Stopping service '#{service}' ..."
-          Yast::Service.Stop(service)
-        else
-          Builtins.y2milestone "Starting service '#{service}' ..."
-          Yast::Service.Start(service)
-        end
+    def switch! service_name
+      if active?(service_name)
+        Yast::Service.Start(service_name)
       else
-        false
+        Yast::Service.Stop(service_name)
       end
     end
 
@@ -312,11 +326,11 @@
     end
 
     def switch_services
+        Builtins.y2milestone "Switching the services"
       services_switched = []
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified]
-        if switch! service_name
-          reset_service(service_name)
+        if switch!(service_name)
           services_switched << service_name
         else
           change  = active?(service_name) ? 'stop' : 'start'
@@ -336,7 +350,6 @@
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified]
         if toggle! service_name
-          reset_service(service_name)
           services_toggled << service_name
         else
           change  = enabled?(service_name) ? 'enable' : 'disable'
