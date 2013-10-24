@@ -1,7 +1,7 @@
 require 'services-manager/ui_elements'
 
 module Yast
-  import "SystemdServices"
+  import "SystemdService"
   import "Progress"
   import "ProductControl"
   import "ProductFeatures"
@@ -22,9 +22,10 @@ module Yast
 
     def call
       function = args.shift.to_s
-      service_id = args['chosen_id'].to_s
+      Builtins.y2milestone args.inspect
+      service_id = args.find {|i| i == 'chosen_id'}.to_s
       #TODO implement behaviour if force_reset parameter provided
-      force_reset = !!args['force_reset']
+      force_reset = !!(args.find {|i| i == 'force_reset'}).to_s
 
       case function
         when 'MakeProposal' then proposal.read
@@ -84,11 +85,10 @@ module Yast
     class Proposal < Client
       include UIElements
 
-      textdomain "services-manager"
-
       attr_reader :default_services, :proposed_services, :links
 
       def initialize
+        textdomain "services-manager"
         @links = []
         @proposed_services = []
         @default_services = ProductFeatures.GetFeature('globals', 'services_proposal')
@@ -98,8 +98,8 @@ module Yast
         load_services_details
         @proposal = {
           'preformatted_proposal' => proposal_summary,
-          'warning_level'         => :warning,
-          'warning'               => nil,
+          'warning_level'         => 'warning',
+          'warning'               => '',
           'links'                 => links,
           'help'                  => help_text
         }
@@ -224,11 +224,11 @@ module Yast
     end
 
     class Writer < Client
-      textdomain "services-manager"
 
       attr_reader :proposal
 
       def initialize proposal
+        textdomain "services-manager"
         @proposal = proposal
       end
 

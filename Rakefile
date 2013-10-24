@@ -1,15 +1,18 @@
-require "yast/rake"
+begin
+  require "yast/rake"
+rescue LoadError
+end
 require 'fileutils'
 require 'tmpdir'
-require 'rake/testtask'
+require 'yast'
 
 YAST_DIR = '/usr/share/YaST2/'
 YAST_DESKTOP = '/usr/share/applications/YaST2/'
 PACKAGE_ARCHIVE = './package/yast2-services-manager.tar.bz2'
 PACKAGE_NAME = 'yast2-services-manager'
 DESTDIR = ENV['DESTDIR'] || '/'
-RNC_DESTINATION = YAST_DIR + '/schema/autoyast/rnc/'
-DOCDIR = '/usr/share/doc/packages/' + PACKAGE_NAME
+RNC_DESTINATION = YAST_DIR + 'schema/autoyast/rnc/'
+DOCDIR = "/usr/share/doc/packages/#{PACKAGE_NAME}/"
 
 # Tells which files/dirs are used for build
 #   key -> files/dirs (if mentioned, they are in resulting package)
@@ -19,21 +22,29 @@ FILES = {
   'src/clients'  => File.join(YAST_DIR, 'clients'),
   'src/modules'  => File.join(YAST_DIR, 'modules'),
   'src/desktop'  => YAST_DESKTOP,
+  'src/lib/services-manager' => File.join(YAST_DIR, "lib/services-manager/"),
   'test'         => nil,
   'config'       => RNC_DESTINATION,
+  'COPYING'      => DOCDIR
 }
 
 Rake::TaskManager.record_task_metadata = true
 
 desc "Install the files on local system"
 task :install do
-  FILES.each do |dir, destination|
+  FILES.each do |path, destination|
     next if destination.nil?
 
     install_to = File.join(DESTDIR, destination)
 
-    Dir.foreach(dir) do |file|
-      file_path = File.join(dir, file)
+    if File.file?(path)
+      FileUtils.mkdir_p(install_to, :verbose => true)
+      FileUtils.install(path, install_to, :verbose => true)
+      next
+    end
+
+    Dir.foreach(path) do |file|
+      file_path = File.join(path, file)
       next unless File.file?(file_path)
 
       begin
@@ -75,7 +86,9 @@ task :package do
   end
 end
 
-Yast::Tasks.configuration do |conf|
-  #lets ignore license check for now
-  conf.skip_license_check << /.*/
+if defined?(Yast::Tasks)
+  Yast::Tasks.configuration do |conf|
+    #lets ignore license check for now
+    conf.skip_license_check << /.*/
+  end
 end

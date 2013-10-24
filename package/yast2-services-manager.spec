@@ -27,8 +27,8 @@ Version:        0.0.9
 Release:        0
 BuildArch:      noarch
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Source0:        %{name}-%{version}.tar.bz2
+BuildRoot:      %{_tmppath}/%{name}-build
+Source0:        %{name}.tar.bz2
 
 Requires:       ruby >= 2.0.0
 Requires:       yast2 >= 3.0.5
@@ -38,6 +38,7 @@ BuildRequires:  ruby
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2 >= 3.0.5
+BuildRequires:  rubygem-rspec
 
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
@@ -50,25 +51,22 @@ Provides user interface and libraries to configure systemd
 services and targets.
 
 %prep
-%setup -n %{name}-%{version}
+%setup -n yast2-services-manager
 
 %build
-%yast_build
+rspec test/*_test.rb
 
 %install
-rake install
+rake install DESTDIR="%{buildroot}"
 %suse_update_desktop_file services-manager
+
+%define yast_dir %{_prefix}/share/YaST2
 
 %files
 %defattr(-,root,root)
-%{yast_clientdir}/*.rb
-%{yast_moduledir}/*.rb
-%{yast_desktopdir}/*.desktop
-%{yast_schemadir}/autoyast/rnc/services-manager.rnc
-%dir %{_datadir}/YaST2/lib/
-%{_datadir}/YaST2/lib/services-manager/
-
-%dir %{yast_docdir}
-%doc %{yast_docdir}/COPYING
-
-%changelog
+%{yast_dir}/clients/*.rb
+%{yast_dir}/modules/*.rb
+%{yast_dir}/schema/autoyast/rnc/*.rnc
+%{yast_dir}/lib/services-manager/*.rb
+%{_prefix}/share/applications/YaST2/services-manager.desktop
+%_docdir/%name/COPYING

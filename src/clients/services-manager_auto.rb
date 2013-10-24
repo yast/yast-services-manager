@@ -5,11 +5,11 @@ module Yast
   import 'ServicesManager'
 
   class ServicesManagerAuto < Client
-    textdomain 'services-manager'
 
     attr_reader :args
 
     def initialize
+      textdomain 'services-manager'
       @args = WFM.Args
       Builtins.y2milestone "Autoyast client called with args #{args}"
     end
@@ -24,7 +24,7 @@ module Yast
       params   = args
 
       case function
-        when 'Change'      then WFM.run_client('services-manager')
+        when 'Change'      then WFM.CallFunction('services-manager')
         when 'Summary'     then auto_summary
         when 'Import'      then ServicesManager.import(params)
         when 'Export'      then ServicesManager.export

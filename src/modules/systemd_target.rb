@@ -69,7 +69,7 @@ module Yast
     def save
       Builtins.y2milestone('Saving default target...')
       if !modified
-        Builtins.y2milestone("Nothing to do, unchanged default target '#{default_target}'")
+        Builtins.y2milestone("Nothing to do, current default target already set to '#{default_target}'")
         return true
       end
 
@@ -150,7 +150,7 @@ module Yast
           self.targets[target] = { :enabled  => status == Status::ENABLED }
         end
       end
-      Builtins.y2milestone "Loaded supported targets: %1", targets.keys
+      Builtins.y2milestone "Loaded supported target units: %1", targets.keys
     end
 
     def load_target_details
@@ -172,9 +172,11 @@ module Yast
         end
       end
 
-      Builtins.y2warning "Targets #{unknown_targets.join(', ')} not found among unit files. " +
-          "No details loaded for those targets." unless unknown_targets.empty?
-      Builtins.y2milestone 'Targets loaded: %1', targets
+      Builtins.y2milestone 'Loaded target details: %1', targets
+
+      if !unknown_targets.empty?
+        Builtins.y2warning "No details loaded for these targets: #{unknown_targets.join(', ')} "
+      end
     end
 
     publish({:function => :all,            :type => "map <string, map> ()" })

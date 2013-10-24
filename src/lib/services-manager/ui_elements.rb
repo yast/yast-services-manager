@@ -4,7 +4,7 @@ module UIElements
   end
 
   def list *entries
-    "<ul>#{entries.map { |i| item(i) }}</ul>"
+    "<ul>#{entries.map { |i| item(i) }.join}</ul>"
   end
 
   def italics words

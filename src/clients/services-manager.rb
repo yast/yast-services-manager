@@ -37,7 +37,6 @@ class ServicesManagerClient < Yast::Client
   #
   # @return :next or :abort
   def main_dialog
-    ServicesManager.read
     adjust_dialog
 
     while true

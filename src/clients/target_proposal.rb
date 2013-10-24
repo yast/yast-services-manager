@@ -18,7 +18,7 @@ module Yast
     end
 
     module Warnings
-      attr_reader :warnings, :args
+      attr_reader :warnings
 
       def detect_warnings selected_target
         @warnings = []
@@ -28,6 +28,8 @@ module Yast
         warnings << _("\nDo you want to proceed?") unless warnings.empty?
       end
     end
+
+    attr_reader :args
 
     def initialize
       textdomain 'services-manager'
