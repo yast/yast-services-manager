@@ -56,7 +56,7 @@ services and targets.
 %yast_build
 
 %install
-%yast_install
+rake install
 %suse_update_desktop_file services-manager
 
 %files
