@@ -120,9 +120,10 @@ module Yast
       sshd = service.all['sshd']
       status = sshd[:enabled]
       service.toggle 'sshd'
-      expect(sshd[:enabled]).to eq(!status)
+      expect(sshd[:enabled]).not_to eq(status)
       expect(sshd[:modified]).to eq(true)
       service.reset
+      sshd = service.all['sshd']
       expect(sshd[:enabled]).to eq(status)
       expect(sshd[:modified]).to eq(false)
     end
@@ -134,6 +135,7 @@ module Yast
       expect(sshd[:active]).to eq(!status)
       expect(sshd[:modified]).to eq(true)
       service.reset
+      sshd = service.all['sshd']
       expect(sshd[:active]).to eq(status)
       expect(sshd[:modified]).to eq(false)
     end

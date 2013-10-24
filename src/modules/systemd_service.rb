@@ -135,6 +135,7 @@
     def reset
       self.errors = []
       self.modified = false
+      true
     end
 
 
