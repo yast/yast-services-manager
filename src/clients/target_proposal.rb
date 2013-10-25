@@ -202,5 +202,5 @@ module Yast
 
     end
   end
+  TargetProposal.new.call(WFM.Args)
 end
-Yast::TargetProposal.new.call(WFM.Args)

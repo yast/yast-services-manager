@@ -39,6 +39,6 @@ module Yast
       end
     end
   end
+  SystemdTargetFinish.new.call(WFM.Args)
 end
 
-Yast::SystemdTargetFinish.new.call(WFM.Args)

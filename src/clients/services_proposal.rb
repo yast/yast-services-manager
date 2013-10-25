@@ -20,8 +20,8 @@ module Yast
     end
 
     def call args
+      Builtins.y2milestone "Provided args: #{args}"
       function = args.shift.to_s
-      Builtins.y2milestone args.inspect
       service_id = args.find {|i| i == 'chosen_id'}.to_s
       #TODO implement behaviour if force_reset parameter provided
       force_reset = !!(args.find {|i| i == 'force_reset'})
@@ -335,6 +335,6 @@ module Yast
       end
     end
   end
+  ServicesProposal.new.call(WFM.Args)
 end
 
-Yast::ServicesProposal.new.call(WFM.Args)

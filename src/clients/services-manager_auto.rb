@@ -54,6 +54,6 @@ module Yast
     end
 
   end
+  ServicesManagerAuto.new.call(WFM.Args)
 end
 
-Yast::ServicesManagerAuto.new.call(WFM.Args)
