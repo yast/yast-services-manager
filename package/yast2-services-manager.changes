@@ -1,4 +1,18 @@
 -------------------------------------------------------------------
+Fri Oct 25 12:31:53 UTC 2013 - vmoravec@suse.com
+
+- 0.0.10
+- add alias services for services-manager client
+- replace old tests with rspec tests
+- add yast clients: target_proposal, services_proposal, target_finish
+- various fixes of modules' API
+
+-------------------------------------------------------------------
+Sun Sep 15 08:49:56 UTC 2013 - tchvatal@suse.com
+
+- Fix the ruby dep and drop clean section as it is useless. 
+
+-------------------------------------------------------------------
 Fri Sep 13 14:42:38 UTC 2013 - vmoravec@suse.com
 
 - 0.0.9

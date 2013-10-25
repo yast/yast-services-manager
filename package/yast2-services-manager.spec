@@ -15,6 +15,7 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
+
 ######################################################################
 #
 # IMPORTANT: Please do not change spec file in build service directly
@@ -23,14 +24,14 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        0.0.9
+Version:        0.0.10
 Release:        0
 BuildArch:      noarch
 
 BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}.tar.bz2
 
-Requires:       ruby >= 2.0.0
+Requires:       ruby >= 2.0
 Requires:       yast2 >= 3.0.5
 Requires:       yast2-ruby-bindings >= 1.2.0
 
@@ -43,7 +44,6 @@ BuildRequires:  rubygem-rspec
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
 License:        GPL-2.0+
-
 Url:            https://github.com/yast/yast-services-manager
 
 %description
