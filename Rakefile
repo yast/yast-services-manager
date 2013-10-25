@@ -4,7 +4,6 @@ rescue LoadError
 end
 require 'fileutils'
 require 'tmpdir'
-require 'yast'
 
 YAST_DIR = '/usr/share/YaST2/'
 YAST_DESKTOP = '/usr/share/applications/YaST2/'
