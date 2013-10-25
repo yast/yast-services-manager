@@ -68,5 +68,10 @@ rake install DESTDIR="%{buildroot}"
 %{yast_dir}/modules/*.rb
 %{yast_dir}/schema/autoyast/rnc/*.rnc
 %{yast_dir}/lib/services-manager/*.rb
+%dir %{yast_dir}/lib/
+%{yast_dir}/lib/services-manager/
 %{_prefix}/share/applications/YaST2/services-manager.desktop
+
+%dir %_docdir/
+%_docdir/%name/
 %_docdir/%name/COPYING
