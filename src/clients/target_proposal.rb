@@ -29,17 +29,14 @@ module Yast
       end
     end
 
-    attr_reader :args
-
     def initialize
       textdomain 'services-manager'
-      @args = WFM.Args
     end
 
-    def call
+    def call args
       function = args.shift.to_s
       #TODO implement behaviour if force_reset parameter provided
-      force_reset = !!args.shift.to_s
+      force_reset = !!args.shift
       case function
         when 'MakeProposal' then Proposal.new.create
         when 'AskUser'      then Dialog.new.show
@@ -206,4 +203,4 @@ module Yast
     end
   end
 end
-Yast::TargetProposal.new.call
+Yast::TargetProposal.new.call(WFM.Args)

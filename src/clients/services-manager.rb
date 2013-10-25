@@ -17,6 +17,7 @@ class ServicesManagerClient < Yast::Client
   end
 
   def main
+    textdomain 'services-manager'
     Wizard.CreateDialog
     success = false
     while true

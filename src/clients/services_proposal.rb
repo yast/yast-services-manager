@@ -12,20 +12,19 @@ module Yast
   import "SuSEFirewall"
 
   class ServicesProposal < Client
-    attr_reader :args, :proposal
+    attr_reader :proposal
 
     def initialize
       textdomain "services-manager"
-      @args = WFM.Args
       @proposal = Proposal.new
     end
 
-    def call
+    def call args
       function = args.shift.to_s
       Builtins.y2milestone args.inspect
       service_id = args.find {|i| i == 'chosen_id'}.to_s
       #TODO implement behaviour if force_reset parameter provided
-      force_reset = !!(args.find {|i| i == 'force_reset'}).to_s
+      force_reset = !!(args.find {|i| i == 'force_reset'})
 
       case function
         when 'MakeProposal' then proposal.read
@@ -338,4 +337,4 @@ module Yast
   end
 end
 
-Yast::ServicesProposal.new.call
+Yast::ServicesProposal.new.call(WFM.Args)

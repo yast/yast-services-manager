@@ -6,14 +6,11 @@ module Yast
   class SystemdTargetFinish < Client
     MULTIUSER = 'multi-user'
 
-    attr_reader :args
-
     def initialize
       textdomain 'services-manager'
-      @args = WFM.Args
     end
 
-    def call
+    def call args
       function = args.shift.to_s
       Builtins.y2milestone "Starting systemd target finish"
 
@@ -44,4 +41,4 @@ module Yast
   end
 end
 
-Yast::SystemdTargetFinish.new.call
+Yast::SystemdTargetFinish.new.call(WFM.Args)
