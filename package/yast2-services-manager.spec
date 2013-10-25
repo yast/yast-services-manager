@@ -24,55 +24,49 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        0.0.9
+Version:        0.0.10
 Release:        0
 BuildArch:      noarch
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Source0:        yast2-services-manager.tar.bz2
+BuildRoot:      %{_tmppath}/%{name}-build
+Source0:        %{name}.tar.bz2
 
 Requires:       ruby >= 2.0
-Requires:       yast2 >= 2.24.1
+Requires:       yast2 >= 3.0.5
 Requires:       yast2-ruby-bindings >= 1.2.0
 
 BuildRequires:  ruby
-BuildRequires:  rubygem-mocha
 BuildRequires:  update-desktop-files
-BuildRequires:  yast2 >= 2.24.1
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
+BuildRequires:  yast2 >= 3.0.5
+BuildRequires:  rubygem-rspec
 
 Summary:        YaST2 - Services Manager
-License:        GPL-2.0
 Group:          System/YaST
-
+License:        GPL-2.0+
 Url:            https://github.com/yast/yast-services-manager
 
 %description
-Provides user interface and libraries to configure running services and the default target.
+Provides user interface and libraries to configure systemd
+services and targets.
 
 %prep
 %setup -n yast2-services-manager
 
 %build
-# Temporary fix: Disabling tests that do not work in openSUSE higher than 12.3
-echo 0%{?suse_version}
-%if 0%{?suse_version} > 0 && 0%{?suse_version} <= 1230
-rake test
-%endif
+rspec test/*_test.rb
 
 %install
 rake install DESTDIR="%{buildroot}"
 %suse_update_desktop_file services-manager
 
+%define yast_dir %{_prefix}/share/YaST2
+
 %files
 %defattr(-,root,root)
-%{_prefix}/share/YaST2/clients/*.rb
-%{_prefix}/share/YaST2/modules/*.rb
+%{yast_dir}/clients/*.rb
+%{yast_dir}/modules/*.rb
+%{yast_dir}/schema/autoyast/rnc/*.rnc
+%{yast_dir}/lib/services-manager/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
-%{_prefix}/share/YaST2/schema/autoyast/rnc/*.rnc
-# Only license comes here, the rest will be in 'doc' package
-%doc %dir %{_prefix}/share/doc/packages/yast2-services-manager/
-%doc %{_prefix}/share/doc/packages/yast2-services-manager/README
-%doc %{_prefix}/share/doc/packages/yast2-services-manager/COPYING
-
-%changelog
+%_docdir/%name/COPYING

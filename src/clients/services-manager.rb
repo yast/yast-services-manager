@@ -1,5 +1,3 @@
-require 'erb'
-
 class ServicesManagerClient < Yast::Client
   Yast.import "ServicesManager"
   Yast.import "UI"
@@ -19,6 +17,7 @@ class ServicesManagerClient < Yast::Client
   end
 
   def main
+    textdomain 'services-manager'
     Wizard.CreateDialog
     success = false
     while true
@@ -39,7 +38,6 @@ class ServicesManagerClient < Yast::Client
   #
   # @return :next or :abort
   def main_dialog
-    ServicesManager.read
     adjust_dialog
 
     while true
@@ -51,9 +49,9 @@ class ServicesManagerClient < Yast::Client
           break if Popup::ReallyAbort(ServicesManager.modified?)
         # Default for double-click in the table
         when Id::TOGGLE_ENABLED, Id::SERVICES_TABLE
-          toggle_enabled
+          toggle_service
         when Id::TOGGLE_RUNNING
-          toggle_running
+          switch_service
         when Id::DEFAULT_TARGET
           handle_dialog
         when Id::SHOW_DETAILS
@@ -67,23 +65,19 @@ class ServicesManagerClient < Yast::Client
     input
   end
 
-  def save params={}
-    Builtins.y2milestone('Writing configuration')
+  def save
+    Builtins.y2milestone('Writing configuration...')
     UI.OpenDialog(Label(_('Writing configuration...')))
-    success = ServicesManager.save(params)
-    # TODO: report errors
+    success = ServicesManager.save
     UI.CloseDialog
-    # Writing has failed, user can decide whether to continue or leave
     if !success
       success = ! Popup::ContinueCancel(
-        _("Writing the configuration have failed.\nWould you like to continue editing?")
+        _("Writing the configuration have failed.\n" +
+        ServicesManager.errors.join("\n")            +
+        "Would you like to continue editing?")
       )
     end
     success
-  end
-
-  def summary
-    ERB.new(summary_template).result(binding)
   end
 
   # Fills the dialog contents
@@ -164,7 +158,7 @@ class ServicesManagerClient < Yast::Client
       UI.ChangeWidget(
         Id(Id::SERVICES_TABLE),
         Cell(service, 2),
-        (running ? _('Active (will stop)') : _('Inactive (will start)'))
+        (running ? _('Active (will start)') : _('Inactive (will stop)'))
       )
     end
   end
@@ -179,7 +173,7 @@ class ServicesManagerClient < Yast::Client
 
   def handle_dialog
     new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
-    Builtins.y2milestone("Setting new default target #{new_default_target}")
+    Builtins.y2milestone("Setting new default target '#{new_default_target}'")
     SystemdTarget.default_target = new_default_target
   end
 
@@ -201,25 +195,16 @@ class ServicesManagerClient < Yast::Client
     true
   end
 
-  # Toggles (starts/stops) the currently selected service
+  # Switches (starts/stops) the currently selected service
   #
   # @return Boolean if successful
-  def toggle_running
+  def switch_service
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
-    Builtins.y2milestone('Toggling service running: %1', service)
-    running = SystemdService.active?(service)
+    Builtins.y2milestone("Setting the service '#{service}' to " +
+      "#{SystemdService.services[service][:active] ? 'inactive' : 'active'}")
 
-    success = (running ? Service.Stop(service) : Service.Start(service))
-
-    if success
-      SystemdService.switch(service)
-      redraw_service(service)
-    else
-      Popup::ErrorDetails(
-        (running ? Message::CannotStopService(service) : Message::CannotStartService(service)),
-        SystemdService.status(service)
-      )
-    end
+    success = SystemdService.switch(service)
+    redraw_service(service) if success
 
     UI.SetFocus(Id(Id::SERVICES_TABLE))
     success
@@ -227,7 +212,7 @@ class ServicesManagerClient < Yast::Client
 
   # Toggles (enable/disable) whether the currently selected service should
   # be enabled or disabled while writing the configuration
-  def toggle_enabled
+  def toggle_service
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
     Builtins.y2milestone('Toggling service status: %1', service)
     SystemdService.toggle(service)
@@ -237,18 +222,6 @@ class ServicesManagerClient < Yast::Client
     true
   end
 
-  def summary_template
-    <<-summary
-<h2><%= _('Services Manager') %></h2>
-<p><b><%= _('Default Target') %></b><%= SystemdTarget.export %></p>
-<p><b><%= _('Enabled Services') %></b></p>
-<ul>
-<% SystemdService.export.each do |service| %>
-  <li><%= service %></li>
-<% end %>
-</ul>
-    summary
-  end
 end
 
 ServicesManagerClient.new.main

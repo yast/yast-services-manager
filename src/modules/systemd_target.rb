@@ -20,32 +20,33 @@ module Yast
     end
 
     attr_accessor :modified, :targets
+    attr_reader   :errors, :default_target
 
     alias_method :all, :targets
 
     def initialize
       textdomain 'services-manager'
-      self.targets = {}
-      @default_target = ''
+      @errors  = []
+      @targets = {}
+      read_targets
     end
 
-    def default_target force=false
-      return @default_target if @default_target_set && !force
-      target_file = get_default_target_filename
-      @default_target = target_file.chomp(TARGET_SUFFIX)
-      @default_target_set = true
-      @default_target
+    def read_targets
+      find_default_target
+      load_supported_targets
+      load_target_details
+    end
+
+    alias_method :read, :read_targets
+
+    def valid?
+      errors.empty?
     end
 
     def default_target= new_default
-      read_targets
-      #FIXME this does not seem to be correct raising exception here like that
-      raise "Unknown target: #{new_default}" unless all.keys.include?(new_default)
-      if default_target != new_default
-        @default_target = new_default
-        self.modified = true
-      end
-      @default_target
+      errors << _("Target #{new_default} not found") unless targets.keys.include?(new_default)
+      @default_target = new_default
+      self.modified = true
     end
 
     def export
@@ -54,8 +55,8 @@ module Yast
 
     def import new_target
       if new_target.to_s.empty?
-        Builtins.y2error("New default target must not be empty string")
-        return nil
+        Builtins.y2error("New default target not provided")
+        return
       end
       self.default_target = new_target
     end
@@ -65,34 +66,55 @@ module Yast
       "@targets=#{targets.keys} >"
     end
 
-    def save params={}
-      return true unless (modified || params[:force])
-      remove_default_target_symlink
-      create_default_target_symlink
+    def save
+      Builtins.y2milestone('Saving default target...')
+      if !modified
+        Builtins.y2milestone("Nothing to do, current default target already set to '#{default_target}'")
+        return true
+      end
+
+      if !valid?
+        Builtins.y2error("Invalid default target '#{default_target}'; aborting saving")
+        return false
+      end
+      removed = remove_default_target_symlink
+      created = create_default_target_symlink
+      removed && created
     end
 
     def reset
+      errors.clear
       read_targets
       self.modified = false
-      true
     end
-
-    def read
-      default_target(true)
-      load_supported_targets && load_target_details
-    end
-
-    alias_method :read_targets, :read
 
     private
 
+    def find_default_target
+      @default_target = get_default_target_filename.chomp(TARGET_SUFFIX)
+    end
+
     def remove_default_target_symlink
-      SCR.Execute(path('.target.remove'), DEFAULT_TARGET_SYMLINK)
+      Builtins.y2milestone("Removing default target symlink..")
+      removed = SCR.Execute(path('.target.remove'), DEFAULT_TARGET_SYMLINK)
+      if removed
+        Builtins.y2milestone "#{DEFAULT_TARGET_SYMLINK} has been removed"
+      else
+        Builtins.y2error "Removing of #{DEFAULT_TARGET_SYMLINK} has failed"
+      end
+      removed
     end
 
     def create_default_target_symlink
+      Builtins.y2milestone("Creating new default target symlink for #{default_target_file}")
       SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_SYMLINK)
-      SCR.Read(path('.target.size'), DEFAULT_TARGET_SYMLINK) > 0
+      created = SCR.Read(path('.target.size'), DEFAULT_TARGET_SYMLINK) > 0
+      if created
+        Builtins.y2milestone("Symlink has been created")
+      else
+        Builtins.y2error("Default target unit file '#{default_target}' is empty")
+      end
+      created
     end
 
     def get_default_target_filename
@@ -113,13 +135,13 @@ module Yast
       SCR.Execute(path('.target.bash_output'), command)
     end
 
-    #TODO
-    # Check for stderr and exit code
     def load_supported_targets
+      self.targets = {}
       output  = list_target_units
       stdout  = output.fetch 'stdout'
       stderr  = output.fetch 'stderr'
       exit_code = output.fetch 'exit'
+      errors << stderr if exit_code.to_i != 0 && !stderr.to_s.empty?
       stdout.each_line do |line|
         target, status = line.split(/[\s]+/)
         if Status::SUPPORTED.include?(status)
@@ -128,17 +150,16 @@ module Yast
           self.targets[target] = { :enabled  => status == Status::ENABLED }
         end
       end
-      Builtins.y2milestone "Loaded supported targets: %1", targets.keys
-      stderr.empty? && exit_code == 0
+      Builtins.y2milestone "Loaded supported target units: %1", targets.keys
     end
 
-    #TODO
-    # Check for stderr and exit code
     def load_target_details
       output  = list_targets_details
       stdout  = output.fetch 'stdout'
       stderr  = output.fetch 'stderr'
       exit_code = output.fetch 'exit'
+      errors << stderr if exit_code.to_i != 0 && !stderr.to_s.empty?
+      unknown_targets = []
       stdout.each_line do |line|
         target, loaded, active, _, *description = line.split(/[\s]+/)
         target.chomp! TARGET_SUFFIX
@@ -146,14 +167,21 @@ module Yast
           targets[target][:loaded] = loaded == Status::LOADED
           targets[target][:active] = active == Status::ACTIVE
           targets[target][:description] = description.join(' ')
+        else
+          unknown_targets << target
         end
       end
-      Builtins.y2milestone 'All targets loaded: %1', targets
-      stderr.empty? && exit_code == 0
+
+      Builtins.y2milestone 'Loaded target details: %1', targets
+
+      if !unknown_targets.empty?
+        Builtins.y2warning "No details loaded for these targets: #{unknown_targets.join(', ')} "
+      end
     end
 
     publish({:function => :all,            :type => "map <string, map> ()" })
     publish({:function => :default_target, :type => "string ()"            })
+    publish({:function => :default_target=,:type => "string (string)"      })
     publish({:function => :export,         :type => "string ()"            })
     publish({:function => :import,         :type => "string ()"            })
     publish({:function => :modified,       :type => "boolean ()"           })

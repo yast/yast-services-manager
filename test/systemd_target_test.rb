@@ -1,67 +1,68 @@
+#!/usr/bin/env rspec
+
 require_relative "test_helper"
 
-include TestHelpers::Targets
-# replace /etc/systemd/system/default.target with test/tmp/targets/etc/default.target
-Yast::SystemdTargetClass::DEFAULT_TARGET_SYMLINK = TEST_TARGET_PATH.join('default.target').to_s
-# replace /usr/lib/systemd/system with test/tmp/targets/lib
-Yast::SystemdTargetClass::SYSTEMD_TARGETS_DIR = TEST_TARGETS_DIR.to_s
+module Yast
+  describe Yast::SystemdTarget do
+    attr_reader :target
 
-describe Yast::SystemdTarget do
+    before do
+      SystemdTargetClass.any_instance
+        .stub(:get_default_target_filename)
+        .and_return('multi-user.target')
+      SystemdTargetClass.any_instance
+        .stub(:list_target_units)
+        .and_return({
+          'stdout' => "multi-user.target         enabled\n" +
+                      "graphical.target          disabled",
+          'stderr' => '',
+          'exit'   => 0
+        })
 
-  attr_reader :systemd_target
-
-  before do
-    @systemd_target = Yast::SystemdTargetClass.new
-  end
-
-  it "can set and save supported default target" do
-    stub_systemd_target do
-      systemd_target.default_target.must_be_empty
-      supported_target = 'runlevel3'
-      systemd_target.default_target = supported_target
-      systemd_target.default_target.must_equal supported_target
-      systemd_target.modified.must_equal true
-      systemd_target.save.must_equal true
+      SystemdTargetClass.any_instance
+        .stub(:list_targets_details)
+        .and_return({
+          'stdout' => "multi-user.target  loaded active   active Multi-User System\n" +
+                      "graphical.target  loaded active   active Graphical Interface",
+          'stderr' => '',
+          'exit'   => 0
+        })
+      SystemdTargetClass.any_instance.stub(:remove_default_target_symlink).and_return(true)
+      SystemdTargetClass.any_instance.stub(:create_default_target_symlink).and_return(true)
+      SystemdTargetClass.any_instance.stub(:default_target_file)
+      @target = SystemdTargetClass.new
     end
-  end
 
-  it "fails when trying to set an unsupported target" do
-    stub_systemd_target do
-      unsupported_target = 'shutdown'
-      proc { systemd_target.default_target = unsupported_target }.must_raise RuntimeError
+    it "can set supported target" do
+      supported_target = 'graphical'
+      target.default_target = supported_target
+      expect(target.default_target).to eq(supported_target)
+      expect(target.modified).to eq(true)
+      expect(target.errors).to be_empty
+      expect(target.valid?).to be(true)
+      expect(target.save).to eq(true)
     end
-  end
 
-  it "can reset the modified target" do
-    stub_systemd_target do
-      systemd_target.default_target.must_be_empty
-      supported_target = 'multi-user'
-      systemd_target.default_target = supported_target
-      systemd_target.default_target.must_equal supported_target
-      systemd_target.default_target.wont_equal nil
-      systemd_target.modified.must_equal true
-      systemd_target.reset
-      systemd_target.modified.must_equal false
-      systemd_target.default_target.must_be_empty
+    it "can set but not save unsupported target" do
+      unsupported = 'suse'
+      target.default_target = unsupported
+      expect(target.default_target).to eq(unsupported)
+      expect(target.errors).not_to be_empty
+      expect(target.valid?).to be(false)
+      expect(target.save).to be(false)
     end
-  end
 
-  it "includes supported targets" do
-    stub_systemd_target do
-      systemd_target.read
-      systemd_target.targets.wont_be_empty
-      %w(runlevel4 runlevel3).each do |target|
-        systemd_target.targets.keys.must_include(target)
-      end
+    it "can reset the modified target" do
+      original_target = target.default_target
+      new_target = 'test'
+      target.default_target = new_target
+      expect(target.default_target).to eq(new_target)
+      expect(target.modified).to eq(true)
+      target.reset
+      expect(target.modified).to eq(false)
+      expect(target.default_target).not_to eq(new_target)
+      expect(target.default_target).to eq(original_target)
     end
-  end
 
-  it "does not include unsupported targets" do
-    stub_systemd_target do
-      systemd_target.read
-      %w(runlevel80 final).each do |target|
-        systemd_target.targets.keys.wont_include(target)
-      end
-    end
   end
 end

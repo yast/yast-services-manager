@@ -1,15 +1,18 @@
 require 'yast'
 
 module Yast
-  class ServicesManagerClass < Module
-    Yast.import "SystemdTarget"
-    Yast.import "SystemdService"
+  import "SystemdTarget"
+  import "SystemdService"
 
+  class ServicesManagerClass < Module
     TARGET   = 'default_target'
     SERVICES = 'services'
 
+    attr_reader :errors
+
     def initialize
       textdomain 'services-manager'
+      @errors = []
     end
 
     def export
@@ -19,7 +22,7 @@ module Yast
       }
     end
 
-    def import(data)
+    def import data
       SystemdTarget.import  data[TARGET]
       SystemdService.import data[SERVICES]
     end
@@ -37,8 +40,12 @@ module Yast
     # Saves the current configuration
     #
     # @return Boolean if successful
-    def save(params = {})
-      SystemdTarget.save(params) && SystemdService.save(params)
+    def save
+      target_saved = SystemdTarget.save
+      errors << SystemdTarget.errors
+      services_saved = SystemdService.save
+      errors << SystemdService.errors
+      !!(target_saved && services_saved)
     end
 
     # Are there any unsaved changes?

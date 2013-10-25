@@ -1,30 +1,43 @@
+#!/usr/bin/env rspec
+
 require_relative 'test_helper'
 
-include TestHelpers::Manager
+module Yast
+  describe ServicesManager do
+    context "Autoyast API" do
+      it "exports systemd target and services" do
+        services = {'a' => {:enabled=>true}, 'b' => {:enabled=>false}}
+        SystemdService.stub(:services).and_return(services)
+        SystemdTarget.stub(:default_target).and_return('some_target')
 
-describe Yast::ServicesManager do
+        data = Yast::ServicesManager.export
+        expect(data['default_target']).to eq('some_target')
+        expect(data['services']).to eq(['a'])
 
-  it "can manage exporting systemd target and services at once" do
-    stub_manager_with :default_target => 'runlevel-8000', :services => ['a', 'b', 'c'] do
-      data = Yast::ServicesManager.export
+      end
 
-      data[Yast::ServicesManagerClass::TARGET].must_equal default_target
-      data[Yast::ServicesManagerClass::SERVICES].must_equal services
-
-      services.all? do |service|
-        data[Yast::ServicesManagerClass::SERVICES].member?(service)
-      end.must_equal(true)
+      it "imports data for systemd target and services" do
+        data = {
+          'default_target' => 'multi-user',
+          'services'       => ['x', 'y', 'z']
+        }
+        expect(SystemdService).to receive(:import)
+        expect(SystemdTarget).to receive(:import)
+        ServicesManager.import(data)
+      end
     end
-  end
 
-  it "can manage importing of data for systemd target and services" do
-  end
-
-  it "shows summary with default target and registered services" do
-    skip "this belongs to UI test suite"
-    stub_manager_with :default_target => 'runlevel333', :services => ['sshd', 'cups'] do
-      Yast::ServicesManager.summary.must_match default_target
-      services.each {|s| Yast::ServicesManager.summary.must_match s }
+    context "Global public API" do
+      it "has available methods for both target and services" do
+        public_methods = [ :save, :read, :reset ]
+        public_methods.each do |method|
+          SystemdService.stub(method)
+          SystemdTarget.stub(method)
+          expect(SystemdService).to receive(method)
+          expect(SystemdTarget).to  receive(method)
+          ServicesManager.__send__(method)
+        end
+      end
     end
   end
 end
