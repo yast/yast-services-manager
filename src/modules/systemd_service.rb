@@ -3,12 +3,12 @@
   import "Mode"
 
   class SystemdServiceClass < Module
-    SERVICE_UNITS_COMMAND    = 'systemctl list-unit-files --type service'
-    SERVICES_DETAILS_COMMAND = 'systemctl --all --type service'
-    SERVICES_STATUS_COMMAND  = 'systemctl status'
-    COMMAND_OPTIONS          = ' --no-legend --no-pager --no-ask-password '
-    TERM_OPTIONS             = ' LANG=C TERM=dumb COLUMNS=1024 '
-    SERVICE_SUFFIX           = '.service'
+    LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
+    LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
+    STATUS_COMMAND          = 'systemctl status'
+    COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
+    TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
+    SERVICE_SUFFIX          = '.service'
 
     DEFAULT_SERVICE_SETTINGS = {
       :enabled     => false,  # Whether the service has been enabled
@@ -27,8 +27,100 @@
       SUPPORTED_STATES = [ENABLED, DISABLED]
     end
 
+    class ServiceLoader
+      attr_reader :unit_files, :units, :services
+
+      def initialize
+        @services   = {}
+        @unit_files = {}
+        @units      = {}
+        load_unit_files
+        load_units
+      end
+
+      def read
+        update_from_units
+        update_from_unit_files
+        services
+      end
+
+      private
+
+      def list_unit_files
+        command = TERM_OPTIONS + LIST_UNIT_FILES_COMMAND + COMMAND_OPTIONS
+        SCR.Execute(Path.new('.target.bash_output'), command)
+      end
+
+      def list_units
+        command = TERM_OPTIONS + LIST_UNITS_COMMAND + COMMAND_OPTIONS
+        SCR.Execute(Path.new('.target.bash_output'), command)
+      end
+
+      def load_unit_files
+        list_unit_files['stdout'].each_line do |line|
+          service, status = line.split(/[\s]+/)
+          service.chomp! SERVICE_SUFFIX
+          unit_files[service] = status
+        end
+      end
+
+      def load_units
+        list_units['stdout'].each_line do |line|
+          service, status, active, _, *description = line.split(/[\s]+/)
+          service.chomp! SERVICE_SUFFIX
+          units[service] = {
+            :status => status,
+            :active => active == Status::ACTIVE,
+            :description => description.join(' ')
+          }
+        end
+      end
+
+      def supported_units
+        # Remove all units which are other than disabled/enabled in unit files output
+        units.reject do |name, _|
+          unit_files[name] && !Status::SUPPORTED_STATES.member?(unit_files[name])
+        end
+      end
+
+      def clean_units
+        supported_units.reject do |name, attributes|
+          attributes[:status] != Status::LOADED
+        end
+      end
+
+      def clean_unit_files
+        unit_files.select do |name, status|
+          Status::SUPPORTED_STATES.member?(status)
+        end
+      end
+
+      def update_from_unit_files
+        clean_unit_files.each do |name, status|
+          if services[name]
+            services[name][:enabled] = status == Status::ENABLED
+          else
+            services[name] = DEFAULT_SERVICE_SETTINGS.clone
+            services[name][:enabled] = status == Status::ENABLED
+            # TODO
+            # Decide what happens if we have a unit file without any other
+            # details provided from `list-units` command
+          end
+        end
+      end
+
+      def update_from_units
+        clean_units.each do |name, attributes|
+          services[name] = DEFAULT_SERVICE_SETTINGS.clone
+          services[name][:loaded] = attributes[:status] == Status::LOADED
+          services[name][:active] = attributes[:active]
+          services[name][:description] = attributes[:description]
+        end
+      end
+    end
+
     attr_reader   :services, :modified
-    attr_accessor :errors
+    attr_accessor :errors, :services
 
     alias_method :all, :services
 
@@ -124,9 +216,7 @@
     #
     # @return [Hash] map of services
     def read
-      load_services
-      load_services_units
-      services
+      self.services = ServiceLoader.new.read
     end
 
     # Resets the global status of the object
@@ -257,18 +347,6 @@
 
     private
 
-    # Helper method to simplify checking for SCR output and also for
-    # using in methods where the return value is boolean dependend on
-    # the #errors collection
-    #
-    # @param [String] external input
-    # @return [Boolean]
-    def check_errors message=''
-      errors << message unless message.empty?
-      yield
-      errors.empty? ? true : false
-    end
-
     # Helper method to avoid if-else branching
     # When passed a block, this will be executed only if the service exists
     # Whitout block it returns the boolean value
@@ -281,47 +359,6 @@
         yield
       else
         exists
-      end
-    end
-
-    def list_services_units
-      command = TERM_OPTIONS + SERVICE_UNITS_COMMAND + COMMAND_OPTIONS
-      SCR.Execute(path('.target.bash_output'), command)
-    end
-
-    def list_services_details
-      command = TERM_OPTIONS + SERVICES_DETAILS_COMMAND + COMMAND_OPTIONS
-      SCR.Execute(path('.target.bash_output'), command)
-    end
-
-    def load_services
-      command_output = list_services_units
-      check_errors(command_output['stderr']) do
-        command_output['stdout'].each_line do |line|
-          service, status = line.split(/[\s]+/)
-          service.chomp! SERVICE_SUFFIX
-          if Status::SUPPORTED_STATES.member?(status)
-            services[service] = DEFAULT_SERVICE_SETTINGS.clone
-            services[service][:enabled] = status == Status::ENABLED
-          end
-        end
-        Builtins.y2milestone('Services loaded: %1', services.keys)
-      end
-    end
-
-    def load_services_units
-      command_output = list_services_details
-      check_errors(command_output.fetch 'stderr') do
-        command_output['stdout'].each_line do |line|
-          service, loaded, active, _, *description = line.split(/[\s]+/)
-          service.chomp! SERVICE_SUFFIX
-          exists?(service) do
-            services[service][:loaded] = loaded == Status::LOADED
-            services[service][:active] = active == Status::ACTIVE
-            services[service][:description] = description.join(' ')
-          end
-        end
-        Builtins.y2debug("Services details loaded: #{services}")
       end
     end
 
