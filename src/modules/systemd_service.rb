@@ -114,10 +114,9 @@
 
     def initialize
       textdomain 'services-manager'
-      @services = {}
       @errors   = []
       @modified = false
-      read
+      @services = read
     end
 
     # Sets whether service should be running after writing the configuration
@@ -190,7 +189,7 @@
     # Change the global modified status
     # Reverting modified to false also requires to set the flag for all services
     def modified= required_status
-      read if required_status == false
+      reload if required_status == false
       @modified = required_status
     end
 
@@ -200,11 +199,15 @@
       end
     end
 
+    def reload
+      self.services = ServiceLoader.new.read
+    end
+
     # Reads all services' data
     #
     # @return [Hash] map of services
     def read
-      self.services = ServiceLoader.new.read
+      ServiceLoader.new.read
     end
 
     # Resets the global status of the object
