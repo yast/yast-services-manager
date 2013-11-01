@@ -29,6 +29,7 @@
 
     class ServiceLoader
       attr_reader :unit_files, :units, :services
+      attr_reader :supported_unit_files, :supported_units
 
       def initialize
         @services   = {}
@@ -36,11 +37,17 @@
         @units      = {}
         load_unit_files
         load_units
+        @supported_unit_files = unit_files.select do |_, status|
+          Status::SUPPORTED_STATES.member?(status)
+        end
+        @supported_units = units.reject do |name, _|
+          unit_files[name] && !Status::SUPPORTED_STATES.member?(unit_files[name])
+        end.reject { |_, attributes| attributes[:status] != Status::LOADED }
       end
 
       def read
-        update_from_units
-        update_from_unit_files
+        extract_services_from_units
+        extract_services_from_unit_files
         services
       end
 
@@ -76,42 +83,23 @@
         end
       end
 
-      def supported_units
-        # Remove all units which are other than disabled/enabled in unit files output
-        units.reject do |name, _|
-          unit_files[name] && !Status::SUPPORTED_STATES.member?(unit_files[name])
-        end
-      end
-
-      def clean_units
-        supported_units.reject do |name, attributes|
-          attributes[:status] != Status::LOADED
-        end
-      end
-
-      def clean_unit_files
-        unit_files.select do |name, status|
-          Status::SUPPORTED_STATES.member?(status)
-        end
-      end
-
-      def update_from_unit_files
-        clean_unit_files.each do |name, status|
-          if services[name]
-            services[name][:enabled] = status == Status::ENABLED
-          else
-            services[name] = DEFAULT_SERVICE_SETTINGS.clone
-            services[name][:enabled] = status == Status::ENABLED
-            # TODO
-            # Decide what happens if we have a unit file without any other
-            # details provided from `list-units` command
-          end
-        end
-      end
-
-      def update_from_units
-        clean_units.each do |name, attributes|
+      def extract_services_from_unit_files
+        supported_unit_files.each do |name, status|
+          next if services[name]
           services[name] = DEFAULT_SERVICE_SETTINGS.clone
+          services[name][:enabled] = status == Status::ENABLED
+          services[name][:active] = Yast::Service.Status(name).zero?
+        end
+      end
+
+      def extract_services_from_units
+        supported_units.each do |name, attributes|
+          services[name] = DEFAULT_SERVICE_SETTINGS.clone
+          if supported_unit_files[name]
+            services[name][:enabled] =  supported_unit_files[name] == Status::ENABLED
+          else
+            services[name][:enabled] = Yast::Service.Enabled(name)
+          end
           services[name][:loaded] = attributes[:status] == Status::LOADED
           services[name][:active] = attributes[:active]
           services[name][:description] = attributes[:description]
@@ -341,7 +329,7 @@
     # @param String service name
     # @return String full unformatted information
     def status service
-      command = "#{TERM_OPTIONS}#{SERVICES_STATUS_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
+      command = "#{TERM_OPTIONS}#{STATUS_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
       SCR.Execute(path('.target.bash_output'), command)['stdout']
     end
 
