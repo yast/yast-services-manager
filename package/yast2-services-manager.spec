@@ -56,7 +56,7 @@ services and targets.
 %prep
 %setup -n yast2-services-manager
 
-%build
+%check
 # opensuse-13.1 does not contain rspec in default repositories
 %if 0%{?suse_version} > 131
 rspec test/*_test.rb
