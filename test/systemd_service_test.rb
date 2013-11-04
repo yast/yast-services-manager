@@ -14,8 +14,8 @@ module Yast
     end
 
     before do
-      SystemdServiceClass.any_instance
-        .stub(:list_services_units)
+      SystemdServiceClass::ServiceLoader.any_instance
+        .stub(:list_unit_files)
         .and_return({
           'stdout'=> "sshd.service     enabled \n"  +
                      "postfix.service  disabled\n " +
@@ -24,8 +24,8 @@ module Yast
           'stderr' => '',
           'exit'   => 0
         })
-      SystemdServiceClass.any_instance
-        .stub(:list_services_details)
+      SystemdServiceClass::ServiceLoader.any_instance
+        .stub(:list_units)
         .and_return({
           'stdout'=>"sshd.service  loaded active   running OpenSSH Daemon\n" +
                     "postfix.service loaded inactive dead    Postfix Mail Agent\n" +
