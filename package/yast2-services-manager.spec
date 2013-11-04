@@ -40,7 +40,7 @@ BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2 >= 3.0.5
 # Backward compatibility fix for opensuse-13.1
-%if 0%{?suse_version} > 0 && 0%{?suse_version} > 131
+%if 0%{?suse_version} > 1310
 BuildRequires:  rubygem-rspec
 %endif
 
@@ -56,9 +56,9 @@ services and targets.
 %prep
 %setup -n yast2-services-manager
 
-%build
+%check
 # opensuse-13.1 does not contain rspec in default repositories
-%if 0%{?suse_version} > 0 && 0%{?suse_version} > 131
+%if 0%{?suse_version} > 1310
 rspec test/*_test.rb
 %endif
 
