@@ -42,7 +42,8 @@
         end
         @supported_units = units.reject do |name, _|
           unit_files[name] && !Status::SUPPORTED_STATES.member?(unit_files[name])
-        end.reject { |_, attributes| attributes[:status] != Status::LOADED }
+        end
+        supported_units.select! { |_, attributes| attributes[:status] == Status::LOADED }
       end
 
       def read
