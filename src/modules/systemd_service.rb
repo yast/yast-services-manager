@@ -223,7 +223,9 @@
 
     # Returns only enabled services, the rest is expected to be disabled
     def export
-      services.keys.select { |service_name| enabled?(service_name) }
+      exported_services = services.select do |service_name, properties|
+        enabled?(service_name) && properties[:loaded]
+      end.keys
     end
 
     def import imported_services=[]
@@ -242,7 +244,7 @@
           Builtins.y2error("Service #{service} doesn't exist on this system")
         end
       end
-      # All the rest will be disabled
+      # The rest will be disabled
       (services.keys - imported_services).each do |service|
         Builtins.y2milestone("Disabling service #{service}")
         disable(service)

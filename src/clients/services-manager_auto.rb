@@ -18,7 +18,7 @@ module Yast
       end
 
       function = args.shift
-      params   = args
+      params   = args.first
 
       case function
         when 'Change'      then WFM.CallFunction('services-manager')
@@ -43,7 +43,8 @@ module Yast
     def summary_template
       <<-summary
 <h2><%= _('Services Manager') %></h2>
-<p><b><%= _('Default Target') %></b><%= SystemdTarget.export %></p>
+<p><b><%= _('Default Target') %></b></p>
+<p><%= SystemdTarget.export %></p>
 <p><b><%= _('Enabled Services') %></b></p>
 <ul>
 <% SystemdService.export.each do |service| %>

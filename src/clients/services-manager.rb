@@ -7,6 +7,7 @@ class ServicesManagerClient < Yast::Client
   Yast.import "Popup"
   Yast.import "Report"
   Yast.import "Message"
+  Yast.import "Mode"
 
   module Id
     SERVICES_TABLE = :services_table
@@ -22,7 +23,7 @@ class ServicesManagerClient < Yast::Client
     success = false
     while true
       if  main_dialog == :next
-        success = save
+        Mode.config ? success = true : success = save
         break if success
       else
         break
@@ -74,7 +75,7 @@ class ServicesManagerClient < Yast::Client
       # FIXME if user select to continue the content of the popup is not discarded
       # and new error messages will be displayed beneath the old ones
       success = ! Popup::ContinueCancel(
-        _("Writing of the configuration have failed.\n" +
+        _("Writing the configuration failed:\n" +
         ServicesManager.errors.join("\n")            +
         "\nWould you like to continue editing?")
       )
