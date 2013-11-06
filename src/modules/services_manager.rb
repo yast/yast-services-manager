@@ -49,7 +49,7 @@ module Yast
     end
 
     # Are there any unsaved changes?
-    def modified?
+    def modified
       SystemdTarget.modified || SystemdService.modified
     end
 
@@ -61,7 +61,7 @@ module Yast
 
     publish({:function => :export,      :type => "map <string, any> ()"          })
     publish({:function => :import,      :type => "boolean ()"                    })
-    publish({:function => :modified?,   :type => "boolean ()"                    })
+    publish({:function => :modified,   :type => "boolean ()"                    })
     publish({:function => :modified=,   :type => "boolean (boolean)"             })
     publish({:function => :read,        :type => "void ()"                       })
     publish({:function => :reset,       :type => "void ()"                       })
