@@ -29,6 +29,8 @@ module Yast
         when 'Write'       then ServicesManager.save
         when 'Reset'       then ServicesManager.reset
         when 'Packages'    then {}
+        when 'GetModified' then ServicesManager.modified?
+        when 'SetModified' then ServicesManager.modified = true
         else
           Builtins.y2error("Unknown Autoyast command: #{function}, params: #{params}")
       end
@@ -37,7 +39,9 @@ module Yast
     private
 
     def auto_summary
-      ERB.new(summary_template).result(binding)
+      result = ERB.new(summary_template).result(binding)
+      Builtins.y2milestone "Returning summary: #{result}"
+      result
     end
 
     def summary_template

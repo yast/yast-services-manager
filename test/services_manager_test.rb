@@ -29,7 +29,7 @@ module Yast
 
     context "Global public API" do
       it "has available methods for both target and services" do
-        public_methods = [ :save, :read, :reset ]
+        public_methods = [ :save, :read, :reset, :modified=, :modified? ]
         public_methods.each do |method|
           SystemdService.stub(method)
           SystemdTarget.stub(method)

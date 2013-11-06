@@ -225,7 +225,6 @@ class ServicesManagerClient < Yast::Client
     UI.SetFocus(Id(Id::SERVICES_TABLE))
     true
   end
-
 end
 
 ServicesManagerClient.new.main

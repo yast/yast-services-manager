@@ -233,11 +233,11 @@
         Builtins.y2error("No data for import provided.")
         return false
       end
+      Builtins.y2milestone("Imported services: #{imported_services}")
       non_existent_services = []
       # All imported will be enabled
       imported_services.each do |service|
         if exists?(service)
-          Builtins.y2milestone("Enabling service #{service}")
           enable(service)
         else
           non_existent_services << service
@@ -246,7 +246,6 @@
       end
       # The rest will be disabled
       (services.keys - imported_services).each do |service|
-        Builtins.y2milestone("Disabling service #{service}")
         disable(service)
       end
       non_existent_services.empty?
