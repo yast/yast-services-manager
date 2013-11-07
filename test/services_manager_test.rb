@@ -14,7 +14,6 @@ module Yast
         SystemdTarget.stub(:default_target).and_return('some_target')
 
         data = Yast::ServicesManager.export
-        puts data
         expect(data['default_target']).to eq('some_target')
         expect(data['services']).to eq(['a'])
 
