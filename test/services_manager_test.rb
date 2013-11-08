@@ -6,7 +6,10 @@ module Yast
   describe ServicesManager do
     context "Autoyast API" do
       it "exports systemd target and services" do
-        services = {'a' => {:enabled=>true}, 'b' => {:enabled=>false}}
+        services = {
+          'a' => {:enabled=>true, :loaded=>true},
+          'b' => {:enabled=>false, :loaded=>true}
+        }
         SystemdService.stub(:services).and_return(services)
         SystemdTarget.stub(:default_target).and_return('some_target')
 
@@ -29,7 +32,7 @@ module Yast
 
     context "Global public API" do
       it "has available methods for both target and services" do
-        public_methods = [ :save, :read, :reset ]
+        public_methods = [ :save, :read, :reset, :modified ]
         public_methods.each do |method|
           SystemdService.stub(method)
           SystemdTarget.stub(method)
@@ -37,6 +40,12 @@ module Yast
           expect(SystemdTarget).to  receive(method)
           ServicesManager.__send__(method)
         end
+
+        SystemdService.stub(:modified=)
+        SystemdTarget.stub(:modified=)
+        expect(SystemdService).to receive(:modified=).with(true)
+        expect(SystemdTarget).to receive(:modified=).with(true)
+        ServicesManager.__send__(:modify)
       end
     end
   end

@@ -18,7 +18,7 @@ module Yast
       end
 
       function = args.shift
-      params   = args
+      params   = args.first
 
       case function
         when 'Change'      then WFM.CallFunction('services-manager')
@@ -29,6 +29,8 @@ module Yast
         when 'Write'       then ServicesManager.save
         when 'Reset'       then ServicesManager.reset
         when 'Packages'    then {}
+        when 'GetModified' then ServicesManager.modified?
+        when 'SetModified' then ServicesManager.modify
         else
           Builtins.y2error("Unknown Autoyast command: #{function}, params: #{params}")
       end
@@ -37,17 +39,20 @@ module Yast
     private
 
     def auto_summary
-      ERB.new(summary_template).result(binding)
+      result = ERB.new(summary_template).result(binding)
+      Builtins.y2milestone "Returning summary: #{result}"
+      result
     end
 
     def summary_template
       <<-summary
 <h2><%= _('Services Manager') %></h2>
-<p><b><%= _('Default Target') %></b><%= SystemdTarget.export %></p>
+<p><b><%= _('Default Target') %></b></p>
+<p><%= ERB::Util.html_escape SystemdTarget.export %></p>
 <p><b><%= _('Enabled Services') %></b></p>
 <ul>
 <% SystemdService.export.each do |service| %>
-  <li><%= service %></li>
+  <li><%= ERB::Util.html_escape service %></li>
 <% end %>
 </ul>
       summary
