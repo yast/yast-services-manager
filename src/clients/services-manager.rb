@@ -23,7 +23,7 @@ class ServicesManagerClient < Yast::Client
     success = false
     while true
       if  main_dialog == :next
-        Mode.config ? success = true : success = save
+        success = Mode.config || save
         break if success
       else
         break

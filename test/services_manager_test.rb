@@ -32,14 +32,20 @@ module Yast
 
     context "Global public API" do
       it "has available methods for both target and services" do
-        public_methods = [ :save, :read, :reset, :modified, :modified= ]
+        public_methods = [ :save, :read, :reset, :modified ]
         public_methods.each do |method|
           SystemdService.stub(method)
           SystemdTarget.stub(method)
           expect(SystemdService).to receive(method)
           expect(SystemdTarget).to  receive(method)
-          method == :modified= ? ServicesManager.__send__(method, true) : ServicesManager.__send__(method)
+          ServicesManager.__send__(method)
         end
+
+        SystemdService.stub(:modified=)
+        SystemdTarget.stub(:modified=)
+        expect(SystemdService).to receive(:modified=).with(true)
+        expect(SystemdTarget).to receive(:modified=).with(false)
+        ServicesManager.__send__(:modify)
       end
     end
   end

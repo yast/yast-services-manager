@@ -225,7 +225,8 @@
     def export
       exported_services = services.select do |service_name, properties|
         enabled?(service_name) && properties[:loaded]
-      end.keys
+      end
+      exported_services.keys
     end
 
     def import imported_services=[]

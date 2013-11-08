@@ -30,7 +30,7 @@ module Yast
         when 'Reset'       then ServicesManager.reset
         when 'Packages'    then {}
         when 'GetModified' then ServicesManager.modified?
-        when 'SetModified' then ServicesManager.modified = true
+        when 'SetModified' then ServicesManager.modify
         else
           Builtins.y2error("Unknown Autoyast command: #{function}, params: #{params}")
       end
@@ -48,11 +48,11 @@ module Yast
       <<-summary
 <h2><%= _('Services Manager') %></h2>
 <p><b><%= _('Default Target') %></b></p>
-<p><%= SystemdTarget.export %></p>
+<p><%= ERB::Util.html_escape SystemdTarget.export %></p>
 <p><b><%= _('Enabled Services') %></b></p>
 <ul>
 <% SystemdService.export.each do |service| %>
-  <li><%= service %></li>
+  <li><%= ERB::Util.html_escape service %></li>
 <% end %>
 </ul>
       summary
