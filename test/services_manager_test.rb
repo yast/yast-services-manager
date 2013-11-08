@@ -44,7 +44,7 @@ module Yast
         SystemdService.stub(:modified=)
         SystemdTarget.stub(:modified=)
         expect(SystemdService).to receive(:modified=).with(true)
-        expect(SystemdTarget).to receive(:modified=).with(false)
+        expect(SystemdTarget).to receive(:modified=).with(true)
         ServicesManager.__send__(:modify)
       end
     end

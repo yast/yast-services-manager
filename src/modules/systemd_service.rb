@@ -226,6 +226,7 @@
       exported_services = services.select do |service_name, properties|
         enabled?(service_name) && properties[:loaded]
       end
+      Builtins.y2milestone("Exported services: #{exported_services.keys}")
       exported_services.keys
     end
 
