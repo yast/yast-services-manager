@@ -19,6 +19,11 @@ module Yast
       LOADED    = 'loaded'
     end
 
+    module BaseTargets
+      GRAPHICAL = 'graphical'
+      MULTIUSER = 'multi-user'
+    end
+
     attr_accessor :modified, :targets
     attr_reader   :errors, :default_target
 
