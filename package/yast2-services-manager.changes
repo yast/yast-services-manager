@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Nov 11 11:13:12 UTC 2013 - vmoravec@suse.com
+
+- 0.0.13
+- group base target constants for better referencing from
+  withing other modules and clients
+
+-------------------------------------------------------------------
 Wed Nov  6 16:49:42 UTC 2013 - vmoravec@suse.com
 
 - 0.0.12
