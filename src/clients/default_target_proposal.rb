@@ -11,9 +11,10 @@ module Yast
   import 'Wizard'
 
   class TargetProposal < Client
+
     module Target
-      GRAPHICAL = 'graphical'
-      MULTIUSER = 'multi-user'
+      include SystemdTargetClass::BaseTargets
+
       SUPPORTED = [ GRAPHICAL, MULTIUSER ]
     end
 
