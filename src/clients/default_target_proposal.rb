@@ -7,7 +7,7 @@ module Yast
   import 'Pkg'
   import "Popup"
   import 'ProductFeatures'
-  import 'ServicesManager'
+  import 'SystemdTarget'
   import 'Wizard'
 
   class TargetProposal < Client
@@ -63,13 +63,12 @@ module Yast
       include Warnings
       include UIElements
 
-      attr_accessor :dialog, :available_targets
+      attr_accessor :dialog
+      attr_reader   :available_targets
 
       def initialize
         textdomain 'services-manager'
-        self.available_targets = SystemdTarget.targets.keys.select do |target|
-          Target::SUPPORTED.include?(target)
-        end
+        @available_targets = Target::SUPPORTED
       end
 
       def show
@@ -164,7 +163,7 @@ module Yast
 
       def initialize
         textdomain 'services-manager'
-        self.default_target = ProductFeatures.GetFeature('globals', 'runlevel')
+        self.default_target = ProductFeatures.GetFeature('globals', 'default_target')
         change_default_target
         detect_warnings(default_target)
       end

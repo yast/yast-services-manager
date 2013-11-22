@@ -33,7 +33,7 @@ module Yast
       textdomain 'services-manager'
       @errors  = []
       @targets = {}
-      read_targets
+      read_targets if Mode.normal
     end
 
     def read_targets
