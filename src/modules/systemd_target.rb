@@ -1,6 +1,8 @@
 require "yast"
 
 module Yast
+  import 'Mode'
+
   class SystemdTargetClass < Module
     LIST_UNITS_COMMAND   = 'systemctl list-unit-files --type target'
     LIST_TARGETS_COMMAND = 'systemctl --all --type target'
