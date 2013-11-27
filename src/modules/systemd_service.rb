@@ -149,9 +149,11 @@
     #
     # @param String service name
     # @return Boolean running
-    def active? service
+    def active service
       exists?(service) { services[service][:active] }
     end
+
+    alias_method :active?, :active
 
     # Enables a given service (in memory only, use save() later)
     #
@@ -181,7 +183,7 @@
     #
     # @param String service
     # @return Boolean enabled
-    def enabled? service
+    def enabled service
       exists?(service) do
         services[service][:enabled]
       end
@@ -224,7 +226,7 @@
     # Returns only enabled services, the rest is expected to be disabled
     def export
       exported_services = services.select do |service_name, properties|
-        enabled?(service_name) && properties[:loaded]
+        enabled(service_name) && properties[:loaded]
       end
       Builtins.y2milestone("Exported services: #{exported_services.keys}")
       exported_services.keys
@@ -296,7 +298,7 @@
     # @param [String] service name
     # @return [Boolean]
     def switch service
-      active?(service) ? deactivate(service) : activate(service)
+      active(service) ? deactivate(service) : activate(service)
     end
 
     # Starts or stops the service
@@ -304,7 +306,7 @@
     # @param [String] service name
     # @return [Boolean]
     def switch! service_name
-      if active?(service_name)
+      if active(service_name)
         Yast::Service.Start(service_name)
       else
         Yast::Service.Stop(service_name)
@@ -320,7 +322,7 @@
     # @param [String] service name
     # @return [Boolean]
     def toggle service
-      enabled?(service) ? disable(service) : enable(service)
+      enabled(service) ? disable(service) : enable(service)
     end
 
     # Enable or disable the service
@@ -328,7 +330,7 @@
     # @param [String] service name
     # @return [Boolean]
     def toggle! service
-      enabled?(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
+      enabled(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
     end
 
     # Returns full information about the service as returned from systemctl command
@@ -365,8 +367,8 @@
         if switch!(service_name)
           services_switched << service_name
         else
-          change  = active?(service_name) ? 'stop' : 'start'
-          status  = enabled?(service_name) ? 'enabled' : 'disabled'
+          change  = active(service_name) ? 'stop' : 'start'
+          status  = enabled(service_name) ? 'enabled' : 'disabled'
           message = _("Could not %{change} %{service} which is currently %{status}. ") %
             { :change => change, :service => service_name, :status => status }
           message << status(service_name)
@@ -384,7 +386,7 @@
         if toggle! service_name
           services_toggled << service_name
         else
-          change  = enabled?(service_name) ? 'enable' : 'disable'
+          change  = enabled(service_name) ? 'enable' : 'disable'
           message = _("Could not %{change} %{service}. ") %
             { :change => change, :service => service_name }
           message << status(service_name)
@@ -395,15 +397,15 @@
       services_toggled
     end
 
-    publish({:function => :active?,   :type => "boolean ()"           })
+    publish({:function => :active,    :type => "boolean ()"           })
     publish({:function => :activate,  :type => "string (boolean)"     })
     publish({:function => :all,       :type => "map <string, map> ()" })
     publish({:function => :disable,   :type => "string (boolean)"     })
     publish({:function => :enable,    :type => "string (boolean)"     })
-    publish({:function => :enabled?,  :type => "boolean ()"           })
+    publish({:function => :enabled,   :type => "boolean ()"           })
     publish({:function => :errors,    :type => "list ()"              })
-    publish({:function => :export,    :type => "list <string>"        })
-    publish({:function => :import,    :type => "boolean ()"           })
+    publish({:function => :export,    :type => "list <string> ()"     })
+    publish({:function => :import,    :type => "boolean (list <string>)" })
     publish({:function => :modified,  :type => "boolean ()"           })
     publish({:function => :modified=, :type => "boolean (boolean)"    })
     publish({:function => :read,      :type => "map <string, map> ()" })
