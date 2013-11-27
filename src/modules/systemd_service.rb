@@ -153,6 +153,8 @@
       exists?(service) { services[service][:active] }
     end
 
+    alias_method :active?, :active
+
     # Enables a given service (in memory only, use save() later)
     #
     # @param String service name
