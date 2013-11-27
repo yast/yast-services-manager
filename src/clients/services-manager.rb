@@ -140,7 +140,7 @@ class ServicesManagerClient < Yast::Client
   end
 
   def redraw_service(service)
-    enabled = SystemdService.enabled?(service)
+    enabled = SystemdService.enabled(service)
 
     UI.ChangeWidget(
       Id(Id::SERVICES_TABLE),
@@ -148,7 +148,7 @@ class ServicesManagerClient < Yast::Client
       (enabled ? _('Enabled') : _('Disabled'))
     )
 
-    running = SystemdService.active?(service)
+    running = SystemdService.active(service)
 
     # The current state matches the futural state
     if (enabled == running)
