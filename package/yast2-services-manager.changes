@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Nov 27 12:50:10 UTC 2013 - vmoravec@suse.com
+
+- 0.0.18
+- remove dependency on ruby 2.0
+
+-------------------------------------------------------------------
 Wed Nov 27 10:13:56 UTC 2013 - vmoravec@suse.com
 
 - fix publishing export method in SystemdService module
