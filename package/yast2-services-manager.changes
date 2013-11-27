@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Nov 27 10:13:56 UTC 2013 - vmoravec@suse.com
+
+- fix publishing export method in SystemdService module
+- 0.0.17
+
+-------------------------------------------------------------------
 Tue Nov 26 07:43:18 UTC 2013 - vmoravec@suse.cz
 
 - fix missing dependency on Mode module
