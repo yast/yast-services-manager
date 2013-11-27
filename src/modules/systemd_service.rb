@@ -402,7 +402,7 @@
     publish({:function => :enable,    :type => "string (boolean)"     })
     publish({:function => :enabled?,  :type => "boolean ()"           })
     publish({:function => :errors,    :type => "list ()"              })
-    publish({:function => :export,    :type => "list <string>"        })
+    publish({:function => :export,    :type => "list ()"              })
     publish({:function => :import,    :type => "boolean ()"           })
     publish({:function => :modified,  :type => "boolean ()"           })
     publish({:function => :modified=, :type => "boolean (boolean)"    })
