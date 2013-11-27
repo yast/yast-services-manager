@@ -24,14 +24,14 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        0.0.17
+Version:        0.0.18
 Release:        0
 BuildArch:      noarch
 
 BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}.tar.bz2
 
-Requires:       ruby >= 2.0
+Requires:       ruby
 Requires:       yast2 >= 3.0.5
 Requires:       yast2-ruby-bindings >= 1.2.0
 
