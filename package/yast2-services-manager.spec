@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        0.0.19
+Version:        0.0.20
 Release:        0
 BuildArch:      noarch
 
@@ -56,7 +56,7 @@ Provides user interface and libraries to configure systemd
 services and targets.
 
 %prep
-%setup -n yast2-services-manager
+%setup -n %{name}-%{version}
 
 %check
 # opensuse-13.1 does not contain rspec in default repositories
