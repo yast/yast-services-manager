@@ -53,6 +53,8 @@ module Yast
       SystemdTarget.modified || SystemdService.modified
     end
 
+    alias_method :modified?, :modified
+
     def modify
       SystemdTarget.modified = true
       SystemdService.modified = true

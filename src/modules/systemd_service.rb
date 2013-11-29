@@ -112,6 +112,7 @@
     attr_accessor :errors, :services
 
     alias_method :all, :services
+    alias_method :modified?, :modified
 
     def initialize
       textdomain 'services-manager'

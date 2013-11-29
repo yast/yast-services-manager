@@ -51,7 +51,9 @@ module Yast
     end
 
     def default_target= new_default
-      errors << _("Target #{new_default} not found") unless targets.keys.include?(new_default)
+      if Mode.normal
+        errors << _("Target #{new_default} not found") unless targets.keys.include?(new_default)
+      end
       @default_target = new_default
       self.modified = true
     end
@@ -81,6 +83,7 @@ module Yast
       end
 
       if !valid?
+        Builtins.y2error(errors.map('; '))
         Builtins.y2error("Invalid default target '#{default_target}'; aborting saving")
         return false
       end
