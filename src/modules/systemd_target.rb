@@ -83,7 +83,7 @@ module Yast
       end
 
       if !valid?
-        Builtins.y2error(errors.map('; '))
+        errors.each {|e| Builtins.y2error(e) }
         Builtins.y2error("Invalid default target '#{default_target}'; aborting saving")
         return false
       end
