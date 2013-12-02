@@ -56,6 +56,8 @@ module Yast
       end
       @default_target = new_default
       self.modified = true
+      Builtins.y2milestone "New default target set: #{new_default}"
+      new_default
     end
 
     def export

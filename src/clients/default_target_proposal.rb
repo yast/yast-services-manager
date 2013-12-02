@@ -179,6 +179,7 @@ module Yast
       private
 
       def change_default_target
+        return  self.default_target = SystemdTarget.default_target if SystemdTarget.default_target
         detect_target unless Mode.autoinst
         SystemdTarget.default_target = self.default_target
       end
@@ -196,6 +197,8 @@ module Yast
         elsif Linuxrc.vnc
           self.default_target = Target::GRAPHICAL
         elsif Linuxrc.usessh
+          self.default_target = Target::MULTIUSER
+        else
           self.default_target = Target::MULTIUSER
         end
       end
