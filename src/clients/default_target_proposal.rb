@@ -180,6 +180,7 @@ module Yast
 
       def change_default_target
         return  self.default_target = SystemdTarget.default_target if SystemdTarget.default_target
+
         detect_target unless Mode.autoinst
         SystemdTarget.default_target = self.default_target
       end
