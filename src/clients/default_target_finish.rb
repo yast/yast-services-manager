@@ -4,7 +4,10 @@ module Yast
   import 'SystemdTarget'
 
   class SystemdTargetFinish < Client
-    MULTIUSER = 'multi-user'
+
+    module Target
+      include SystemdTargetClass::BaseTargets
+    end
 
     def initialize
       textdomain 'services-manager'
@@ -33,7 +36,7 @@ module Yast
       if Mode.update
         Builtins.y2milestone "Update mode, no need to set systemd target again.."
       else
-        SystemdTarget.default_target = MULTIUSER if SystemdTarget.default_target.empty?
+        SystemdTarget.default_target = Target::MULTIUSER if SystemdTarget.default_target.empty?
         Builtins.y2milestone "Setting default target to #{SystemdTarget.default_target}"
         SystemdTarget.save
       end
