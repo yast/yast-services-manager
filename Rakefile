@@ -17,14 +17,14 @@ DOCDIR = "/usr/share/doc/packages/#{PACKAGE_NAME}/"
 #   key -> files/dirs (if mentioned, they are in resulting package)
 #   val -> where they are installed (nil == not installed)
 FILES = {
-  'Rakefile'     => nil,
-  'src/clients'  => File.join(YAST_DIR, 'clients'),
-  'src/modules'  => File.join(YAST_DIR, 'modules'),
-  'src/desktop'  => YAST_DESKTOP,
+  'Rakefile'                 => nil,
+  'src/clients'              => File.join(YAST_DIR, 'clients'),
+  'src/modules'              => File.join(YAST_DIR, 'modules'),
+  'src/desktop'              => YAST_DESKTOP,
   'src/lib/services-manager' => File.join(YAST_DIR, "lib/services-manager/"),
-  'test'         => nil,
-  'config'       => RNC_DESTINATION,
-  'COPYING'      => DOCDIR
+  'test'                     => nil,
+  'src/autoyast_rnc'         => RNC_DESTINATION,
+  'COPYING'                  => DOCDIR
 }
 
 Rake::TaskManager.record_task_metadata = true
