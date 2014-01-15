@@ -60,6 +60,8 @@ services and targets.
 %prep
 %setup -n %{name}-%{version}
 
+%build
+
 %check
 # opensuse-13.1 does not contain rspec in default repositories
 %if 0%{?suse_version} > 1310
