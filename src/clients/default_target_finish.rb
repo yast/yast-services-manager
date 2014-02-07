@@ -32,18 +32,14 @@ module Yast
         'steps' => 1,
         'title' => _('Saving default systemd target...'),
         'when'  => minimal_inst ? [] :
-          [ :installation, :live_installation, :update, :autoinst ]
+          [ :installation, :live_installation, :autoinst ]
       }
     end
 
     def write
-      if Mode.update
-        Builtins.y2milestone "Update mode, no need to set systemd target again.."
-      else
-        SystemdTarget.default_target = Target::MULTIUSER if SystemdTarget.default_target.empty?
-        Builtins.y2milestone "Setting default target to #{SystemdTarget.default_target}"
-        SystemdTarget.save
-      end
+      SystemdTarget.default_target = Target::MULTIUSER if SystemdTarget.default_target.empty?
+      Builtins.y2milestone "Setting default target to #{SystemdTarget.default_target}"
+      SystemdTarget.save
     end
   end
   SystemdTargetFinish.new.call(WFM.Args)
