@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Feb  7 15:02:19 UTC 2014 - jreidinger@suse.com
+
+- support minimal installation (FATE#313149)
+- 0.0.23
+
+-------------------------------------------------------------------
 Tue Jan  7 17:01:45 CET 2014 - locilka@suse.com
 
 - Reusing already defined constant in SystemdTarget instead of
