@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        0.0.23
+Version:        0.0.24
 Release:        0
 BuildArch:      noarch
 
@@ -34,6 +34,8 @@ Source0:        %{name}-%{version}.tar.bz2
 Requires:       ruby
 Requires:       yast2 >= 3.0.5
 Requires:       yast2-ruby-bindings >= 1.2.0
+# need new enough installation for its inst clients
+Conflicts:      yast2-installation < 3.1.32
 
 Obsoletes:      yast2-runlevel
 
