@@ -27,7 +27,7 @@ module Yast
     end
 
     def info
-      minimal_inst = Installation::MinimalInstallation.instance.enabled?
+      minimal_inst = ::Installation::MinimalInstallation.instance.enabled?
       {
         'steps' => 1,
         'title' => _('Saving default systemd target...'),
