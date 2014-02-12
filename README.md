@@ -1,20 +1,9 @@
-About
-=====
-YaST Runlevel written in Ruby.
+# Yast Services Manager
+
+Systemd target and services configuration library for Yast
 
 Running
 =======
 
-    sudo rake install
     sudo yast2 services-manager
 
-Running Tasks
-=============
-
-    rake test
-    rake package
-
-Todo
-====
-- Use Classes/Struct and OOP instead of Hashes
-- Documentation (probably yard)
