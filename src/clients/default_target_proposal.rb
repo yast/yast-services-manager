@@ -205,6 +205,9 @@ module Yast
       end
 
     end
-  end
+  # clients are always re-evaluated, so avoid redefine of class otherwise
+  # constant redefine warning happen
+  end unless defined? :TargetProposal
+
   TargetProposal.new.call(WFM.Args)
 end
