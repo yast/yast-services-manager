@@ -8,7 +8,8 @@ module Yast
     ENV_VARS        = " LANG=C TERM=dumb COLUMNS=1024 "
     SYSTEMCTL       = ENV_VARS + CONTROL + COMMAND_OPTIONS
 
-    SUPPORTED_TYPES = [ :service, :socket, :target ]
+    SUPPORTED_TYPES  = [ :service, :socket, :target ]
+    SUPPORTED_STATES = [ "enabled", "disabled" ]
 
     def self.list_unit_files type: nil
       command = SYSTEMCTL + "list-unit-files"
@@ -75,26 +76,27 @@ module Yast
         description:  "Description",
         load_state:   "LoadState",
         active_state: "ActiveState",
-        sub_state:    "SubState"
+        sub_state:    "SubState",
+        unit_file_state: "UnitFileState"
       }
 
 
       def initialize unit_name, properties
         properties.merge!(DEFAULT_PROPERTIES)
         self.scr = systemctl_show(unit_name, properties)
-        properties.each do |name, property|
-          self[name] = extract(property)
-        end
-        self.active  = active_state == 'active'
-        self.running = sub_state == 'running'
-        self.loaded  = load_state == 'loaded'
-        self.not_found = load_state == 'not_found'
+        properties.each {|name, property| self[name] = extract(property) }
+        self.active    = active_state == 'active'
+        self.running   = sub_state    == 'running'
+        self.loaded    = load_state   == 'loaded'
+        self.not_found = load_state   == 'not-found'
+        self.enabled   = unit_file_state == 'enabled'
       end
 
-      alias_method :active?,   :active
-      alias_method :running?,  :running
+      alias_method :active?,    :active
+      alias_method :running?,   :running
       alias_method :loaded?,    :loaded
       alias_method :not_found?, :not_found
+      alias_method :enabled?,   :enabled
 
       private
 

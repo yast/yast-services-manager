@@ -1,5 +1,5 @@
 module Yast
-  module DeferSystemctl
+  module DeferredExecution
     attr_reader :actions
     attr_accessor :modified
 
@@ -23,7 +23,7 @@ module Yast
       true
     end
 
-    def run_deferred
+    def execute_deferred
       return unless modified?
       blocks_called = actions.map do |block|
         block.call
