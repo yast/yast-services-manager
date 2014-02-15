@@ -1,27 +1,37 @@
 module Yast
   module DeferSystemctl
+    attr_reader :actions
+    attr_accessor :modified
+
+    alias_method :modified?, :modified
+
     def initialize
       @modified = false
       @actions  = []
     end
 
-    def modified?
-      @modified
+    def defer &block
+      raise "Mandatory block missing" unless block_given?
+
+      actions << block
+      self.modified = true
     end
 
-    def defer action
-      @actions << action
-      @modified = true
+    def reset
+      actions.clear
+      self.modified = false
+      true
     end
 
     def run_deferred
-      actions_done = []
-      @actions.each do |action|
-        send(action)
-        actions_done << action
+      return unless modified?
+      blocks_called = actions.map do |block|
+        block.call
+        block
       end
     ensure
-      @actions -= actions_done
+      actions -= blocks_called
+      self.modified = false if actions.empty?
     end
   end
 end

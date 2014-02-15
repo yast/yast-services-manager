@@ -8,20 +8,30 @@ module Yast
 
     def find socket_name
       socket_name += UNIT_SUFFIX unless socket_name.match(/#{UNIT_SUFFIX}$/)
-      @socket = Socket.new(socket_name)
+      socket = Socket.new(socket_name)
+      return if socket.not_found?
+      socket
+    end
+
+    def all
+      #
     end
 
     class Socket
       include DeferSystemctl
       extend  Forwardable
 
-      def_delegators :@properties, :id, :description, :load_state, :active_state
+      def_delegators :@properties, :id, :pid, :description, :loaded?, :active?, :not_found?
 
       def_delegators :@systemctl, :status, :start, :stop, :enable, :disable
 
       def initialize socket_name
         @systemctl = Systemctl.new(name: socket_name, type: :socket)
-        @properties = systemctl.show(socket_name)
+        @properties = systemctl.properties(socket_name)
+      end
+
+      def save
+        run_deferred
       end
     end
   end

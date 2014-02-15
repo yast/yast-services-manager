@@ -39,12 +39,14 @@ module Yast
       @unit_type = type
     end
 
-    def show unit_name
-      Properties.new(scr_execute(SYSTEMCTL + "show " + unit_name))
+    def show unit_name, properties={}
+      Properties.new(unit_name, properties)
     end
 
+    alias_method :properties, :show
+
     def status unit_name
-      Status.new(scr_execute(SYSTEMCTL + "status " + unit_name))
+      scr_execute(SYSTEMCTL + "status " + unit_name + " 2&>1").stdout
     end
 
     def start
@@ -65,33 +67,45 @@ module Yast
       self.class.scr_execute(command)
     end
 
+    class Properties < OpenStruct
 
-    class Properties
-      attr_reader :scr
-      attr_reader :id, :description, :load_state, :active_state, :sub_state, :unit_path,
-                  :unit_state, :pid, :config_file
+      DEFAULT_PROPERTIES = {
+        id:           "Id",
+        pid:          "MainPID",
+        description:  "Description",
+        load_state:   "LoadState",
+        active_state: "ActiveState",
+        sub_state:    "SubState"
+      }
 
-      def initialize scr
-        @scr = scr
-        @id = extract_property('Id')
-        @description = extract_property('Description')
-        @load_state = extract_property('LoadState')
-        @active_state = extract_property('ActiveState')
-        @sub_state = extract_property('SubState')
+
+      def initialize unit_name, properties
+        properties.merge!(DEFAULT_PROPERTIES)
+        self.scr = systemctl_show(unit_name, properties)
+        properties.each do |name, property|
+          self[name] = extract(property)
+        end
+        self.active  = active_state == 'active'
+        self.running = sub_state == 'running'
+        self.loaded  = load_state == 'loaded'
+        self.not_found = load_state == 'not_found'
       end
+
+      alias_method :active?,   :active
+      alias_method :running?,  :running
+      alias_method :loaded?,    :loaded
+      alias_method :not_found?, :not_found
 
       private
 
-      def extract_property property_name
-        scr.stdout.scan(/#{property_name}=(.+)/).flatten.first
+      def systemctl_show unit_name, properties
+        command = SYSTEMCTL + "show " + unit_name
+        command += properties.values.map {|p| command += " --property=#{p} "}.join
+        Systemctl.scr_execute(command)
       end
-    end
 
-    class Status
-      attr_reader :scr
-
-      def initialize scr
-        @scr = scr
+      def extract property_name
+        scr.stdout.scan(/#{property_name}=(.+)/).flatten.first
       end
     end
   end
