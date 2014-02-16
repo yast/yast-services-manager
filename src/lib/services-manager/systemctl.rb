@@ -31,7 +31,7 @@ module Yast
       OpenStruct.new(SCR.Execute(Path.new('.target.bash_output'), command))
     end
 
-    attr_reader :unit_name, :type
+    attr_reader :unit_name, :unit_type
 
     def initialize name: nil, type: nil
       raise "Unsupported unit: #{type}" unless SUPPORTED_TYPES.member?(type)
@@ -40,11 +40,9 @@ module Yast
       @unit_type = type
     end
 
-    def show unit_name, properties={}
+    def show properties={}
       Properties.new(unit_name, properties)
     end
-
-    alias_method :properties, :show
 
     def status unit_name
       scr_execute(SYSTEMCTL + "status " + unit_name + " 2&>1").stdout
