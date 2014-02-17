@@ -19,7 +19,7 @@ module Yast
     class Socket
       extend  Forwardable
 
-      def_delegators :@systemctl, :start, :stop, :enable, :disable
+      def_delegators :@systemctl, :properties, :start, :stop, :enable, :disable
 
       attr_reader :systemctl
 
@@ -28,23 +28,23 @@ module Yast
       end
 
       def active?
-        systemctl.properties.active?
+        properties.active?
       end
 
       def enabled?
-        systemctl.properties.enabled?
+        properties.enabled?
       end
 
       def description
-        systemctl.properties.description
+        properties.description
       end
 
       def status
-        systemctl.properties.status
+        properties.status
       end
 
       def listening?
-        systemctl.properties.sub_state == "listening"
+        properties.sub_state == "listening"
       end
     end
   end
