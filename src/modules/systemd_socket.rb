@@ -1,5 +1,4 @@
 require 'services-manager/systemctl'
-require 'services-manager/defer_systemctl'
 require 'forwardable'
 
 module Yast
@@ -9,7 +8,7 @@ module Yast
     def find socket_name, properties={}
       socket_name += UNIT_SUFFIX unless socket_name.match(/#{UNIT_SUFFIX}$/)
       socket = Socket.new(socket_name, properties)
-      return if socket.properties.not_found?
+      return if socket.systemctl.properties.not_found?
       socket
     end
 
@@ -18,24 +17,34 @@ module Yast
     end
 
     class Socket
-      include DeferredExecution
       extend  Forwardable
 
-      def_delegators :@properties, :id, :pid, :description, :loaded?, :active?, :enabled?
+      def_delegators :@systemctl, :start, :stop, :enable, :disable
 
-      def_delegators :@systemctl, :status, :start, :stop, :enable, :disable
+      attr_reader :systemctl
 
-      def initialize socket_name, custom_properties
-        @systemctl = Systemctl.new(name: socket_name, type: :socket)
-        @properties = systemctl.show(custom_properties)
+      def initialize socket_name, properties
+        @systemctl = Systemctl.new(name: socket_name, type: :socket, properties: properties)
+      end
+
+      def active?
+        systemctl.properties.active?
+      end
+
+      def enabled?
+        systemctl.properties.enabled?
+      end
+
+      def description
+        systemctl.properties.description
+      end
+
+      def status
+        systemctl.properties.status
       end
 
       def listening?
-        properties.sub_state == "listening"
-      end
-
-      def save
-        execute_deferred
+        systemctl.properties.sub_state == "listening"
       end
     end
   end
