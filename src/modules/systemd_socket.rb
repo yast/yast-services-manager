@@ -46,6 +46,10 @@ module Yast
       def listening?
         properties.sub_state == "listening"
       end
+
+      def supported?
+        properties.supported?
+      end
     end
   end
   SystemdSocket = SystemdSocketClass.new

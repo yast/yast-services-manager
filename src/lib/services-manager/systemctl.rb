@@ -100,6 +100,7 @@ module Yast
         self[:loaded?]    = load_state      == "loaded"
         self[:not_found?] = load_state      == "not-found"
         self[:enabled?]   = unit_file_state == "enabled"
+        self[:supported?] = SUPPORTED_STATES.member?(unit_file_state)
         self[:status]     = systemctl_status
       end
 
