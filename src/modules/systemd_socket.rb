@@ -27,7 +27,7 @@ module Yast
       attr_reader :systemctl
 
       def initialize socket_name, properties
-        @systemctl = Systemctl.new(name: socket_name, type: :socket, properties: properties)
+        @systemctl = Systemctl.new(socket_name, properties: properties)
       end
 
       def name
