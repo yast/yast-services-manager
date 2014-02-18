@@ -23,21 +23,29 @@ module Yast
     def self.list_unit_files type: nil
       command = SYSTEMCTL + " list-unit-files "
       command += " --type=#{type} " if type
-      scr_execute(command)
+      scr_execute(command).stdout
     end
 
     def self.list_units type: nil, all: true
       command = SYSTEMCTL + " list-units "
       command += " --all " if all
       command += " --type=#{type} " if type
-      scr_execute(command)
-    end
-
-    def self.list_sockets
+      scr_execute(command).stdout
     end
 
     def self.scr_execute command
       OpenStruct.new(SCR.Execute(Path.new(".target.bash_output"), command))
+    end
+
+    def self.socket_units
+      sockets_from_files = list_unit_files(:type=>:socket).lines.map do |line|
+        line.split(/[\s]+/).first
+      end
+      sockets_from_units = list_units(:type=>:socket).lines.map do |line|
+        socket_unit, _, _, _ = line.split(/[\s]+/)
+        socket_unit
+      end
+      sockets_from_files | sockets_from_units
     end
 
     attr_reader   :unit_name, :unit_type, :input_properties
@@ -57,30 +65,35 @@ module Yast
     end
 
     def start
-      unit_command("start").exit.zero?
+      result = unit_command("start")
+      refresh!
+      result.exit.zero?
     end
 
     def stop
-      unit_command("stop").exit.zero?
+      result = unit_command("stop")
+      refresh!
+      result.exit.zero?
     end
 
     def enable
-      unit_command("enable").exit.zero?
+      unit_command("enable")
+      refresh!
+      result.exit.zero?
     end
 
     def disable
-      unit_command("disable").exit.zero?
+      unit_command("disable")
+      refresh!
+      result.exit.zero?
     end
 
-    def reload!
+    def refresh!
       self.properties = show
     end
 
     def unit_command command_name, options={}
-      options.merge!(:reload=>true) if options[:reload].nil?
-      result = scr_execute("#{SYSTEMCTL} #{command_name} #{unit_name} #{options[:options]}")
-      reload! if options[:reload]
-      result
+      scr_execute("#{SYSTEMCTL} #{command_name} #{unit_name} #{options[:options]}")
     end
 
     def scr_execute command
@@ -113,14 +126,14 @@ module Yast
       end
 
       def systemctl_status
-        systemctl.unit_command("status", :reload=>false, :options=>"2>&1").stdout
+        systemctl.unit_command("status", :options => "2>&1").stdout
       end
 
       def systemctl_show
         properties = systemctl.input_properties.map do |_, property_name|
           " --property=#{property_name} "
         end
-        systemctl.unit_command("show", :reload=>false, :options=>properties.join)
+        systemctl.unit_command("show", :options => properties.join)
       end
     end
   end
