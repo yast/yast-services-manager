@@ -54,8 +54,12 @@ module SystemdSocketStubs
   include SystemctlStubs
   include SystemdUnitStubs
 
+  def socket_properties
+    @properties ||= File.read(File.join(__dir__, 'files', 'iscsid_socket_properties'))
+  end
+
   def stub_sockets
-    show_socket = File.read(File.join(__dir__, 'files', 'iscsid_socket_properties'))
+    show_socket = socket_properties
     stub_socket_properties(show_socket)
     stub_systemctl
   end

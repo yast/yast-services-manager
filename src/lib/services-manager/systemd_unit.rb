@@ -33,9 +33,9 @@ module Yast
       raise "Missing unit type suffix" unless unit_type
       raise "Unsupported unit type '#{unit_type}'" unless SUPPORTED_TYPES.member?(unit_type)
 
+      @errors = ""
       @input_properties = properties.merge!(DEFAULT_PROPERTIES)
       @properties = show
-      @errors = ""
     end
 
     def show
@@ -114,7 +114,7 @@ module Yast
         properties = systemd_unit.input_properties.map do |_, property_name|
           " --property=#{property_name} "
         end
-        systemd_unit.command("show", :options => properties.join)
+        systemd_unit.command("show", :options => properties.join).stdout
       end
     end
   end

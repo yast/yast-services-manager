@@ -31,7 +31,7 @@ module Yast
         unit = SystemdUnit.new("my.socket")
         properties = unit.properties
         expect(unit.stop).to be_true
-        expect(unit.properties.object_id).not_to eq(properties.object_id)
+        expect(unit.properties).not_to equal(properties)
       end
 
       it "fails to stop the unit due to an error" do
@@ -49,7 +49,7 @@ module Yast
         unit = SystemdUnit.new("my.socket")
         properties = unit.properties
         expect(unit.start).to be_true
-        expect(unit.properties.object_id).not_to eq(properties.object_id)
+        expect(unit.properties).not_to equal(properties)
       end
 
       it "fails to start the unit" do
@@ -79,14 +79,14 @@ module Yast
         unit = SystemdUnit.new("your.socket")
         properties = unit.properties
         unit.enable
-        expect(unit.properties.object_id).not_to eq(properties.object_id)
+        expect(unit.properties).not_to equal(properties)
       end
     end
 
     describe "#show" do
       it "always returns new unit properties object" do
         unit = SystemdUnit.new("startrek.socket")
-        expect(unit.show.object_id).not_to eq(unit.show.object_id)
+        expect(unit.show).not_to equal(unit.show)
       end
     end
 
