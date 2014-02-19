@@ -45,6 +45,7 @@ module Yast
 
     describe "#start" do
       it "starts (activates) the unit and reloads its properties" do
+        stub_unit_command(:success=>true)
         unit = SystemdUnit.new("my.socket")
         properties = unit.properties
         expect(unit.start).to be_true
@@ -61,6 +62,7 @@ module Yast
 
     describe "#enable" do
       it "enables the unit successfully" do
+        stub_unit_command(:success=>true)
         unit = SystemdUnit.new("your.socket")
         expect(unit.enable).to be_true
       end
@@ -73,6 +75,7 @@ module Yast
       end
 
       it "triggers reloading of unit properties" do
+        stub_unit_command(:success=>true)
         unit = SystemdUnit.new("your.socket")
         properties = unit.properties
         unit.enable
