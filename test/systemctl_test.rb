@@ -8,7 +8,7 @@ module Yast
     include SystemctlStubs
 
     before do
-      stub_systemctl_execute
+      stub_systemctl
     end
 
     describe ".socket_units" do
@@ -19,4 +19,5 @@ module Yast
         expect(unit).to match(/.socket$/)
       end
     end
+  end
 end

@@ -7,6 +7,13 @@ require "yast"
 Yast.import 'ServicesManager'
 
 module SystemctlStubs
+
+  def stub_systemctl
+    stub_socket_unit_files
+    stub_socket_units
+    stub_systemctl_execute
+  end
+
   def stub_systemctl_execute success: true
     Yast::Systemctl.stub(:execute).and_return(
       OpenStruct.new \
@@ -14,25 +21,6 @@ module SystemctlStubs
       :stderr => ( success ? '' : 'failure'),
       :exit   => ( success ? 0  : 1 )
     )
-  end
-end
-
-module SystemdSocketStubs
-  include SystemctlStubs
-
-  def stub_sockets
-    show_socket = File.read(File.join(__dir__, 'files', 'iscsid_socket_properties'))
-    stub_socket_properties(show_socket)
-    stub_socket_unit_files
-    stub_socket_units
-    stub_systemctl_execute
-  end
-
-  def stub_socket_properties
-    SystemdUnit::Properties
-      .any_instance
-      .stub(:show_systemd_properties)
-      .and_return(sample_properties)
   end
 
   def stub_socket_unit_files
@@ -57,6 +45,23 @@ lvm2-lvmetad.socket          loaded inactive dead      LVM2 metadata daemon sock
 pcscd.socket                 loaded active   listening PC/SC Smart Card Daemon Activation Socket
 LIST
     )
+  end
+end
+
+module SystemdSocketStubs
+  include SystemctlStubs
+
+  def stub_sockets
+    show_socket = File.read(File.join(__dir__, 'files', 'iscsid_socket_properties'))
+    stub_socket_properties(show_socket)
+    stub_systemctl
+  end
+
+  def stub_socket_properties
+    SystemdUnit::Properties
+      .any_instance
+      .stub(:show_systemd_properties)
+      .and_return(sample_properties)
   end
 end
 
