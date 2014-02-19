@@ -27,6 +27,7 @@ module Yast
 
     describe "#stop" do
       it "stops (deactivates) the unit and reloads its properties" do
+        stub_unit_command
         unit = SystemdUnit.new("my.socket")
         properties = unit.properties
         expect(unit.stop).to be_true
@@ -60,19 +61,19 @@ module Yast
 
     describe "#enable" do
       it "enables the unit successfully" do
-        unit = SystemUnit.new("your.socket")
+        unit = SystemdUnit.new("your.socket")
         expect(unit.enable).to be_true
       end
 
       it "fails to enable the unit" do
         stub_unit_command(:success=>false)
-        unit = SystemUnit.new("your.socket")
+        unit = SystemdUnit.new("your.socket")
         expect(unit.enable).to be_false
         expect(unit.errors).not_to be_empty
       end
 
       it "triggers reloading of unit properties" do
-        unit = SystemUnit.new("your.socket")
+        unit = SystemdUnit.new("your.socket")
         properties = unit.properties
         unit.enable
         expect(unit.properties.object_id).not_to eq(properties.object_id)
@@ -81,7 +82,7 @@ module Yast
 
     describe "#show" do
       it "always returns new unit properties object" do
-        unit = SystemUnit.new("startrek.socket")
+        unit = SystemdUnit.new("startrek.socket")
         expect(unit.show.object_id).not_to eq(unit.show.object_id)
       end
     end

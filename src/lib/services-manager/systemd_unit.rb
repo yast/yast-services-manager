@@ -28,7 +28,7 @@ module Yast
     attr_reader   :unit_name, :unit_type, :input_properties, :errors
     attr_accessor :properties
 
-    def initialize full_unit_name, properties: {}
+    def initialize full_unit_name, properties={}
       @unit_name, @unit_type = full_unit_name.split(".")
       raise "Missing unit type suffix" unless unit_type
       raise "Unsupported unit type '#{unit_type}'" unless SUPPORTED_TYPES.member?(unit_type)
