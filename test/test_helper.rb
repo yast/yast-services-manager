@@ -11,17 +11,8 @@ module SystemctlStubs
   def stub_systemctl
     stub_socket_unit_files
     stub_socket_units
-    stub_systemctl_execute
   end
 
-  def stub_systemctl_execute success: true
-    Yast::Systemctl.stub(:execute).and_return(
-      OpenStruct.new \
-      :stdout => 'success',
-      :stderr => ( success ? '' : 'failure'),
-      :exit   => ( success ? 0  : 1 )
-    )
-  end
 
   def stub_socket_unit_files
     Yast::Systemctl.stub(:list_unit_files).and_return(<<LIST
@@ -48,8 +39,20 @@ LIST
   end
 end
 
+module SystemdUnitStubs
+  def stub_unit_command success: true
+    Yast::Systemctl.stub(:execute).and_return(
+      OpenStruct.new \
+      :stdout => 'success',
+      :stderr => ( success ? '' : 'failure'),
+      :exit   => ( success ? 0  : 1 )
+    )
+  end
+end
+
 module SystemdSocketStubs
   include SystemctlStubs
+  include SystemdUnitStubs
 
   def stub_sockets
     show_socket = File.read(File.join(__dir__, 'files', 'iscsid_socket_properties'))
@@ -57,11 +60,11 @@ module SystemdSocketStubs
     stub_systemctl
   end
 
-  def stub_socket_properties
-    SystemdUnit::Properties
+  def stub_socket_properties properties
+    Yast::SystemdUnit::Properties
       .any_instance
       .stub(:show_systemd_properties)
-      .and_return(sample_properties)
+      .and_return(properties)
   end
 end
 

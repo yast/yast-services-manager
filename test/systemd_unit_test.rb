@@ -1,7 +1,7 @@
 #!/usr/bin/env rspec
 
 require_relative 'test_helper'
-require_relative '../src/lib/services-manager/systemctl'
+require_relative '../src/lib/services-manager/systemd_unit'
 
 module Yast
   describe SystemdUnit do
