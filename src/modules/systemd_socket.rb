@@ -1,5 +1,4 @@
-require 'services-manager/systemctl'
-require 'forwardable'
+require 'services-manager/systemd_unit'
 
 module Yast
   class SystemdSocketClass < Module
@@ -19,41 +18,10 @@ module Yast
       sockets.select {|s| s.properties.supported?}
     end
 
-    class Socket
-      extend  Forwardable
-
-      def_delegators :@systemctl, :properties, :start, :stop, :enable, :disable
-
-      attr_reader :systemctl
-
-      def initialize socket_name, properties
-        @systemctl = Systemctl.new(socket_name, properties: properties)
-      end
-
-      def name
-        properties.id
-      end
-
-      def active?
-        properties.active?
-      end
-
-      def enabled?
-        properties.enabled?
-      end
-
-      def description
-        properties.description
-      end
-
-      def status
-        properties.status
-      end
-
+    class Socket < SystemdUnit
       def listening?
         properties.sub_state == "listening"
       end
-
     end
   end
   SystemdSocket = SystemdSocketClass.new
