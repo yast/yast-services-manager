@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Feb 20 12:54:55 UTC 2014 - vmoravec@suse.com
+
+- Fix wrong target selection (bnc#864073)
+- 3.1.5
+
+-------------------------------------------------------------------
 Thu Feb 20 08:53:50 UTC 2014 - vmoravec@suse.com
 
 - Add explicit empty default target (bnc#864073)
