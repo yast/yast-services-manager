@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Feb 20 08:53:50 UTC 2014 - vmoravec@suse.com
+
+- Add explicit empty default target (bnc#864073)
+- 3.1.4
+
+-------------------------------------------------------------------
 Mon Feb 17 09:10:43 UTC 2014 - jreidinger@suse.com
 
 - fix latest fix for constant refine (bnc#864055)

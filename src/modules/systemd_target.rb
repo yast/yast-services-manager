@@ -35,6 +35,7 @@ module Yast
       textdomain 'services-manager'
       @errors  = []
       @targets = {}
+      @default_target = ''
       read_targets if Mode.normal
     end
 
