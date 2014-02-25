@@ -26,7 +26,6 @@ module Yast
         if Linuxrc.vnc && selected_target != Target::GRAPHICAL
           warnings << _('VNC needs graphical system to be available')
         end
-        warnings << _("\nDo you want to proceed?") unless warnings.empty?
       end
     end
 
@@ -50,8 +49,8 @@ module Yast
     def description
       {
         'id'              => 'services-manager',
-        'menu_title'      => _("&Default systemd target and services"),
-        'rich_text_title' => _("Default systemd target and services")
+        'menu_title'      => _("&Default systemd target"),
+        'rich_text_title' => _("Default systemd target")
       }
     end
 
@@ -72,24 +71,23 @@ module Yast
       end
 
       def show
-        create_dialog
-        {'workflow_sequence' => show_dialog}
+        sequence = create_dialog { handle_dialog }
+        {'workflow_sequence' => sequence}
       end
 
       private
 
-      def show_dialog
+      def handle_dialog
         case UI.UserInput
         when :next, :ok
           selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton).to_s
           Builtins.y2milestone "Target selected by user: #{selected_target}"
           detect_warnings(selected_target)
           if !warnings.empty?
-            return show_dialog unless Popup.YesNo(warnings.join)
+            return handle_dialog unless Popup.ContinueCancel(warnings.join "\n")
           end
           Builtins.y2milestone "Setting systemd default target to '#{selected_target}'"
           SystemdTarget.default_target = selected_target unless selected_target.empty?
-          Wizard.CloseDialog
           :next
         when :cancel
           :cancel
@@ -117,6 +115,8 @@ module Yast
         )
         Wizard.SetAbortButton(:cancel, Label.CancelButton)
         Wizard.HideBackButton
+        yield
+        Wizard.CloseDialog
       end
 
       def help
