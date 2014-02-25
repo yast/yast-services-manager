@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Feb 25 15:43:51 UTC 2014 - vmoravec@suse.com
+
+- Fix crashing installer if canceled target proposal (bnc#865354)
+- 3.1.6
+
+-------------------------------------------------------------------
 Thu Feb 20 12:54:55 UTC 2014 - vmoravec@suse.com
 
 - Fix wrong target selection (bnc#864073)

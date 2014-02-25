@@ -92,6 +92,7 @@ module Yast
           Wizard.CloseDialog
           :next
         when :cancel
+          Wizard.CloseDialog
           :cancel
         end
       end
