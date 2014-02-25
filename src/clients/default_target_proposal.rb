@@ -26,7 +26,6 @@ module Yast
         if Linuxrc.vnc && selected_target != Target::GRAPHICAL
           warnings << _('VNC needs graphical system to be available')
         end
-        warnings << _("\nDo you want to proceed?") unless warnings.empty?
       end
     end
 
@@ -91,7 +90,7 @@ module Yast
           if !warnings.empty?
             # yes: proceed despite warnings
             # no:  loop via tail recursion
-            return handle_dialog unless Popup.YesNo(warnings.join)
+            return handle_dialog unless Popup.ContinueCancel(warnings.join "\n")
           end
           Builtins.y2milestone "Setting systemd default target to '#{selected_target}'"
           SystemdTarget.default_target = selected_target unless selected_target.empty?
