@@ -72,27 +72,31 @@ module Yast
       end
 
       def show
-        create_dialog
-        {'workflow_sequence' => show_dialog}
+        Wizard.CreateDialog
+        setup_wizard_dialog
+        {'workflow_sequence' => handle_dialog}
+      ensure
+        Wizard.CloseDialog
       end
 
       private
 
-      def show_dialog
+      # event loop
+      def handle_dialog
         case UI.UserInput
         when :next, :ok
           selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton).to_s
           Builtins.y2milestone "Target selected by user: #{selected_target}"
           detect_warnings(selected_target)
           if !warnings.empty?
-            return show_dialog unless Popup.YesNo(warnings.join)
+            # yes: proceed despite warnings
+            # no:  loop via tail recursion
+            return handle_dialog unless Popup.YesNo(warnings.join)
           end
           Builtins.y2milestone "Setting systemd default target to '#{selected_target}'"
           SystemdTarget.default_target = selected_target unless selected_target.empty?
-          Wizard.CloseDialog
           :next
         when :cancel
-          Wizard.CloseDialog
           :cancel
         end
       end
@@ -105,9 +109,9 @@ module Yast
         VBox(*radio_buttons)
       end
 
-      def create_dialog
+      # set up contents of a wizard dialog (opened elsewhere)
+      def setup_wizard_dialog
         caption = _("Set Default Systemd Target")
-        Wizard.CreateDialog
         Wizard.SetTitleIcon "yast-runlevel"
         Wizard.SetContentsButtons(
           caption,
