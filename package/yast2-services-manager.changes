@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Feb 26 13:24:10 UTC 2014 - vmoravec@suse.com
+
+- Select the current default target in the proposal (bnc#865357)
+- 3.1.7
+
+-------------------------------------------------------------------
 Tue Feb 25 15:43:51 UTC 2014 - vmoravec@suse.com
 
 - Fix crashing installer if canceled target proposal (bnc#865354)
