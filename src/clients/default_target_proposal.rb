@@ -98,7 +98,8 @@ module Yast
       def generate_target_buttons
         Builtins.y2milestone "Available targets: #{available_targets}"
         radio_buttons = available_targets.map do |target_name|
-          Left(RadioButton(Id(target_name), target_name))
+          selected = target_name == SystemdTarget.default_target
+          Left(RadioButton(Id(target_name), target_name, selected))
         end
         VBox(*radio_buttons)
       end
