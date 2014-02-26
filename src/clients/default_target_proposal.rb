@@ -71,6 +71,7 @@ module Yast
       end
 
       def show
+        # create the proposal dialog and get the sequence symbol from block
         sequence = create_dialog { handle_dialog }
         {'workflow_sequence' => sequence}
       end
@@ -116,6 +117,7 @@ module Yast
         Wizard.SetAbortButton(:cancel, Label.CancelButton)
         Wizard.HideBackButton
         yield
+      ensure
         Wizard.CloseDialog
       end
 
