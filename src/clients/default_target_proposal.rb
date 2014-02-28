@@ -166,7 +166,6 @@ module Yast
 
       def initialize
         textdomain 'services-manager'
-        self.default_target = ProductFeatures.GetFeature('globals', 'default_target')
         change_default_target
         detect_warnings(default_target)
       end
@@ -182,9 +181,8 @@ module Yast
       private
 
       def change_default_target
-        return  self.default_target = SystemdTarget.default_target unless SystemdTarget.default_target.empty?
-
-        detect_target unless Mode.autoinst
+        self.default_target = ProductFeatures.GetFeature('globals', 'default_target')
+        detect_target
         SystemdTarget.default_target = self.default_target
       end
 
