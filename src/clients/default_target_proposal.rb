@@ -22,7 +22,7 @@ module Yast
       attr_reader :warnings
 
       def detect_warnings selected_target
-        @warnings = []
+        @warnings ||= []
         if Linuxrc.vnc && selected_target != Target::GRAPHICAL
           warnings << _('VNC needs graphical system to be available')
         end
@@ -81,14 +81,16 @@ module Yast
       def handle_dialog
         case UI.UserInput
         when :next, :ok
-          selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton).to_s
-          Builtins.y2milestone "Target selected by user: #{selected_target}"
-          detect_warnings(selected_target)
-          if !warnings.empty?
-            return handle_dialog unless Popup.ContinueCancel(warnings.join "\n")
+          selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton)
+          if selected_target
+            detect_warnings(selected_target)
+            if !warnings.empty?
+              return handle_dialog unless Popup.ContinueCancel(warnings.join "\n")
+            end
+            Builtins.y2milestone "User selected target '#{selected_target}'"
+            SystemdTarget.default_target = selected_target
+            SystemdTarget.force = true
           end
-          Builtins.y2milestone "Setting systemd default target to '#{selected_target}'"
-          SystemdTarget.default_target = selected_target unless selected_target.empty?
           :next
         when :cancel
           :cancel
@@ -166,6 +168,7 @@ module Yast
 
       def initialize
         textdomain 'services-manager'
+        @warnings = []
         change_default_target
         detect_warnings(default_target)
       end
@@ -183,7 +186,16 @@ module Yast
       def change_default_target
         self.default_target = ProductFeatures.GetFeature('globals', 'default_target')
         detect_target
-        SystemdTarget.default_target = self.default_target
+        # Check if the user forced a particular target before; if he did and the
+        # autodetection recommends a different one now, warn the user about this
+        # and keep the default target unchanged.
+        if SystemdTarget.force && default_target != SystemdTarget.default_target
+          warnings << _("The installer is recommending you the default target '#{default_target}'.")
+          warnings << _("However, you have set the default target to '#{SystemdTarget.default_target}'.")
+          self.default_target = SystemdTarget.default_target
+          return
+        end
+        SystemdTarget.default_target = default_target
       end
 
       def detect_target

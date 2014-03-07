@@ -26,7 +26,7 @@ module Yast
       MULTIUSER = 'multi-user'
     end
 
-    attr_accessor :modified, :targets
+    attr_accessor :modified, :targets, :force
     attr_reader   :errors, :default_target
 
     alias_method :all, :targets
