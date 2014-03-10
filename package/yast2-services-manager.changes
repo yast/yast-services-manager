@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Mar  7 14:15:16 UTC 2014 - vmoravec@suse.com
+
+- Respect the user preference for default target (bnc#867125)
+- 3.1.9
+
+-------------------------------------------------------------------
 Fri Feb 28 17:06:39 UTC 2014 - vmoravec@suse.com
 
 - Reload target detection after install config change (bnc#866292)
