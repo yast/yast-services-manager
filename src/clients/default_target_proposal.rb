@@ -219,11 +219,11 @@ module Yast
               give_reason _("Text mode installation assumes no GUI on the target system")
               Target::MULTIUSER
             else
-              give_reason_("Using VNC assumes a GUI on the target system")
+              give_reason _("Using VNC assumes a GUI on the target system")
               Target::GRAPHICAL
             end
           elsif Linuxrc.vnc
-            give_reason_("Using VNC assumes a GUI on the target system")
+            give_reason _("Using VNC assumes a GUI on the target system")
             Target::GRAPHICAL
           elsif Linuxrc.usessh
             give_reason _("SSH installation mode assumes no GUI on the target system")
