@@ -22,7 +22,6 @@ module Yast
       attr_reader :warnings
 
       def detect_warnings selected_target
-        @warnings ||= []
         if Linuxrc.vnc && selected_target != Target::GRAPHICAL
           warnings << _('VNC needs graphical system to be available')
         end
@@ -67,6 +66,7 @@ module Yast
 
       def initialize
         textdomain 'services-manager'
+        @warnings = []
         @available_targets = Target::SUPPORTED
       end
 
@@ -82,15 +82,13 @@ module Yast
         case UI.UserInput
         when :next, :ok
           selected_target = UI.QueryWidget(Id(:selected_target), :CurrentButton)
-          if selected_target
-            detect_warnings(selected_target)
-            if !warnings.empty?
-              return handle_dialog unless Popup.ContinueCancel(warnings.join "\n")
-            end
-            Builtins.y2milestone "User selected target '#{selected_target}'"
-            SystemdTarget.default_target = selected_target
-            SystemdTarget.force = true
+          detect_warnings(selected_target)
+          if !warnings.empty?
+            return handle_dialog unless Popup.ContinueCancel(warnings.join "\n")
           end
+          Builtins.y2milestone "User selected target '#{selected_target}'"
+          SystemdTarget.default_target = selected_target
+          SystemdTarget.force = true
           :next
         when :cancel
           :cancel
@@ -169,8 +167,14 @@ module Yast
       def initialize
         textdomain 'services-manager'
         @warnings = []
+        if SystemdTarget.force
+          Builtins.y2milestone(
+            "Default target has been changed before by user manually to '#{SystemdTarget.default_target}'"
+          )
+        end
         change_default_target
         detect_warnings(default_target)
+        Builtins.y2milestone("Systemd default target is set to '#{SystemdTarget.default_target}'")
       end
 
       def create
@@ -190,31 +194,54 @@ module Yast
         # autodetection recommends a different one now, warn the user about this
         # and keep the default target unchanged.
         if SystemdTarget.force && default_target != SystemdTarget.default_target
-          warnings << _("The installer is recommending you the default target '#{default_target}'.")
-          warnings << _("However, you have set the default target to '#{SystemdTarget.default_target}'.")
+          warnings << _("The installer is recommending you the default target '%s' ") % default_target
+          warnings << SystemdTarget.proposal_reason
           self.default_target = SystemdTarget.default_target
           return
         end
+        Builtins.y2milestone("Setting systemd default target to #{default_target}")
         SystemdTarget.default_target = default_target
       end
 
       def detect_target
-        if Arch.x11_setup_needed && Pkg.IsSelected("xorg-x11-server") || Mode.live_installation
-          self.default_target = Target::GRAPHICAL
-          return
-        end
+        self.default_target =
+          if Arch.x11_setup_needed && Pkg.IsSelected("xorg-x11-server")
+            give_reason _("X11 packages have been selected for installation")
+            Target::GRAPHICAL
+          elsif Mode.live_installation
+            give_reason _("Live Installation is typically used for full GUI in target system")
+            Target::GRAPHICAL
+          elsif Linuxrc.serial_console
+            give_reason _("Serial connection does typically not support GUI")
+            Target::MULTIUSER
+          elsif Linuxrc.vnc && Linuxrc.usessh
+            if UI.GetDisplayInfo == 'TextMode'
+              give_reason _("Text mode installation assumes no GUI on the target system")
+              Target::MULTIUSER
+            else
+              give_reason_("Using VNC assumes a GUI on the target system")
+              Target::GRAPHICAL
+            end
+          elsif Linuxrc.vnc
+            give_reason_("Using VNC assumes a GUI on the target system")
+            Target::GRAPHICAL
+          elsif Linuxrc.usessh
+            give_reason _("SSH installation mode assumes no GUI on the target system")
+            Target::MULTIUSER
+          elsif !(Arch.x11_setup_needed && Pkg.IsSelected("xorg-x11-server"))
+            give_reason _("X11 packages have not been selected for installation")
+            Target::MULTIUSER
+          else
+            give_reason _("This recommendation is based on the analysis of other installation settings")
+            Target::MULTIUSER
+          end
 
-        if Linuxrc.serial_console
-          self.default_target = Target::MULTIUSER
-        elsif Linuxrc.vnc && Linuxrc.usessh
-          self.default_target = UI.GetDisplayInfo == 'TextMode' ? Target::MULTIUSER : Target::GRAPHICAL
-        elsif Linuxrc.vnc
-          self.default_target = Target::GRAPHICAL
-        elsif Linuxrc.usessh
-          self.default_target = Target::MULTIUSER
-        else
-          self.default_target = Target::MULTIUSER
-        end
+        Builtins.y2milestone("Detected target proposal '#{default_target}'")
+      end
+
+      def give_reason message
+        SystemdTarget.proposal_reason = message
+        Builtins.y2milestone("Systemd target detection says: #{message}")
       end
 
     end
