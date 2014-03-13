@@ -3,14 +3,14 @@
 require_relative "test_helper"
 
 module Yast
-  describe Yast::SystemdTarget do
+  describe Yast::ServicesManagerTarget do
     attr_reader :target
 
     before do
-      SystemdTargetClass.any_instance
+      ServicesManagerTargetClass.any_instance
         .stub(:get_default_target_filename)
         .and_return('multi-user.target')
-      SystemdTargetClass.any_instance
+      ServicesManagerTargetClass.any_instance
         .stub(:list_target_units)
         .and_return({
           'stdout' => "multi-user.target         enabled\n" +
@@ -19,7 +19,7 @@ module Yast
           'exit'   => 0
         })
 
-      SystemdTargetClass.any_instance
+      ServicesManagerTargetClass.any_instance
         .stub(:list_targets_details)
         .and_return({
           'stdout' => "multi-user.target  loaded active   active Multi-User System\n" +
@@ -27,10 +27,10 @@ module Yast
           'stderr' => '',
           'exit'   => 0
         })
-      SystemdTargetClass.any_instance.stub(:remove_default_target_symlink).and_return(true)
-      SystemdTargetClass.any_instance.stub(:create_default_target_symlink).and_return(true)
-      SystemdTargetClass.any_instance.stub(:default_target_file)
-      @target = SystemdTargetClass.new
+      ServicesManagerTargetClass.any_instance.stub(:remove_default_target_symlink).and_return(true)
+      ServicesManagerTargetClass.any_instance.stub(:create_default_target_symlink).and_return(true)
+      ServicesManagerTargetClass.any_instance.stub(:default_target_file)
+      @target = ServicesManagerTargetClass.new
     end
 
     it "can set supported target" do

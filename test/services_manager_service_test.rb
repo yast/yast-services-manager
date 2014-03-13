@@ -3,7 +3,7 @@
 require_relative "test_helper"
 
 module Yast
-  describe SystemdService do
+  describe ServicesManagerService do
     attr_reader :service
 
     def stub_services
@@ -14,7 +14,7 @@ module Yast
     end
 
     before do
-      SystemdServiceClass::ServiceLoader.any_instance
+      ServicesManagerServiceClass::ServiceLoader.any_instance
         .stub(:list_unit_files)
         .and_return({
           'stdout'=> "sshd.service     enabled \n"  +
@@ -24,7 +24,7 @@ module Yast
           'stderr' => '',
           'exit'   => 0
         })
-      SystemdServiceClass::ServiceLoader.any_instance
+      ServicesManagerServiceClass::ServiceLoader.any_instance
         .stub(:list_units)
         .and_return({
           'stdout'=>"sshd.service  loaded active   running OpenSSH Daemon\n" +
@@ -34,7 +34,7 @@ module Yast
           'exit'   => 0
         })
 
-      @service = Yast::SystemdServiceClass.new
+      @service = Yast::ServicesManagerServiceClass.new
     end
 
     it "provides a collection of supported services" do

@@ -2,7 +2,7 @@
   import "Service"
   import "Mode"
 
-  class SystemdServiceClass < Module
+  class ServicesManagerServiceClass < Module
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
     STATUS_COMMAND          = 'systemctl status'
@@ -415,5 +415,5 @@
     publish({:function => :status,    :type => "string (string)"      })
   end
 
-  SystemdService = SystemdServiceClass.new
+  ServicesManagerService = ServicesManagerServiceClass.new
 end

@@ -3,7 +3,7 @@ require "yast"
 module Yast
   import 'Mode'
 
-  class SystemdTargetClass < Module
+  class ServicesManagerTargetClass < Module
     LIST_UNITS_COMMAND   = 'systemctl list-unit-files --type target'
     LIST_TARGETS_COMMAND = 'systemctl --all --type target'
     COMMAND_OPTIONS      = ' --no-legend --no-pager --no-ask-password '
@@ -204,5 +204,5 @@ module Yast
     publish({:function => :save,           :type => "boolean ()"           })
   end
 
-  SystemdTarget = SystemdTargetClass.new
+  ServicesManagerTarget = ServicesManagerTargetClass.new
 end

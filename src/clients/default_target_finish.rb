@@ -3,12 +3,12 @@ require "installation/minimal_installation"
 module Yast
   import 'Directory'
   import 'Mode'
-  import 'SystemdTarget'
+  import 'ServicesManagerTarget'
 
-  class SystemdTargetFinish < Client
+  class ServicesManagerTargetFinish < Client
 
     module Target
-      include SystemdTargetClass::BaseTargets
+      include ServicesManagerTargetClass::BaseTargets
     end
 
     def initialize
@@ -37,11 +37,11 @@ module Yast
     end
 
     def write
-      SystemdTarget.default_target = Target::MULTIUSER if SystemdTarget.default_target.empty?
-      Builtins.y2milestone "Setting default target to #{SystemdTarget.default_target}"
-      SystemdTarget.save
+      ServicesManagerTarget.default_target = Target::MULTIUSER if ServicesManagerTarget.default_target.empty?
+      Builtins.y2milestone "Setting default target to #{ServicesManagerTarget.default_target}"
+      ServicesManagerTarget.save
     end
   end
-  SystemdTargetFinish.new.call(WFM.Args)
+  ServicesManagerTargetFinish.new.call(WFM.Args)
 end
 

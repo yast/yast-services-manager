@@ -48,10 +48,10 @@ module Yast
       <<-summary
 <h2><%= _('Services Manager') %></h2>
 <p><b><%= _('Default Target') %></b></p>
-<p><%= ERB::Util.html_escape SystemdTarget.export %></p>
+<p><%= ERB::Util.html_escape ServicesManagerTarget.export %></p>
 <p><b><%= _('Enabled Services') %></b></p>
 <ul>
-<% SystemdService.export.each do |service| %>
+<% ServicesManagerService.export.each do |service| %>
   <li><%= ERB::Util.html_escape service %></li>
 <% end %>
 </ul>
