@@ -246,12 +246,8 @@
           enable(service)
         else
           non_existent_services << service
-          Builtins.y2error("Service #{service} doesn't exist on this system")
+          Builtins.y2error("Service '#{service}' doesn't exist on this system")
         end
-      end
-      # The rest will be disabled
-      (services.keys - imported_services).each do |service|
-        disable(service)
       end
       non_existent_services.empty?
     end
