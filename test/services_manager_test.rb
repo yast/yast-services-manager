@@ -10,8 +10,8 @@ module Yast
           'a' => {:enabled=>true, :loaded=>true},
           'b' => {:enabled=>false, :loaded=>true}
         }
-        SystemdService.stub(:services).and_return(services)
-        SystemdTarget.stub(:default_target).and_return('some_target')
+        ServicesManagerService.stub(:services).and_return(services)
+        ServicesManagerTarget.stub(:default_target).and_return('some_target')
 
         data = Yast::ServicesManager.export
         expect(data['default_target']).to eq('some_target')
@@ -24,8 +24,8 @@ module Yast
           'default_target' => 'multi-user',
           'services'       => ['x', 'y', 'z']
         }
-        expect(SystemdService).to receive(:import)
-        expect(SystemdTarget).to receive(:import)
+        expect(ServicesManagerService).to receive(:import)
+        expect(ServicesManagerTarget).to receive(:import)
         ServicesManager.import(data)
       end
     end
@@ -34,17 +34,17 @@ module Yast
       it "has available methods for both target and services" do
         public_methods = [ :save, :read, :reset, :modified ]
         public_methods.each do |method|
-          SystemdService.stub(method)
-          SystemdTarget.stub(method)
-          expect(SystemdService).to receive(method)
-          expect(SystemdTarget).to  receive(method)
+          ServicesManagerService.stub(method)
+          ServicesManagerTarget.stub(method)
+          expect(ServicesManagerService).to receive(method)
+          expect(ServicesManagerTarget).to  receive(method)
           ServicesManager.__send__(method)
         end
 
-        SystemdService.stub(:modified=)
-        SystemdTarget.stub(:modified=)
-        expect(SystemdService).to receive(:modified=).with(true)
-        expect(SystemdTarget).to receive(:modified=).with(true)
+        ServicesManagerService.stub(:modified=)
+        ServicesManagerTarget.stub(:modified=)
+        expect(ServicesManagerService).to receive(:modified=).with(true)
+        expect(ServicesManagerTarget).to receive(:modified=).with(true)
         ServicesManager.__send__(:modify)
       end
     end

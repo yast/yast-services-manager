@@ -126,7 +126,7 @@ class ServicesManagerClient < Yast::Client
   # Redraws the services dialog
   def redraw_services
     UI.OpenDialog(Label(_('Reading services status...')))
-    services = SystemdService.all.collect do |service, attributes|
+    services = ServicesManagerService.all.collect do |service, attributes|
       Item(Id(service),
         service,
         attributes[:enabled] ? _('Enabled') : _('Disabled'),
@@ -140,7 +140,7 @@ class ServicesManagerClient < Yast::Client
   end
 
   def redraw_service(service)
-    enabled = SystemdService.enabled(service)
+    enabled = ServicesManagerService.enabled(service)
 
     UI.ChangeWidget(
       Id(Id::SERVICES_TABLE),
@@ -148,7 +148,7 @@ class ServicesManagerClient < Yast::Client
       (enabled ? _('Enabled') : _('Disabled'))
     )
 
-    running = SystemdService.active(service)
+    running = ServicesManagerService.active(service)
 
     # The current state matches the futural state
     if (enabled == running)
@@ -168,9 +168,9 @@ class ServicesManagerClient < Yast::Client
   end
 
   def redraw_system_targets
-    targets = SystemdTarget.all.collect do |target, target_def|
+    targets = ServicesManagerTarget.all.collect do |target, target_def|
       label = target_def[:description] || target
-      Item(Id(target), label, (target == SystemdTarget.default_target))
+      Item(Id(target), label, (target == ServicesManagerTarget.default_target))
     end
     UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, targets)
   end
@@ -178,13 +178,13 @@ class ServicesManagerClient < Yast::Client
   def handle_dialog
     new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
     Builtins.y2milestone("Setting new default target '#{new_default_target}'")
-    SystemdTarget.default_target = new_default_target
+    ServicesManagerTarget.default_target = new_default_target
   end
 
   # Opens up a popup with details about the currently selected service
   def show_details
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
-    full_info = SystemdService.status(service)
+    full_info = ServicesManagerService.status(service)
     x_size = full_info.lines.collect{|line| line.size}.sort.last
     y_size = full_info.lines.count
 
@@ -205,9 +205,9 @@ class ServicesManagerClient < Yast::Client
   def switch_service
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
     Builtins.y2milestone("Setting the service '#{service}' to " +
-      "#{SystemdService.services[service][:active] ? 'inactive' : 'active'}")
+      "#{ServicesManagerService.services[service][:active] ? 'inactive' : 'active'}")
 
-    success = SystemdService.switch(service)
+    success = ServicesManagerService.switch(service)
     redraw_service(service) if success
 
     UI.SetFocus(Id(Id::SERVICES_TABLE))
@@ -219,7 +219,7 @@ class ServicesManagerClient < Yast::Client
   def toggle_service
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
     Builtins.y2milestone('Toggling service status: %1', service)
-    SystemdService.toggle(service)
+    ServicesManagerService.toggle(service)
 
     redraw_service(service)
     UI.SetFocus(Id(Id::SERVICES_TABLE))

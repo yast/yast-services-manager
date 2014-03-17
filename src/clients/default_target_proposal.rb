@@ -7,13 +7,13 @@ module Yast
   import 'Pkg'
   import "Popup"
   import 'ProductFeatures'
-  import 'SystemdTarget'
+  import 'ServicesManagerTarget'
   import 'Wizard'
 
   class TargetProposal < Client
 
     module Target
-      include SystemdTargetClass::BaseTargets
+      include ServicesManagerTargetClass::BaseTargets
 
       SUPPORTED = [ GRAPHICAL, MULTIUSER ]
     end
@@ -87,8 +87,8 @@ module Yast
             return handle_dialog unless Popup.ContinueCancel(warnings.join "\n")
           end
           Builtins.y2milestone "User selected target '#{selected_target}'"
-          SystemdTarget.default_target = selected_target
-          SystemdTarget.force = true
+          ServicesManagerTarget.default_target = selected_target
+          ServicesManagerTarget.force = true
           :next
         when :cancel
           :cancel
@@ -98,7 +98,7 @@ module Yast
       def generate_target_buttons
         Builtins.y2milestone "Available targets: #{available_targets}"
         radio_buttons = available_targets.map do |target_name|
-          selected = target_name == SystemdTarget.default_target
+          selected = target_name == ServicesManagerTarget.default_target
           Left(RadioButton(Id(target_name), target_name, selected))
         end
         VBox(*radio_buttons)
@@ -167,14 +167,14 @@ module Yast
       def initialize
         textdomain 'services-manager'
         @warnings = []
-        if SystemdTarget.force
+        if ServicesManagerTarget.force
           Builtins.y2milestone(
-            "Default target has been changed before by user manually to '#{SystemdTarget.default_target}'"
+            "Default target has been changed before by user manually to '#{ServicesManagerTarget.default_target}'"
           )
         end
         change_default_target
         detect_warnings(default_target)
-        Builtins.y2milestone("Systemd default target is set to '#{SystemdTarget.default_target}'")
+        Builtins.y2milestone("Systemd default target is set to '#{ServicesManagerTarget.default_target}'")
       end
 
       def create
@@ -193,14 +193,14 @@ module Yast
         # Check if the user forced a particular target before; if he did and the
         # autodetection recommends a different one now, warn the user about this
         # and keep the default target unchanged.
-        if SystemdTarget.force && default_target != SystemdTarget.default_target
+        if ServicesManagerTarget.force && default_target != ServicesManagerTarget.default_target
           warnings << _("The installer is recommending you the default target '%s' ") % default_target
-          warnings << SystemdTarget.proposal_reason
-          self.default_target = SystemdTarget.default_target
+          warnings << ServicesManagerTarget.proposal_reason
+          self.default_target = ServicesManagerTarget.default_target
           return
         end
         Builtins.y2milestone("Setting systemd default target to #{default_target}")
-        SystemdTarget.default_target = default_target
+        ServicesManagerTarget.default_target = default_target
       end
 
       def detect_target
@@ -240,7 +240,7 @@ module Yast
       end
 
       def give_reason message
-        SystemdTarget.proposal_reason = message
+        ServicesManagerTarget.proposal_reason = message
         Builtins.y2milestone("Systemd target detection says: #{message}")
       end
 

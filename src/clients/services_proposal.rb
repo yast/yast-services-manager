@@ -1,7 +1,7 @@
 require 'services-manager/ui_elements'
 
 module Yast
-  import "SystemdService"
+  import "ServicesManagerService"
   import "Progress"
   import "ProductControl"
   import "ProductFeatures"
