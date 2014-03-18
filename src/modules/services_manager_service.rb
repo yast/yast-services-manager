@@ -234,8 +234,8 @@
     end
 
     def import imported_services=[]
-      if imported_services.empty?
-        Builtins.y2error("No data for import provided.")
+      if imported_services.nil? || imported_services.empty?
+        Builtins.y2error("No services for import provided.")
         return false
       end
       Builtins.y2milestone("Imported services: #{imported_services}")

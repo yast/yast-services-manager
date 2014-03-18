@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Mar 18 13:37:40 UTC 2014 - vmoravec@suse.com
+
+- Do not crash installation with empty services list (bnc#868614)
+- 3.1.11
+
+-------------------------------------------------------------------
 Mon Mar 17 09:23:40 UTC 2014 - vmoravec@suse.com
 
 - Do not disable services not listed in autoyast profile 
