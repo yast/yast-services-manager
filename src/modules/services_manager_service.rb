@@ -238,17 +238,26 @@
         Builtins.y2error("No services for import provided.")
         return false
       end
-      Builtins.y2milestone("Imported services: #{imported_services}")
+
+      Builtins.y2milestone("Importing services: #{imported_services}")
+
+      profile = ServicesManagerProfile.new(imported_services)
+
       non_existent_services = []
-      # All imported will be enabled
-      imported_services.each do |service|
-        if exists?(service)
-          enable(service)
+
+      profile.services.each do |service|
+        case service.status
+        when 'enable'
+          exists?(service) ? enable(service) : non_existent_services << service.name
+        when 'disable'
+          exists?(service) ? disable(service) : non_existent_services << service.name
         else
-          non_existent_services << service
-          Builtins.y2error("Service '#{service}' doesn't exist on this system")
+          Builtins.y2error("Unknown status '#{service.status}' for service '#{service.name}'"
         end
       end
+
+      Builtins.y2error("Services #{services.inspect} don't exist on this system")
+
       non_existent_services.empty?
     end
 
