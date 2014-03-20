@@ -252,7 +252,7 @@
         when 'disable'
           exists?(service) ? disable(service) : non_existent_services << service.name
         else
-          Builtins.y2error("Unknown status '#{service.status}' for service '#{service.name}'"
+          Builtins.y2error("Unknown status '#{service.status}' for service '#{service.name}'")
         end
       end
 
