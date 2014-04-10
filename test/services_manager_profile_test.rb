@@ -6,12 +6,13 @@ require 'services-manager/services_manager_profile'
 
 module Yast
   describe ServicesManagerProfile do
-    attr_reader :profile, :autoyast_data
+    attr_reader :profile, :autoyast_profile
 
     context "legacy runlevel autoyast profile" do
       before do
-        @autoyast_data =
-          [
+        @autoyast_profile = {
+          'default'  => '3',
+          'services' => [
             {
               'service_name'   => 'sshd',
               'service_status' => 'enable',
@@ -23,7 +24,8 @@ module Yast
               'service_start'  => '5'
             },
           ]
-        @profile = ServicesManagerProfile.new(autoyast_data)
+        }
+        @profile = ServicesManagerProfile.new(autoyast_profile)
       end
 
       it "returns profile object with services collection" do
@@ -32,7 +34,7 @@ module Yast
       end
 
       it "provides the original data from autoyast" do
-        expect(profile.autoyast_data).to equal(autoyast_data)
+        expect(profile.autoyast_profile).to equal(autoyast_profile)
       end
 
       it "provides collection of services to be enabled" do
@@ -46,12 +48,20 @@ module Yast
         expect(service).not_to be_nil
         expect(service.status).to eq('disable')
       end
+
+      it "provides default target" do
+        expect(profile.target).not_to be_empty
+        expect(profile.target).to eq('multi-user')
+      end
     end
 
     context "simplified services profile" do
       before do
-        @autoyast_data = [ 'sshd', 'iscsi' ]
-        @profile = ServicesManagerProfile.new(autoyast_data)
+        @autoyast_profile = {
+          'default_target'=>'graphical',
+          'services' => [ 'sshd', 'iscsi' ]
+        }
+        @profile = ServicesManagerProfile.new(autoyast_profile)
       end
 
       it "returns profile object that provides services collection" do
@@ -60,7 +70,7 @@ module Yast
       end
 
       it "provides the original data from autoyast" do
-        expect(profile.autoyast_data).to equal(autoyast_data)
+        expect(profile.autoyast_profile).to equal(autoyast_profile)
       end
 
       it "provides collection of services to be enabled" do
@@ -74,16 +84,23 @@ module Yast
         expect(service).not_to be_nil
         expect(service.status).to eq('enable')
       end
+
+      it "provides default target" do
+        expect(profile.target).not_to be_empty
+        expect(profile.target).to eq('graphical')
+      end
     end
 
     context "extended services autoyast profile" do
       before do
-        @autoyast_data =
-          [
-            {'enable'  => ['sshd',  'iscsi'  ] },
-            {'disable' => ['nginx', 'libvirt'] }
-          ]
-        @profile = ServicesManagerProfile.new(autoyast_data)
+        @autoyast_profile = {
+          'default_target' => 'multi-user',
+          'services' => {
+            'enable'  => ['sshd',  'iscsi'  ],
+            'disable' => ['nginx', 'libvirt']
+          }
+        }
+        @profile = ServicesManagerProfile.new(autoyast_profile)
       end
 
       it "returns profile object that provides services collection" do
@@ -92,7 +109,7 @@ module Yast
       end
 
       it "provides the original data from autoyast" do
-        expect(profile.autoyast_data).to equal(autoyast_data)
+        expect(profile.autoyast_profile).to equal(autoyast_profile)
       end
 
       it "provides collection of services to be disabled" do
@@ -105,6 +122,11 @@ module Yast
         service = profile.services.find {|s| s.name == 'sshd'}
         expect(service).not_to be_nil
         expect(service.status).to eq('enable')
+      end
+
+      it "provides default target" do
+        expect(profile.target).not_to be_empty
+        expect(profile.target).to eq('multi-user')
       end
     end
   end

@@ -1,4 +1,5 @@
 require 'yast'
+require 'services-manager/services_manager_profile'
 
 module Yast
   import "ServicesManagerTarget"
@@ -23,8 +24,9 @@ module Yast
     end
 
     def import data
-      ServicesManagerTarget.import  data[TARGET]
-      ServicesManagerService.import data[SERVICES]
+      profile = ServicesManagerProfile.new(data)
+      ServicesManagerTarget.import(profile)
+      ServicesManagerService.import(profile)
     end
 
     def reset

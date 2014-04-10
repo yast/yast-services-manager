@@ -233,32 +233,23 @@
       exported_services.keys
     end
 
-    def import imported_services=[]
-      if imported_services.nil? || imported_services.empty?
-        Builtins.y2error("No services for import provided.")
-        return false
-      end
-
-      Builtins.y2milestone("Importing services: #{imported_services}")
-
-      profile = ServicesManagerProfile.new(imported_services)
-
+    def import profile
+      Builtins.y2milestone("List of services from autoyast profile: #{profile.services.map(&:name)}")
       non_existent_services = []
-
       profile.services.each do |service|
         case service.status
         when 'enable'
-          exists?(service) ? enable(service) : non_existent_services << service.name
+          exists?(service.name) ? enable(service.name) : non_existent_services << service.name
         when 'disable'
-          exists?(service) ? disable(service) : non_existent_services << service.name
+          exists?(service.name) ? disable(service.name) : non_existent_services << service.name
         else
           Builtins.y2error("Unknown status '#{service.status}' for service '#{service.name}'")
         end
       end
+      return true if non_existent_services.empty?
 
-      Builtins.y2error("Services #{services.inspect} don't exist on this system")
-
-      non_existent_services.empty?
+      Builtins.y2error("Services #{non_existent_services.inspect} don't exist on this system")
+      false
     end
 
     # Saves the current configuration in memory
