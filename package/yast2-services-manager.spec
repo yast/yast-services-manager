@@ -39,6 +39,7 @@ Requires:       yast2-ruby-bindings >= 1.2.0
 Conflicts:      yast2-installation < 3.1.32
 
 Obsoletes:      yast2-runlevel
+Conflicts:      yast2-runlevel
 
 BuildRequires:  ruby
 BuildRequires:  update-desktop-files
@@ -83,6 +84,7 @@ rake install DESTDIR="%{buildroot}"
 %dir %{yast_dir}/lib/
 %{yast_dir}/lib/services-manager/
 %{_prefix}/share/applications/YaST2/services-manager.desktop
+%{_prefix}/share/applications/YaST2/runlevel.desktop
 
 %dir %_docdir/
 %_docdir/%name/
