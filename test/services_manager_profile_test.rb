@@ -79,12 +79,6 @@ module Yast
         expect(service.status).to eq('enable')
       end
 
-      it "provides collection of services to be disabled" do
-        service = profile.services.find {|s| s.name == 'iscsi'}
-        expect(service).not_to be_nil
-        expect(service.status).to eq('enable')
-      end
-
       it "provides default target" do
         expect(profile.target).not_to be_empty
         expect(profile.target).to eq('graphical')

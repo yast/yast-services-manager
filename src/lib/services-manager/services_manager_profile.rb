@@ -16,6 +16,8 @@ module Yast
       extract_target
     end
 
+    private
+
     def extract_services
       services = autoyast_profile['services']
       return if services.nil? || services.empty?
@@ -47,11 +49,12 @@ module Yast
           when "1"
             log.error "You can't set the default target to 'rescue' in autoyast profile"
             nil
+          else
+            log.error "Target '#{autoyast_profile['default']}' is not valid"
+            nil
           end
       end
     end
-
-    private
 
     def load_from_simple_list services
       self.services.concat(

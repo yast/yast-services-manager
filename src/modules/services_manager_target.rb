@@ -67,7 +67,6 @@ module Yast
 
     def import profile
       return false if profile.target.nil? || profile.target.empty?
-      Builtins.y2milestone("New default target: '#{profile.target}'")
       self.default_target = profile.target
     end
 
