@@ -65,12 +65,9 @@ module Yast
       default_target
     end
 
-    def import new_target
-      if new_target.to_s.empty?
-        Builtins.y2error("New default target not provided")
-        return
-      end
-      self.default_target = new_target
+    def import profile
+      return false if profile.target.nil? || profile.target.empty?
+      self.default_target = profile.target
     end
 
     def inspect

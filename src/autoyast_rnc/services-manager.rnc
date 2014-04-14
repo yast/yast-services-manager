@@ -2,15 +2,57 @@ default namespace = "http://www.suse.com/1.0/yast2ns"
 namespace a = "http://relaxng.org/ns/compatibility/annotations/1.0"
 namespace config = "http://www.suse.com/1.0/configns"
 
+# runlevel legacy schema
+
+runlevel_service_name   = element service_name   { text }
+runlevel_service_status = element service_status { text }
+runlevel_service_start  = element service_start  { text }
+runlevel_service_stop   = element service_stop   { text }
+
+runlevel_service =
+  element service {
+     attribute config:type { text }?   &
+       runlevel_service_name?          &
+       runlevel_service_start?         &
+       runlevel_service_stop?          &
+       runlevel_service_status?
+  }
+
+runlevel_services =
+  element services {
+    attribute config:type { "list" }?,
+    runlevel_service*
+  }
+
+runlevel_default = element \default { text }
+
+runlevel_content = element runlevel { runlevel_default? & runlevel_services? }
+
+# current services-manager schema
+
 service = element service { text }
 
-services = element services {
-  attribute config:type { text }?,
-  service*
-}
+enabled =
+  element enabled {
+    attribute config:type { text }? &
+      service*
+  }
+
+disabled =
+  element disabled {
+    attribute config:type { text }? &
+      service*
+  }
+
+services =
+  element services { attribute config:type { text }? & enabled  } |
+  element services { attribute config:type { text }? & disabled } |
+  element services { attribute config:type { text }? & service* }
 
 default_target = element default_target { text }
 
-services-manager = element services-manager {
-  default_target? & services?
-}
+services_manager_content = default_target? & services?
+
+services-manager =
+  element services-manager { services_manager_content } |
+  element runlevel         { runlevel_content         }
