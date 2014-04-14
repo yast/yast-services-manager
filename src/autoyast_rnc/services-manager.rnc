@@ -20,7 +20,7 @@ runlevel_service =
 
 runlevel_services =
   element services {
-    attribute config:type { text }?,
+    attribute config:type { "list" }?,
     runlevel_service*
   }
 

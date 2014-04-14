@@ -123,5 +123,20 @@ module Yast
         expect(profile.target).to eq('multi-user')
       end
     end
+
+    context "missing services and target entries in profile" do
+      before do
+        @autoyast_profile = {}
+        @profile = ServicesManagerProfile.new(autoyast_profile)
+      end
+
+      it "provides not target information" do
+        expect(profile.target).to be_nil
+      end
+
+      it "provides empty list of services" do
+        expect(profile.services).to be_empty
+      end
+    end
   end
 end

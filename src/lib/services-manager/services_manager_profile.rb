@@ -1,13 +1,80 @@
 module Yast
+  import "Report"
+
+  ###  Supported profiles
+  #
+  # @example Extended profile with list of services to be enabled and disabled
+  #
+  # <services-manager>
+  #   <default_target>multi-user</default_target>
+  #   <services>
+  #     <enable config:type="list">
+  #       <service>at</service>
+  #       <service>cron</service>
+  #       <service>nscd</service>
+  #       <service>openct</service>
+  #       <service>postfix</service>
+  #       <service>rsyslog</service>
+  #       <service>sshd</service>
+  #     </enable>
+  #     <disable config:type="list">
+  #       <service>libvirtd</service>
+  #     </disable>
+  #   </services>
+  # </services-manager>
+  #
+  # @deprecated Legacy profile with incomplete support for services
+  # @example Simple list of services
+  #   Supported are only services to be enabled. This profile is missing
+  #   services which are going to be disabled.
+  #
+  #  <services-manager>
+  #   <default_target>multi-user</default_target>
+  #   <services config:type="list">
+  #     <service>cron</service>
+  #     <service>postfix</service>
+  #     <service>sshd</service>
+  #   </services>
+  #  </services-manager>
+  #
+  # @deprecated Legacy runlevel profile
+  # @example Runlevel profle
+  #
+  #   <runlevel>
+  #     <default>3</default>
+  #     <services config:type="list">
+  #       <service>
+  #         <service_name>sshd</service_name>
+  #         <service_status>enable</service_status>
+  #         <service_start>3</service_start>
+  #       </service>
+  #     </services>
+  #   </runlevel>
+  #
+  ###
+
   class ServicesManagerProfile
     include Yast::Logger
 
     ENABLE  = 'enable'
     DISABLE = 'disable'
 
+    # Service object with two attributes:
+    # @attr [String] name of the service unit. Suffix '.service' is optional.
+    # @attr [String] required status on the target system. Can be 'enable' or 'disable'.
     Service = Struct.new(:name, :status)
 
-    attr_reader :autoyast_profile, :services, :target
+    # Profile data passed from autoyast, a Hash expected
+    # @return [Hash]
+    attr_reader :autoyast_profile
+
+    # List of Service structs
+    # @return [Array<Service>]
+    attr_reader :services
+
+    # Name of the systemd default target unit. Suffix '.target' is optional.
+    # @return [String] if the target has been specified in the profile. Can be nil.
+    attr_reader :target
 
     def initialize autoyast_profile
       @autoyast_profile = autoyast_profile
@@ -29,7 +96,8 @@ module Yast
       elsif services.all? {|i| i.is_a?(Hash) && (i.key?('service_name') || i.key?('service_status')) }
         load_from_runlevel_list(services)
       else
-        raise "Unknown autoyast services profile schema for data #{autoyast_profile}"
+        Yast::Report.Error _("Unknown autoyast services profile schema for 'services-manager'")
+        return
       end
       log.info "Extracted services from autoyast profile: #{self.services}"
     end
