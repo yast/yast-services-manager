@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        3.1.12
+Version:        3.1.13
 
 Release:        0
 BuildArch:      noarch
@@ -84,6 +84,7 @@ rake install DESTDIR="%{buildroot}"
 %dir %{yast_dir}/lib/
 %{yast_dir}/lib/services-manager/
 %{_prefix}/share/applications/YaST2/services-manager.desktop
+# Needed for legacy support of runlevel autoyast profile
 %{_prefix}/share/applications/YaST2/runlevel.desktop
 
 %dir %_docdir/
