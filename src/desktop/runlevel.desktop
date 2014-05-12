@@ -1,3 +1,5 @@
+# This file is needed for legacy support of runlevel autoyast profile
+
 [Desktop Entry]
 Type=Application
 Categories=Settings;System;Qt;X-SuSE-YaST;X-SuSE-YaST-System;
@@ -16,6 +18,7 @@ X-SuSE-YaST-Geometry=
 X-SuSE-YaST-SortKey=
 
 Icon=yast-runlevel
+Hidden=true
 Exec=xdg-su -c "/sbin/yast2 services-manager"
 
 Name=Services Manager
