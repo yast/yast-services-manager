@@ -82,8 +82,8 @@ rake install DESTDIR="%{buildroot}"
 %{yast_dir}/schema/autoyast/rnc/*.rnc
 %dir %{yast_dir}/lib/services-manager/
 %{yast_dir}/lib/services-manager/*.rb
-%dir %{yast_dir}/services-manager/
-%{yast_dir}/services-manager/*.erb
+%dir %{yast_dir}/data/services-manager/
+%{yast_dir}/data/services-manager/*.erb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
 # Needed for legacy support of runlevel autoyast profile
 %{_prefix}/share/applications/YaST2/runlevel.desktop
