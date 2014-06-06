@@ -1,3 +1,5 @@
+require "yast"
+
 module Yast
   import "Report"
 
@@ -55,6 +57,9 @@ module Yast
 
   class ServicesManagerProfile
     include Yast::Logger
+
+    extend Yast::I18n
+    textdomain "services-manager"
 
     ENABLE  = 'enable'
     DISABLE = 'disable'
