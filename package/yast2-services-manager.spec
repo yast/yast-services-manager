@@ -45,8 +45,8 @@ BuildRequires:  ruby
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2 >= 3.0.5
-# need install task
-BuildRequires:  rubygem-yast-rake >= 0.1.6
+# Support for 'data' directory in rake install task
+BuildRequires:  rubygem-yast-rake >= 0.1.7
 BuildRequires:  rubygem-rspec
 
 Summary:        YaST2 - Services Manager
