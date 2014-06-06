@@ -66,7 +66,7 @@ services and targets.
 %check
 # opensuse-13.1 does not contain rspec in default repositories
 %if 0%{?suse_version} > 1310
-rspec test/*_test.rb
+rake test:unit
 %endif
 
 %install
