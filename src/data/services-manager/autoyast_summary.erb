@@ -1,0 +1,14 @@
+<%
+  textdomain "services-manager"
+%>
+
+<h2><%= _('Services Manager') %></h2>
+<p><b><%= _('Default Target') %></b></p>
+<p><%= ERB::Util.html_escape(ServicesManagerTarget.export) %></p>
+
+<p><b><%= _('Enabled Services') %></b></p>
+<ul>
+<% ServicesManagerService.export.each do |service| %>
+  <li><%= ERB::Util.html_escape(service) %></li>
+<% end %>
+</ul>

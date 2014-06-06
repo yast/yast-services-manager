@@ -28,6 +28,16 @@ module Yast
         expect(ServicesManagerTarget).to receive(:import)
         ServicesManager.import(data)
       end
+
+      it "returns HTML-formatted autoyast summary with HTML-escaped values" do
+        expect(ServicesManagerTarget).to receive(:export).and_return("multi-head-graphical-hydra")
+        expect(ServicesManagerService).to receive(:export).and_return(["service-1", "service-<br>-2", "service-<b>name</b>-3"])
+
+        summary = ServicesManager.auto_summary
+        ["multi-head-graphical-hydra", "service-1", "service-&lt;br&gt;-2", "service-&lt;b&gt;name&lt;/b&gt;-3"].each do |item|
+          expect(summary).to match(/#{item}/)
+        end
+      end
     end
 
     context "Global public API" do

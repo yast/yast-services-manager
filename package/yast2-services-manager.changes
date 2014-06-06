@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Jun  6 10:52:11 CEST 2014 - locilka@suse.com
+
+- AutoYast summary - hard-coded ERB moved to separate file
+  to be able to generate translations (bnc#878606)
+- Added missing textdomain (bnc#881277)
+- 3.1.14
+
+-------------------------------------------------------------------
 Mon May 12 09:37:03 UTC 2014 - vmoravec@suse.com
 
 - Fix displaying icon twice in control centre (bnc#874124)

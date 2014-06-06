@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        3.1.13
+Version:        3.1.14
 
 Release:        0
 BuildArch:      noarch
@@ -45,8 +45,8 @@ BuildRequires:  ruby
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2 >= 3.0.5
-# need install task
-BuildRequires:  rubygem-yast-rake >= 0.1.6
+# Support for 'data' directory in rake install task
+BuildRequires:  rubygem-yast-rake >= 0.1.7
 BuildRequires:  rubygem-rspec
 
 Summary:        YaST2 - Services Manager
@@ -80,9 +80,10 @@ rake install DESTDIR="%{buildroot}"
 %{yast_dir}/clients/*.rb
 %{yast_dir}/modules/*.rb
 %{yast_dir}/schema/autoyast/rnc/*.rnc
+%dir %{yast_dir}/lib/services-manager/
 %{yast_dir}/lib/services-manager/*.rb
-%dir %{yast_dir}/lib/
-%{yast_dir}/lib/services-manager/
+%dir %{yast_dir}/services-manager/
+%{yast_dir}/services-manager/*.erb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
 # Needed for legacy support of runlevel autoyast profile
 %{_prefix}/share/applications/YaST2/runlevel.desktop
