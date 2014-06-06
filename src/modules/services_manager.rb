@@ -1,11 +1,14 @@
 require 'yast'
 require 'services-manager/services_manager_profile'
+require 'erb'
 
 module Yast
   import "ServicesManagerTarget"
   import "ServicesManagerService"
 
   class ServicesManagerClass < Module
+    include Yast::Logger
+
     TARGET   = 'default_target'
     SERVICES = 'services'
 
@@ -21,6 +24,13 @@ module Yast
         TARGET   => ServicesManagerTarget.export,
         SERVICES => ServicesManagerService.export
       }
+    end
+
+    def auto_summary
+      erb_template = File.expand_path("../../data/services-manager/autoyast_summary.erb", __FILE__)
+      result = ERB.new(File.read(erb_template)).result(binding)
+      log.info "Returning summary: #{result}"
+      result
     end
 
     def import data

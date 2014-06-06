@@ -1,5 +1,3 @@
-require 'erb'
-
 module Yast
   import 'Wizard'
   import 'ServicesManager'
@@ -22,7 +20,7 @@ module Yast
 
       case function
         when 'Change'      then WFM.CallFunction('services-manager')
-        when 'Summary'     then auto_summary
+        when 'Summary'     then ServicesManager.auto_summary
         when 'Import'      then ServicesManager.import(params)
         when 'Export'      then ServicesManager.export
         when 'Read'        then ServicesManager.read
@@ -34,28 +32,6 @@ module Yast
         else
           Builtins.y2error("Unknown Autoyast command: #{function}, params: #{params}")
       end
-    end
-
-    private
-
-    def auto_summary
-      result = ERB.new(summary_template).result(binding)
-      Builtins.y2milestone "Returning summary: #{result}"
-      result
-    end
-
-    def summary_template
-      <<-summary
-<h2><%= _('Services Manager') %></h2>
-<p><b><%= _('Default Target') %></b></p>
-<p><%= ERB::Util.html_escape ServicesManagerTarget.export %></p>
-<p><b><%= _('Enabled Services') %></b></p>
-<ul>
-<% ServicesManagerService.export.each do |service| %>
-  <li><%= ERB::Util.html_escape service %></li>
-<% end %>
-</ul>
-      summary
     end
 
   end
