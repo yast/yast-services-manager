@@ -28,9 +28,7 @@ module Yast
 
     def auto_summary
       erb_template = File.expand_path("../../data/services-manager/autoyast_summary.erb", __FILE__)
-      result = ERB.new(File.read(erb_template)).result(binding)
-      log.info "Returning summary: #{result}"
-      result
+      ERB.new(File.read(erb_template)).result(binding)
     end
 
     def import data
