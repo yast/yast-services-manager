@@ -2,32 +2,50 @@ require "yast"
 
 module Yast
   import 'Mode'
+  import 'SystemdTarget'
 
   class ServicesManagerTargetClass < Module
-    LIST_UNITS_COMMAND   = 'systemctl list-unit-files --type target'
-    LIST_TARGETS_COMMAND = 'systemctl --all --type target'
-    COMMAND_OPTIONS      = ' --no-legend --no-pager --no-ask-password '
-    TERM_OPTIONS         = ' LANG=C TERM=dumb COLUMNS=1024 '
-    TARGET_SUFFIX        = '.target'
-    DEFAULT_TARGET       = 'default'
-    SYSTEMD_TARGETS_DIR  = '/usr/lib/systemd/system'
-    DEFAULT_TARGET_SYMLINK  = "/etc/systemd/system/#{DEFAULT_TARGET}#{TARGET_SUFFIX}"
-
-    module Status
-      ENABLED   = 'enabled'
-      DISABLED  = 'disabled'
-      SUPPORTED = [ENABLED, DISABLED]
-      ACTIVE    = 'active'
-      LOADED    = 'loaded'
-    end
+    include Yast::Logger
 
     module BaseTargets
       GRAPHICAL = 'graphical'
       MULTIUSER = 'multi-user'
     end
 
-    attr_accessor :modified, :targets, :force, :proposal_reason
-    attr_reader   :errors, :default_target
+    # The targets listed below should not be displayed to the users in the drop down
+    # menu on the services-manager UI.
+    # More info at:
+    # * https://bugzilla.novell.com/show_bug.cgi?id=869656
+    # * http://www.freedesktop.org/software/systemd/man/bootup.html
+    # * http://www.freedesktop.org/wiki/Software/systemd/SystemUpdates/
+    BLACK_LISTED_TARGETS = %w(
+      halt
+      kexec
+      poweroff
+      reboot
+      system-update
+    )
+
+    # @return [Boolean] True if properties of the ServicesManagerTarget has been modified
+    attr_accessor :modified
+
+    # @return [Boolean] Used by client default_target_proposal to override the default settings
+    # Used during installation workflow
+    attr_accessor :force
+
+    # @return [String] Shows a reason why the default target has been selected;
+    # Shown in client default_target_proposal during installation workflow
+    attr_accessor :proposal_reason
+
+    # @return [Array<String>] Errors collection
+    attr_reader :errors
+
+    # @return [String] Name of the default systemd target unit
+    attr_reader :default_target
+
+    # @return [Hash] Collection of available targets
+    # @example {'rescue' => {:enabled=>false, :loaded=>true, :active=>false, :description=>'Rescue'}}
+    attr_reader :targets
 
     alias_method :all, :targets
 
@@ -36,13 +54,24 @@ module Yast
       @errors  = []
       @targets = {}
       @default_target = ''
-      read_targets if Mode.normal
+      read_targets
     end
 
     def read_targets
-      find_default_target
-      load_supported_targets
-      load_target_details
+      return unless Mode.normal
+
+      @default_target = SystemdTarget.get_default.name
+      SystemdTarget.all.each do |target|
+        next unless target.allow_isolate?
+        next if BLACK_LISTED_TARGETS.member?(target.name)
+
+        targets[target.name] = {
+          :enabled => target.enabled?,
+          :loaded  => target.loaded?,
+          :active  => target.active?,
+          :description => target.description
+        }
+      end
     end
 
     alias_method :read, :read_targets
@@ -57,7 +86,7 @@ module Yast
       end
       @default_target = new_default
       self.modified = true
-      Builtins.y2milestone "New default target set: #{new_default}"
+      log.info "New default target set: #{new_default}"
       new_default
     end
 
@@ -76,117 +105,23 @@ module Yast
     end
 
     def save
-      Builtins.y2milestone('Saving default target...')
-      if !modified
-        Builtins.y2milestone("Nothing to do, current default target already set to '#{default_target}'")
-        return true
-      end
+      return true if !modified
 
       if !valid?
-        errors.each {|e| Builtins.y2error(e) }
-        Builtins.y2error("Invalid default target '#{default_target}'; aborting saving")
+        errors.each {|e| log.error(e) }
+        log.error("Invalid default target '#{default_target}'; aborting saving")
         return false
       end
-      removed = remove_default_target_symlink
-      created = create_default_target_symlink
-      removed && created
+
+      log.info('Saving default target...')
+      SystemdTarget.set_default(default_target)
     end
 
     def reset
       errors.clear
+      targets.clear
       read_targets
       self.modified = false
-    end
-
-    private
-
-    def find_default_target
-      @default_target = get_default_target_filename.chomp(TARGET_SUFFIX)
-    end
-
-    def remove_default_target_symlink
-      Builtins.y2milestone("Removing default target symlink..")
-      removed = SCR.Execute(path('.target.remove'), DEFAULT_TARGET_SYMLINK)
-      if removed
-        Builtins.y2milestone "#{DEFAULT_TARGET_SYMLINK} has been removed"
-      else
-        Builtins.y2error "Removing of #{DEFAULT_TARGET_SYMLINK} has failed"
-      end
-      removed
-    end
-
-    def create_default_target_symlink
-      Builtins.y2milestone("Creating new default target symlink for #{default_target_file}")
-      SCR.Execute(path('.target.symlink'), default_target_file, DEFAULT_TARGET_SYMLINK)
-      created = SCR.Read(path('.target.size'), DEFAULT_TARGET_SYMLINK) > 0
-      if created
-        Builtins.y2milestone("Symlink has been created")
-      else
-        Builtins.y2error("Default target unit file '#{default_target}' is empty")
-      end
-      created
-    end
-
-    def get_default_target_filename
-      File.basename(SCR.Read(path('.target.symlink'), DEFAULT_TARGET_SYMLINK).to_s)
-    end
-
-    def default_target_file
-      File.join(SYSTEMD_TARGETS_DIR, "#{default_target}#{TARGET_SUFFIX}")
-    end
-
-    def list_target_units
-      command = TERM_OPTIONS + LIST_UNITS_COMMAND + COMMAND_OPTIONS
-      SCR.Execute(path('.target.bash_output'), command)
-    end
-
-    def list_targets_details
-      command = TERM_OPTIONS + LIST_TARGETS_COMMAND + COMMAND_OPTIONS
-      SCR.Execute(path('.target.bash_output'), command)
-    end
-
-    def load_supported_targets
-      self.targets = {}
-      output  = list_target_units
-      stdout  = output.fetch 'stdout'
-      stderr  = output.fetch 'stderr'
-      exit_code = output.fetch 'exit'
-      errors << stderr if exit_code.to_i != 0 && !stderr.to_s.empty?
-      stdout.each_line do |line|
-        target, status = line.split(/[\s]+/)
-        if Status::SUPPORTED.include?(status)
-          target.chomp! TARGET_SUFFIX
-          next if target == DEFAULT_TARGET
-          self.targets[target] = { :enabled  => status == Status::ENABLED }
-        end
-      end
-      Builtins.y2milestone "Loaded supported target units: %1", targets.keys
-    end
-
-    def load_target_details
-      output  = list_targets_details
-      stdout  = output.fetch 'stdout'
-      stderr  = output.fetch 'stderr'
-      exit_code = output.fetch 'exit'
-      errors << stderr if exit_code.to_i != 0 && !stderr.to_s.empty?
-      unknown_targets = []
-      stdout.each_line do |line|
-        target, loaded, active, _, *description = line.split(/[\s]+/)
-        target.chomp! TARGET_SUFFIX
-        if targets[target]
-          targets[target][:loaded] = loaded == Status::LOADED
-          targets[target][:active] = active == Status::ACTIVE
-          targets[target][:description] = description.join(' ')
-        else
-          unknown_targets << target
-        end
-      end
-
-      Builtins.y2milestone 'Loaded target details: %1', targets
-
-      if !unknown_targets.empty?
-        Builtins.y2warning "No details loaded for these targets: #{unknown_targets.join(', ')} "
-      end
     end
 
     publish({:function => :all,            :type => "map <string, map> ()" })
