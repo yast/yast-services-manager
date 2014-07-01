@@ -3,66 +3,79 @@
 require_relative "test_helper"
 
 module Yast
-  describe Yast::ServicesManagerTarget do
-    attr_reader :target
-
-    before do
-      ServicesManagerTargetClass.any_instance
-        .stub(:get_default_target_filename)
-        .and_return('multi-user.target')
-      ServicesManagerTargetClass.any_instance
-        .stub(:list_target_units)
-        .and_return({
-          'stdout' => "multi-user.target         enabled\n" +
-                      "graphical.target          disabled",
-          'stderr' => '',
-          'exit'   => 0
-        })
-
-      ServicesManagerTargetClass.any_instance
-        .stub(:list_targets_details)
-        .and_return({
-          'stdout' => "multi-user.target  loaded active   active Multi-User System\n" +
-                      "graphical.target  loaded active   active Graphical Interface",
-          'stderr' => '',
-          'exit'   => 0
-        })
-      ServicesManagerTargetClass.any_instance.stub(:remove_default_target_symlink).and_return(true)
-      ServicesManagerTargetClass.any_instance.stub(:create_default_target_symlink).and_return(true)
-      ServicesManagerTargetClass.any_instance.stub(:default_target_file)
-      @target = ServicesManagerTargetClass.new
+  module TestTarget
+    class Template < Struct.new(
+      :name, :allow_isolate?, :enabled?, :loaded?, :active?, :description
+    )
     end
 
-    it "can set supported target" do
-      supported_target = 'graphical'
-      target.default_target = supported_target
-      expect(target.default_target).to eq(supported_target)
-      expect(target.modified).to eq(true)
-      expect(target.errors).to be_empty
-      expect(target.valid?).to be(true)
-      expect(target.save).to eq(true)
+    GRAPHICAL  = Template.new('graphical', true)
+    MULTI_USER = Template.new('multi-user', true)
+    POWEROFF   = Template.new('poweroff', true)
+    SLEEP      = Template.new('sleep', false)
+
+    ALL = [ GRAPHICAL, MULTI_USER, POWEROFF, SLEEP ]
+  end
+
+  describe ServicesManagerTarget do
+    context "reading targets" do
+      it "reads default target name and other targets" do
+        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+        target = ServicesManagerTargetClass.new
+        expect(target.default_target).to eq('graphical')
+        expect(target.targets).not_to be_empty
+        expect(target.targets.keys).to include('multi-user')
+        expect(target.targets.keys).to include('graphical')
+        expect(target.targets.keys).not_to include('poweroff')
+        expect(target.targets.keys).not_to include('sleep')
+      end
+
+      it "skips reading targets if Mode.normal is false" do
+        Mode.SetMode('not-normal')
+        expect(SystemdTarget).not_to receive(:all)
+        expect(SystemdTarget).not_to receive(:get_default)
+        target = ServicesManagerTargetClass.new
+        expect(target.default_target).to be_empty
+        expect(target.targets).to be_empty
+        Mode.SetMode('normal')
+      end
     end
 
-    it "can set but not save unsupported target" do
-      unsupported = 'suse'
-      target.default_target = unsupported
-      expect(target.default_target).to eq(unsupported)
-      expect(target.errors).not_to be_empty
-      expect(target.valid?).to be(false)
-      expect(target.save).to be(false)
+    context "saving default target" do
+      it "saves the modified default target name" do
+        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+        expect(SystemdTarget).to receive(:set_default).and_return(true)
+        target = ServicesManagerTargetClass.new
+        expect(target.default_target).to eq('graphical')
+        target.default_target = 'multi-user'
+        expect(target.default_target).to eq('multi-user')
+        expect(target.save).to be_true
+      end
+
+      it "skips setting the default target if not modified" do
+        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+        target = ServicesManagerTargetClass.new
+        expect(target.modified).to be_false
+        expect(target.save).to be_true
+      end
     end
 
-    it "can reset the modified target" do
-      original_target = target.default_target
-      new_target = 'test'
-      target.default_target = new_target
-      expect(target.default_target).to eq(new_target)
-      expect(target.modified).to eq(true)
-      target.reset
-      expect(target.modified).to eq(false)
-      expect(target.default_target).not_to eq(new_target)
-      expect(target.default_target).to eq(original_target)
+    context "re-setting targets" do
+      it "reloads the object properties" do
+        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+        target = ServicesManagerTargetClass.new
+        target.default_target = 'multi-user'
+        expect(target.modified).to be_true
+        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+        target.reset
+        expect(target.modified).to be_false
+        expect(target.default_target).to eq('graphical')
+      end
     end
-
   end
 end

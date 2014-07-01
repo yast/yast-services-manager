@@ -52,7 +52,6 @@ module Yast
     # @return Boolean if successful
     def save
       target_saved = ServicesManagerTarget.save
-      errors << ServicesManagerTarget.errors
       services_saved = ServicesManagerService.save
       errors << ServicesManagerService.errors
       !!(target_saved && services_saved)
