@@ -18,7 +18,7 @@ module Yast
     # * https://bugzilla.novell.com/show_bug.cgi?id=869656
     # * http://www.freedesktop.org/software/systemd/man/bootup.html
     # * http://www.freedesktop.org/wiki/Software/systemd/SystemUpdates/
-    BLACK_LISTED_TARGETS = %w(
+    BLACKLISTED_TARGETS = %w(
       halt
       kexec
       poweroff
@@ -29,16 +29,13 @@ module Yast
     # @return [Boolean] True if properties of the ServicesManagerTarget has been modified
     attr_accessor :modified
 
-    # @return [Boolean] Used by client default_target_proposal to override the default settings
     # Used during installation workflow
+    # @return [Boolean] Used by client default_target_proposal to override the default settings
     attr_accessor :force
 
-    # @return [String] Shows a reason why the default target has been selected;
     # Shown in client default_target_proposal during installation workflow
+    # @return [String] Shows a reason why the default target has been selected;
     attr_accessor :proposal_reason
-
-    # @return [Array<String>] Errors collection
-    attr_reader :errors
 
     # @return [String] Name of the default systemd target unit
     attr_reader :default_target
@@ -51,7 +48,6 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
-      @errors  = []
       @targets = {}
       @default_target = ''
       read_targets
@@ -63,7 +59,7 @@ module Yast
       @default_target = SystemdTarget.get_default.name
       SystemdTarget.all.each do |target|
         next unless target.allow_isolate?
-        next if BLACK_LISTED_TARGETS.member?(target.name)
+        next if BLACKLISTED_TARGETS.member?(target.name)
 
         targets[target.name] = {
           :enabled => target.enabled?,
@@ -76,17 +72,14 @@ module Yast
 
     alias_method :read, :read_targets
 
-    def valid?
-      errors.empty?
-    end
-
     def default_target= new_default
-      if Mode.normal
-        errors << _("Target #{new_default} not found") unless targets.keys.include?(new_default)
+      if Mode.normal && !targets.keys.include?(new_default)
+        raise "Target #{new_default} not found, available only #{targets.keys.join(', ')}"
       end
+
       @default_target = new_default
       self.modified = true
-      log.info "New default target set: #{new_default}"
+      log.info "New default target has been set: #{new_default}"
       new_default
     end
 
@@ -106,19 +99,11 @@ module Yast
 
     def save
       return true if !modified
-
-      if !valid?
-        errors.each {|e| log.error(e) }
-        log.error("Invalid default target '#{default_target}'; aborting saving")
-        return false
-      end
-
       log.info('Saving default target...')
       SystemdTarget.set_default(default_target)
     end
 
     def reset
-      errors.clear
       targets.clear
       read_targets
       self.modified = false

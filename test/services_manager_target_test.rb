@@ -5,7 +5,7 @@ require_relative "test_helper"
 module Yast
   module TestTarget
     class Template < Struct.new(
-      :name, :allow_isolate, :enabled, :loaded, :active, :description
+      :name, :allow_isolate?, :enabled?, :loaded?, :active?, :description
     )
     end
 
@@ -38,11 +38,12 @@ module Yast
         target = ServicesManagerTargetClass.new
         expect(target.default_target).to be_empty
         expect(target.targets).to be_empty
+        Mode.SetMode('normal')
       end
     end
 
     context "saving default target" do
-      it "saves the modified default target" do
+      it "saves the modified default target name" do
         expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
         expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
         expect(SystemdTarget).to receive(:set_default).and_return(true)
@@ -69,7 +70,8 @@ module Yast
         target = ServicesManagerTargetClass.new
         target.default_target = 'multi-user'
         expect(target.modified).to be_true
-        expect(target).to receive(:read_targets)
+        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
         target.reset
         expect(target.modified).to be_false
         expect(target.default_target).to eq('graphical')
