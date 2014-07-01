@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jul  1 09:19:08 UTC 2014 - vmoravec@suse.com
+
+- Fix issues with ServicesManagerTarget (bnc#869656, bnc#867759,
+  bnc#875098)
+- 3.1.15
+
+-------------------------------------------------------------------
 Fri Jun  6 10:52:11 CEST 2014 - locilka@suse.com
 
 - AutoYast summary - hard-coded ERB moved to separate file
