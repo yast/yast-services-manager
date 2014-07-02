@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jul  2 12:15:17 UTC 2014 - vmoravec@suse.com
+
+- Fix failing tests
+- 3.1.16
+
+-------------------------------------------------------------------
 Tue Jul  1 09:19:08 UTC 2014 - vmoravec@suse.com
 
 - Fix issues with ServicesManagerTarget (bnc#869656, bnc#867759,

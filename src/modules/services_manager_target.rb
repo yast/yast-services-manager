@@ -49,6 +49,7 @@ module Yast
     def initialize
       textdomain 'services-manager'
       @targets = {}
+      @modified = false
       @default_target = ''
       read_targets
     end
@@ -56,7 +57,9 @@ module Yast
     def read_targets
       return unless Mode.normal
 
-      @default_target = SystemdTarget.get_default.name
+      default_target = SystemdTarget.get_default
+      @default_target = default_target ? default_target.name : ''
+
       SystemdTarget.all.each do |target|
         next unless target.allow_isolate?
         next if BLACKLISTED_TARGETS.member?(target.name)
