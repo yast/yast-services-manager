@@ -36,8 +36,8 @@ module Yast
         expect(SystemdTarget).not_to receive(:all)
         expect(SystemdTarget).not_to receive(:get_default)
         target = ServicesManagerTargetClass.new
-        expect(target.default_target).to be_empty
         expect(target.targets).to be_empty
+        expect(target.default_target).to be_empty
         Mode.SetMode('normal')
       end
     end
@@ -51,15 +51,15 @@ module Yast
         expect(target.default_target).to eq('graphical')
         target.default_target = 'multi-user'
         expect(target.default_target).to eq('multi-user')
-        expect(target.save).to be_true
+        expect(target.save).to eq(true)
       end
 
       it "skips setting the default target if not modified" do
         expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
         expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
         target = ServicesManagerTargetClass.new
-        expect(target.modified).to be_false
-        expect(target.save).to be_true
+        expect(target.modified).to eq(false)
+        expect(target.save).to eq(true)
       end
     end
 
@@ -69,11 +69,11 @@ module Yast
         expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
         target = ServicesManagerTargetClass.new
         target.default_target = 'multi-user'
-        expect(target.modified).to be_true
+        expect(target.modified).to eq(true)
         expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
         expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
         target.reset
-        expect(target.modified).to be_false
+        expect(target.modified).to eq(false)
         expect(target.default_target).to eq('graphical')
       end
     end
