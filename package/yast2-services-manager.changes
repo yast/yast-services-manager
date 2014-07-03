@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jul  3 16:32:16 CEST 2014 - locilka@suse.com
+
+- Marked "runlevel" as not clonable, the functionality is there
+  for importing old profiles only (bnc#873604)
+- 3.1.17
+
+-------------------------------------------------------------------
 Wed Jul  2 12:15:17 UTC 2014 - vmoravec@suse.com
 
 - Fix failing tests
