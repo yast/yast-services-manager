@@ -19,13 +19,13 @@ module Yast
 
       TRANSLATIONS = {
         # Default target option #1
-        GRAPHICAL => _("Graphical"),
+        GRAPHICAL => N_("Graphical"),
         # Default target option #2
-        MULTIUSER => _("Multi-user"),
+        MULTIUSER => N_("Multi-user"),
       }
 
       def localize(target_name)
-        TRANSLATIONS[target_name] || target_name
+        _(TRANSLATIONS[target_name])
       end
     end
 
