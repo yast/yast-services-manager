@@ -13,6 +13,7 @@ module Yast
   class TargetProposal < Client
 
     module Target
+      extend Yast::I18n
       include ServicesManagerTargetClass::BaseTargets
 
       SUPPORTED = [ GRAPHICAL, MULTIUSER ]
