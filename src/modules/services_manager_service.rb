@@ -1,4 +1,6 @@
- module Yast
+require "yast"
+
+module Yast
   import "Service"
   import "Mode"
 
