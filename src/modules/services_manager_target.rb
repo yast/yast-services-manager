@@ -18,10 +18,10 @@ module Yast
       MULTIUSER = 'multi-user'
 
       TRANSLATIONS = {
-        # Default target option #1
-        GRAPHICAL => N_("Graphical"),
-        # Default target option #2
-        MULTIUSER => N_("Multi-user"),
+        # Default systemd target (previously: runlevel 5) option #1
+        GRAPHICAL => N_("Graphical mode"),
+        # Default systemd target (previously: runlevel 3) option #2
+        MULTIUSER => N_("Text mode"),
       }
 
       def self.localize(target_name)
