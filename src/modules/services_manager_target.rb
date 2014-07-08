@@ -8,8 +8,25 @@ module Yast
     include Yast::Logger
 
     module BaseTargets
+      extend Yast::I18n
+
+      def initialize
+        textdomain 'services-manager'
+      end
+
       GRAPHICAL = 'graphical'
       MULTIUSER = 'multi-user'
+
+      TRANSLATIONS = {
+        # Default target option #1
+        GRAPHICAL => N_("Graphical"),
+        # Default target option #2
+        MULTIUSER => N_("Multi-user"),
+      }
+
+      def self.localize(target_name)
+        _(TRANSLATIONS[target_name] || target_name)
+      end
     end
 
     # The targets listed below should not be displayed to the users in the drop down

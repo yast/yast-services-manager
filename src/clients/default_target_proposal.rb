@@ -5,7 +5,7 @@ module Yast
   import 'Linuxrc'
   import 'Mode'
   import 'Pkg'
-  import "Popup"
+  import 'Popup'
   import 'ProductFeatures'
   import 'ServicesManagerTarget'
   import 'Wizard'
@@ -13,21 +13,9 @@ module Yast
   class TargetProposal < Client
 
     module Target
-      extend Yast::I18n
       include ServicesManagerTargetClass::BaseTargets
 
       SUPPORTED = [ GRAPHICAL, MULTIUSER ]
-
-      TRANSLATIONS = {
-        # Default target option #1
-        GRAPHICAL => N_("Graphical"),
-        # Default target option #2
-        MULTIUSER => N_("Multi-user"),
-      }
-
-      def localize(target_name)
-        _(TRANSLATIONS[target_name])
-      end
     end
 
     module Warnings
@@ -109,10 +97,18 @@ module Yast
 
       def generate_target_buttons
         Builtins.y2milestone "Available targets: #{available_targets}"
+
         radio_buttons = available_targets.map do |target_name|
           selected = target_name == ServicesManagerTarget.default_target
-          Left(RadioButton(Id(target_name), Target::localize(target_name), selected))
+          Left(
+            RadioButton(
+              Id(target_name),
+              ServicesManagerTargetClass::BaseTargets.localize(target_name),
+              selected
+            )
+          )
         end
+
         VBox(*radio_buttons)
       end
 
@@ -190,8 +186,14 @@ module Yast
       end
 
       def create
-        proposal = { 'preformatted_proposal' => list(Target::localize(default_target)) }
+        proposal = {
+          'preformatted_proposal' => list(
+            ServicesManagerTargetClass::BaseTargets.localize(default_target)
+          )
+        }
+
         return proposal if warnings.empty?
+
         proposal.update 'warning_level' => :warning
         proposal.update 'warning'       => list(*warnings)
         proposal

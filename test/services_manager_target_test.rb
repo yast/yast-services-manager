@@ -78,4 +78,24 @@ module Yast
       end
     end
   end
+
+  describe ServicesManagerTargetClass::BaseTargets do
+    describe "#localize" do
+      context "target is known" do
+        it "localizes the target" do
+          expect(ServicesManagerTargetClass::BaseTargets.localize(
+            ServicesManagerTargetClass::BaseTargets::GRAPHICAL
+          )).to eq("Graphical")
+        end
+      end
+
+      context "target is unknown" do
+        it "returns the given target unlocalized" do
+          expect(ServicesManagerTargetClass::BaseTargets.localize(
+            "unknown-target"
+          )).to eq("unknown-target")
+        end
+      end
+    end
+  end
 end
