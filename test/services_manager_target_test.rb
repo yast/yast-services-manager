@@ -85,7 +85,7 @@ module Yast
         it "localizes the target" do
           expect(ServicesManagerTargetClass::BaseTargets.localize(
             ServicesManagerTargetClass::BaseTargets::GRAPHICAL
-          )).to eq("Graphical")
+          )).to eq("Graphical mode")
         end
       end
 
