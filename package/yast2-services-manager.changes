@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jul  8 09:34:32 CEST 2014 - locilka@suse.com
+
+- Function 'localize' moved to ServicesManagerTarget library and
+  added a test case (bnc#886117)
+- 3.1.20
+
+-------------------------------------------------------------------
 Mon Jul  7 16:08:30 CEST 2014 - locilka@suse.com
 
 - Fixed broken N_(...) call (bnc#886040)
