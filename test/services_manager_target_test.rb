@@ -17,6 +17,9 @@ module Yast
     ALL = [ GRAPHICAL, MULTI_USER, POWEROFF, SLEEP ]
   end
 
+  extend Yast::I18n
+  Yast::textdomain "services-manager"
+
   describe ServicesManagerTarget do
     context "reading targets" do
       it "reads default target name and other targets" do
@@ -81,15 +84,15 @@ module Yast
 
   describe ServicesManagerTargetClass::BaseTargets do
     describe "#localize" do
-      context "target is known" do
+      context "when target is known" do
         it "localizes the target" do
           expect(ServicesManagerTargetClass::BaseTargets.localize(
             ServicesManagerTargetClass::BaseTargets::GRAPHICAL
-          )).to eq("Graphical mode")
+          )).to eq(Yast::_("Graphical mode"))
         end
       end
 
-      context "target is unknown" do
+      context "when target is unknown" do
         it "returns the given target unlocalized" do
           expect(ServicesManagerTargetClass::BaseTargets.localize(
             "unknown-target"
