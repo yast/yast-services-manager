@@ -7,26 +7,68 @@ module Yast
     context "Autoyast API" do
       it "exports systemd target and services" do
         services = {
-          'a' => {:enabled=>true, :loaded=>true},
-          'b' => {:enabled=>false, :loaded=>true}
+          'a' => { :enabled => true,  :loaded => true },
+          'b' => { :enabled => false, :loaded => true },
+          'c' => { :enabled => true,  :loaded => true },
         }
-        ServicesManagerService.stub(:services).and_return(services)
-        ServicesManagerTarget.stub(:default_target).and_return('some_target')
+
+        expect(ServicesManagerService).to receive(:services).and_return(services)
+        expect(ServicesManagerTarget).to receive(:default_target).and_return('some_target')
 
         data = Yast::ServicesManager.export
         expect(data['default_target']).to eq('some_target')
-        expect(data['services']).to eq(['a'])
-
+        expect(data['services']['enable']).to eq(['a', 'c'])
+        expect(data['services']['disable']).to eq(['b'])
       end
 
-      it "imports data for systemd target and services" do
-        data = {
-          'default_target' => 'multi-user',
-          'services'       => ['x', 'y', 'z']
-        }
-        expect(ServicesManagerService).to receive(:import)
-        expect(ServicesManagerTarget).to receive(:import)
-        ServicesManager.import(data)
+      context "when using AutoYast profile written in SLE 11 format" do
+        it "imports data for systemd target and services" do
+          data = {
+            'default' => '3',
+            'services' => [
+              {
+                'service_name' => 'sa',
+                'service_status' => 'enable',
+                'service_start' => '3',
+              },
+              {
+                'service_name' => 'sb',
+                'service_status' => 'enable',
+                'service_start' => '3',
+              },
+            ]
+          }
+          expect(ServicesManagerService).to receive(:import)
+          expect(ServicesManagerTarget).to receive(:import)
+          ServicesManager.import(data)
+        end
+      end
+
+      context "when using AutoYast profile written in pre-SLE 12 format" do
+        it "imports data for systemd target and services" do
+          data = {
+            'default_target' => 'multi-user',
+            'services'       => ['x', 'y', 'z']
+          }
+          expect(ServicesManagerService).to receive(:import)
+          expect(ServicesManagerTarget).to receive(:import)
+          ServicesManager.import(data)
+        end
+      end
+
+      context "when using AutoYast profile in the current format" do
+        it "imports data for systemd target and services" do
+          data = {
+            'default_target' => 'multi-user',
+            'services' => {
+              'enable'  => ['x', 'y', 'z'],
+              'disable' => ['d', 'e', 'f'],
+            },
+          }
+          expect(ServicesManagerService).to receive(:import)
+          expect(ServicesManagerTarget).to receive(:import)
+          ServicesManager.import(data)
+        end
       end
 
       it "returns HTML-formatted autoyast summary with HTML-escaped values" do
