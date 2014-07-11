@@ -4,21 +4,30 @@ require_relative 'test_helper'
 
 module Yast
   describe ServicesManager do
+    before(:each) do
+      log.info "--- test ---"
+      allow(ServicesManagerService).to receive(:read).and_return({})
+    end
+
     context "Autoyast API" do
       it "exports systemd target and services" do
         services = {
           'a' => { :enabled => true,  :loaded => true },
-          'b' => { :enabled => false, :loaded => true },
+          'b' => { :enabled => false, :modified => true },
           'c' => { :enabled => true,  :loaded => true },
+          # Service will not be exported: it's not modified
+          'd' => { :enabled => false, :modified => false },
+          # Service will not be exported: it's not loaded
+          'e' => { :enabled => true,  :loaded => false },
         }
 
-        expect(ServicesManagerService).to receive(:services).and_return(services)
+        allow(ServicesManagerService).to receive(:services).and_return(services)
         expect(ServicesManagerTarget).to receive(:default_target).and_return('some_target')
 
         data = Yast::ServicesManager.export
         expect(data['default_target']).to eq('some_target')
-        expect(data['services']['enable']).to eq(['a', 'c'])
-        expect(data['services']['disable']).to eq(['b'])
+        expect(data['services']['enable'].sort).to eq(['a', 'c'].sort)
+        expect(data['services']['disable'].sort).to eq(['b'].sort)
       end
 
       context "when using AutoYast profile written in SLE 11 format" do
@@ -36,11 +45,21 @@ module Yast
                 'service_status' => 'enable',
                 'service_start' => '3',
               },
+              {
+                'service_name' => 'sc',
+                'service_status' => 'disable',
+                'service_start' => '3',
+              },
             ]
           }
-          expect(ServicesManagerService).to receive(:import)
-          expect(ServicesManagerTarget).to receive(:import)
-          ServicesManager.import(data)
+
+          expect(ServicesManagerService).to receive(:exists?).with(/^s[abc]$/).at_least(:once).and_return(true)
+          expect(ServicesManagerService).to receive(:enable).with(/^s[ab]$/).twice.and_return(true)
+          expect(ServicesManagerService).to receive(:disable).with(/^sc$/).once.and_return(true)
+
+          expect(ServicesManagerService).to receive(:import).and_call_original
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to be_true
         end
       end
 
@@ -50,9 +69,12 @@ module Yast
             'default_target' => 'multi-user',
             'services'       => ['x', 'y', 'z']
           }
-          expect(ServicesManagerService).to receive(:import)
-          expect(ServicesManagerTarget).to receive(:import)
-          ServicesManager.import(data)
+
+          expect(ServicesManagerService).to receive(:exists?).with(/^[xyz]$/).at_least(:once).and_return(true)
+
+          expect(ServicesManagerService).to receive(:import).and_call_original
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to be_true
         end
       end
 
@@ -65,9 +87,13 @@ module Yast
               'disable' => ['d', 'e', 'f'],
             },
           }
-          expect(ServicesManagerService).to receive(:import)
-          expect(ServicesManagerTarget).to receive(:import)
-          ServicesManager.import(data)
+          expect(ServicesManagerService).to receive(:exists?).with(/^[xyzdef]$/).at_least(:once).and_return(true)
+          expect(ServicesManagerService).to receive(:enable).with(/^[xyz]$/).exactly(3).times.and_return(true)
+          expect(ServicesManagerService).to receive(:disable).with(/^[def]$/).exactly(3).times.and_return(true)
+
+          expect(ServicesManagerService).to receive(:import).and_call_original
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to be_true
         end
       end
 
