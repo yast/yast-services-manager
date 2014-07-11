@@ -5,6 +5,8 @@ module Yast
   import "Mode"
 
   class ServicesManagerServiceClass < Module
+    include Yast::Logger
+
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
     STATUS_COMMAND          = 'systemctl status'
@@ -34,21 +36,25 @@ module Yast
       attr_reader :supported_unit_files, :supported_units
 
       def initialize
+      end
+
+      def read
         @services   = {}
         @unit_files = {}
         @units      = {}
+
         load_unit_files
         load_units
+
         @supported_unit_files = unit_files.select do |_, status|
           Status::SUPPORTED_STATES.member?(status)
         end
+
         @supported_units = units.reject do |name, _|
           unit_files[name] && !Status::SUPPORTED_STATES.member?(unit_files[name])
         end
         supported_units.select! { |_, attributes| attributes[:status] == Status::LOADED }
-      end
 
-      def read
         extract_services_from_units
         extract_services_from_unit_files
         services
@@ -110,17 +116,22 @@ module Yast
       end
     end
 
-    attr_reader   :services, :modified
+    attr_reader   :modified
     attr_accessor :errors, :services
 
-    alias_method :all, :services
     alias_method :modified?, :modified
+
+    def services
+      @services ||= read
+      @services
+    end
+
+    alias_method :all, :services
 
     def initialize
       textdomain 'services-manager'
       @errors   = []
       @modified = false
-      @services = read
     end
 
     # Sets whether service should be running after writing the configuration
@@ -228,16 +239,28 @@ module Yast
 
     # Returns only enabled services, the rest is expected to be disabled
     def export
-      exported_services = services.select do |service_name, properties|
+      enabled_services = services.select do |service_name, properties|
         enabled(service_name) && properties[:loaded]
       end
-      Builtins.y2milestone("Exported services: #{exported_services.keys}")
-      exported_services.keys
+
+      # Only services modifed by the user to be disabled are exported
+      # to AutoYast profile, untouched services are not exported
+      disabled_services = services.select do |service_name, properties|
+        !enabled(service_name) && properties[:modified]
+      end
+
+      log.info "Export: enabled services: #{enabled_services.keys}, disabled services: #{disabled_services.keys}"
+
+      {
+        'enable' => enabled_services.keys,
+        'disable' => disabled_services.keys,
+      }
     end
 
     def import profile
-      Builtins.y2milestone("List of services from autoyast profile: #{profile.services.map(&:name)}")
+      log.info "List of services from autoyast profile: #{profile.services.map(&:name)}"
       non_existent_services = []
+
       profile.services.each do |service|
         case service.status
         when 'enable'
@@ -248,6 +271,7 @@ module Yast
           Builtins.y2error("Unknown status '#{service.status}' for service '#{service.name}'")
         end
       end
+
       return true if non_existent_services.empty?
 
       Builtins.y2error("Services #{non_existent_services.inspect} don't exist on this system")
