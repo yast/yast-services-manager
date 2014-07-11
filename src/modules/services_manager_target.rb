@@ -57,40 +57,43 @@ module Yast
     # @return [String] Name of the default systemd target unit
     attr_reader :default_target
 
+    def initialize
+      textdomain 'services-manager'
+      @modified = false
+      @default_target = ''
+    end
+
     # @return [Hash] Collection of available targets
     # @example {'rescue' => {:enabled=>false, :loaded=>true, :active=>false, :description=>'Rescue'}}
-    attr_reader :targets
+    def targets
+      @targets ||= read
+      @targets
+    end
 
     alias_method :all, :targets
 
-    def initialize
-      textdomain 'services-manager'
-      @targets = {}
-      @modified = false
-      @default_target = ''
-      read_targets
-    end
-
-    def read_targets
+    def read
       return unless Mode.normal
 
       default_target = SystemdTarget.get_default
       @default_target = default_target ? default_target.name : ''
 
+      systemd_targets = {}
+
       SystemdTarget.all.each do |target|
         next unless target.allow_isolate?
         next if BLACKLISTED_TARGETS.member?(target.name)
 
-        targets[target.name] = {
+        systemd_targets[target.name] = {
           :enabled => target.enabled?,
           :loaded  => target.loaded?,
           :active  => target.active?,
           :description => target.description
         }
       end
-    end
 
-    alias_method :read, :read_targets
+      systemd_targets
+    end
 
     def default_target= new_default
       if Mode.normal && !targets.keys.include?(new_default)
@@ -124,8 +127,7 @@ module Yast
     end
 
     def reset
-      targets.clear
-      read_targets
+      @targets.clear
       self.modified = false
     end
 
