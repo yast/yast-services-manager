@@ -3,10 +3,29 @@
 require_relative 'test_helper'
 
 module Yast
+  Yast.import 'ServicesManagerTarget'
+  Yast.import 'ServicesManager'
+
+  TARGETS = {
+    "multi-user"=>{
+      :enabled=>true, :loaded=>true, :active=>true, :description=>"Multi-User System"
+    },
+    "emergency"=>{
+      :enabled=>false, :loaded=>true, :active=>false, :description=>"Emergency Mode"
+    },
+    "graphical"=>{
+      :enabled=>false, :loaded=>true, :active=>false, :description=>"Graphical Interface"
+    },
+    "rescue"=>{
+      :enabled=>false, :loaded=>true, :active=>false, :description=>"Rescue Mode"
+    }
+  }
+
   describe ServicesManager do
     before(:each) do
       log.info "--- test ---"
-      allow(ServicesManagerService).to receive(:read).and_return({})
+      allow(Yast::ServicesManagerService).to receive(:services).and_return({})
+      allow(Yast::ServicesManagerTarget).to receive(:targets).and_return(TARGETS)
     end
 
     context "Autoyast API" do
