@@ -35,9 +35,6 @@ module Yast
       attr_reader :unit_files, :units, :services
       attr_reader :supported_unit_files, :supported_units
 
-      def initialize
-      end
-
       def read
         @services   = {}
         @unit_files = {}
@@ -123,7 +120,6 @@ module Yast
 
     def services
       @services ||= read
-      @services
     end
 
     alias_method :all, :services

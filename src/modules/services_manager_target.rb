@@ -84,8 +84,6 @@ module Yast
       default_target = SystemdTarget.get_default
       @default_target = default_target ? default_target.name : ''
 
-      @targets = {}
-
       SystemdTarget.all.each do |target|
         next unless target.allow_isolate?
         next if BLACKLISTED_TARGETS.member?(target.name)
@@ -133,8 +131,6 @@ module Yast
     end
 
     def reset
-      @targets = nil
-      @default_target = nil
       self.modified = false
       read
     end
