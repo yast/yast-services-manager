@@ -2,6 +2,8 @@
 
 require_relative "test_helper"
 
+Yast.import "Mode"
+
 module Yast
   module TestTarget
     class Template < Struct.new(
@@ -21,11 +23,18 @@ module Yast
   Yast::textdomain "services-manager"
 
   describe ServicesManagerTarget do
+    before(:each) do
+      log.info "--- test ---"
+      allow(Yast::Mode).to receive(:mode).and_return("normal")
+    end
+
     context "reading targets" do
       it "reads default target name and other targets" do
         expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
         expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+
         target = ServicesManagerTargetClass.new
+
         expect(target.default_target).to eq('graphical')
         expect(target.targets).not_to be_empty
         expect(target.targets.keys).to include('multi-user')
@@ -35,7 +44,7 @@ module Yast
       end
 
       it "skips reading targets if Mode.normal is false" do
-        Mode.SetMode('not-normal')
+        allow(Yast::Mode).to receive(:mode).and_return("instalation")
         expect(SystemdTarget).not_to receive(:all)
         expect(SystemdTarget).not_to receive(:get_default)
         target = ServicesManagerTargetClass.new
@@ -58,8 +67,8 @@ module Yast
       end
 
       it "skips setting the default target if not modified" do
-        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
-        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+        allow(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+        allow(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
         target = ServicesManagerTargetClass.new
         expect(target.modified).to eq(false)
         expect(target.save).to eq(true)

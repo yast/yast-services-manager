@@ -54,25 +54,32 @@ module Yast
     # @return [String] Shows a reason why the default target has been selected;
     attr_accessor :proposal_reason
 
-    # @return [String] Name of the default systemd target unit
-    attr_reader :default_target
+    def initialize
+      textdomain 'services-manager'
+      @modified = false
+    end
 
     # @return [Hash] Collection of available targets
     # @example {'rescue' => {:enabled=>false, :loaded=>true, :active=>false, :description=>'Rescue'}}
-    attr_reader :targets
+    def targets
+      read if @targets.nil?
+      @targets
+    end
+
+    # @return [String] Name of the default systemd target unit
+    def default_target
+      read if @default_target.nil?
+      @default_target
+    end
 
     alias_method :all, :targets
 
-    def initialize
-      textdomain 'services-manager'
+    def read
       @targets = {}
-      @modified = false
       @default_target = ''
-      read_targets
-    end
 
-    def read_targets
-      return unless Mode.normal
+      # Reads the data on a running system only
+      return true unless Mode.normal
 
       default_target = SystemdTarget.get_default
       @default_target = default_target ? default_target.name : ''
@@ -81,16 +88,16 @@ module Yast
         next unless target.allow_isolate?
         next if BLACKLISTED_TARGETS.member?(target.name)
 
-        targets[target.name] = {
+        @targets[target.name] = {
           :enabled => target.enabled?,
           :loaded  => target.loaded?,
           :active  => target.active?,
           :description => target.description
         }
       end
-    end
 
-    alias_method :read, :read_targets
+      !@targets.empty?
+    end
 
     def default_target= new_default
       if Mode.normal && !targets.keys.include?(new_default)
@@ -124,9 +131,8 @@ module Yast
     end
 
     def reset
-      targets.clear
-      read_targets
       self.modified = false
+      read
     end
 
     publish({:function => :all,            :type => "map <string, map> ()" })

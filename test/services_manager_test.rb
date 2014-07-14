@@ -3,30 +3,117 @@
 require_relative 'test_helper'
 
 module Yast
+  Yast.import 'ServicesManagerTarget'
+  Yast.import 'ServicesManager'
+
+  TARGETS = {
+    "multi-user"=>{
+      :enabled=>true, :loaded=>true, :active=>true, :description=>"Multi-User System"
+    },
+    "emergency"=>{
+      :enabled=>false, :loaded=>true, :active=>false, :description=>"Emergency Mode"
+    },
+    "graphical"=>{
+      :enabled=>false, :loaded=>true, :active=>false, :description=>"Graphical Interface"
+    },
+    "rescue"=>{
+      :enabled=>false, :loaded=>true, :active=>false, :description=>"Rescue Mode"
+    }
+  }
+
   describe ServicesManager do
+    before(:each) do
+      log.info "--- test ---"
+      allow(Yast::ServicesManagerService).to receive(:services).and_return({})
+      allow(Yast::ServicesManagerTarget).to receive(:targets).and_return(TARGETS)
+    end
+
     context "Autoyast API" do
       it "exports systemd target and services" do
         services = {
-          'a' => {:enabled=>true, :loaded=>true},
-          'b' => {:enabled=>false, :loaded=>true}
+          'a' => { :enabled => true,  :loaded => true },
+          'b' => { :enabled => false, :modified => true },
+          'c' => { :enabled => true,  :loaded => true },
+          # Service will not be exported: it's not modified
+          'd' => { :enabled => false, :modified => false },
+          # Service will not be exported: it's not loaded
+          'e' => { :enabled => true,  :loaded => false },
         }
-        ServicesManagerService.stub(:services).and_return(services)
-        ServicesManagerTarget.stub(:default_target).and_return('some_target')
+
+        allow(ServicesManagerService).to receive(:services).and_return(services)
+        expect(ServicesManagerTarget).to receive(:default_target).and_return('some_target')
 
         data = Yast::ServicesManager.export
         expect(data['default_target']).to eq('some_target')
-        expect(data['services']).to eq(['a'])
-
+        expect(data['services']['enable'].sort).to eq(['a', 'c'].sort)
+        expect(data['services']['disable'].sort).to eq(['b'].sort)
       end
 
-      it "imports data for systemd target and services" do
-        data = {
-          'default_target' => 'multi-user',
-          'services'       => ['x', 'y', 'z']
-        }
-        expect(ServicesManagerService).to receive(:import)
-        expect(ServicesManagerTarget).to receive(:import)
-        ServicesManager.import(data)
+      context "when using AutoYast profile written in SLE 11 format" do
+        it "imports data for systemd target and services" do
+          data = {
+            'default' => '3',
+            'services' => [
+              {
+                'service_name' => 'sa',
+                'service_status' => 'enable',
+                'service_start' => '3',
+              },
+              {
+                'service_name' => 'sb',
+                'service_status' => 'enable',
+                'service_start' => '3',
+              },
+              {
+                'service_name' => 'sc',
+                'service_status' => 'disable',
+                'service_start' => '3',
+              },
+            ]
+          }
+
+          expect(ServicesManagerService).to receive(:exists?).with(/^s[abc]$/).at_least(:once).and_return(true)
+          expect(ServicesManagerService).to receive(:enable).with(/^s[ab]$/).twice.and_return(true)
+          expect(ServicesManagerService).to receive(:disable).with(/^sc$/).once.and_return(true)
+
+          expect(ServicesManagerService).to receive(:import).and_call_original
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to be_true
+        end
+      end
+
+      context "when using AutoYast profile written in pre-SLE 12 format" do
+        it "imports data for systemd target and services" do
+          data = {
+            'default_target' => 'multi-user',
+            'services'       => ['x', 'y', 'z']
+          }
+
+          expect(ServicesManagerService).to receive(:exists?).with(/^[xyz]$/).at_least(:once).and_return(true)
+
+          expect(ServicesManagerService).to receive(:import).and_call_original
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to be_true
+        end
+      end
+
+      context "when using AutoYast profile in the current format" do
+        it "imports data for systemd target and services" do
+          data = {
+            'default_target' => 'multi-user',
+            'services' => {
+              'enable'  => ['x', 'y', 'z'],
+              'disable' => ['d', 'e', 'f'],
+            },
+          }
+          expect(ServicesManagerService).to receive(:exists?).with(/^[xyzdef]$/).at_least(:once).and_return(true)
+          expect(ServicesManagerService).to receive(:enable).with(/^[xyz]$/).exactly(3).times.and_return(true)
+          expect(ServicesManagerService).to receive(:disable).with(/^[def]$/).exactly(3).times.and_return(true)
+
+          expect(ServicesManagerService).to receive(:import).and_call_original
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to be_true
+        end
       end
 
       it "returns HTML-formatted autoyast summary with HTML-escaped values" do
