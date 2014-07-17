@@ -4,7 +4,11 @@
 
 <h2><%= _('Services Manager') %></h2>
 <p><b><%= _('Default Target') %></b></p>
-<p><%= ERB::Util.html_escape(ServicesManagerTarget.export) %></p>
+<ul><li><%= ERB::Util.html_escape(
+  ServicesManagerTargetClass::BaseTargets.localize(
+    ServicesManagerTarget.export
+  )
+) %></li></ul>
 
 <% services = ServicesManagerService.export %>
 
