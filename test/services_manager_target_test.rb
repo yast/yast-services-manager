@@ -43,14 +43,13 @@ module Yast
         expect(target.targets.keys).not_to include('sleep')
       end
 
-      it "skips reading targets if Mode.normal is false" do
-        allow(Yast::Mode).to receive(:mode).and_return("instalation")
+      it "skips reading targets if `Stage` is `initial`" do
+        allow(Yast::Stage).to receive(:stage).and_return("initial")
         expect(SystemdTarget).not_to receive(:all)
         expect(SystemdTarget).not_to receive(:get_default)
         target = ServicesManagerTargetClass.new
         expect(target.targets).to be_empty
         expect(target.default_target).to be_empty
-        Mode.SetMode('normal')
       end
     end
 

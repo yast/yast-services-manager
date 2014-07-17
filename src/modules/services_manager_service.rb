@@ -2,7 +2,6 @@ require "yast"
 
 module Yast
   import "Service"
-  import "Mode"
 
   class ServicesManagerServiceClass < Module
     include Yast::Logger

@@ -1,7 +1,7 @@
 require "yast"
 
 module Yast
-  import 'Mode'
+  import 'Stage'
   import 'SystemdTarget'
 
   class ServicesManagerTargetClass < Module
@@ -79,7 +79,7 @@ module Yast
       @default_target = ''
 
       # Reads the data on a running system only
-      return true unless Mode.normal
+      return true if Stage.initial
 
       default_target = SystemdTarget.get_default
       @default_target = default_target ? default_target.name : ''
@@ -100,7 +100,7 @@ module Yast
     end
 
     def default_target= new_default
-      if Mode.normal && !targets.keys.include?(new_default)
+      if !Stage.initial && !targets.keys.include?(new_default)
         raise "Target #{new_default} not found, available only #{targets.keys.join(', ')}"
       end
 
