@@ -118,10 +118,13 @@ module Yast
 
       it "returns HTML-formatted autoyast summary with HTML-escaped values" do
         expect(ServicesManagerTarget).to receive(:export).and_return("multi-head-graphical-hydra")
-        expect(ServicesManagerService).to receive(:export).and_return(["service-1", "service-<br>-2", "service-<b>name</b>-3"])
+        expect(ServicesManagerService).to receive(:export).and_return({
+          "enable" => ["service-1", "service-<br>-2", "service-<b>name</b>-3"],
+          "disable" => ["service-4", "service-<br>-5", "service-<b>name</b>-6"],
+        })
 
         summary = ServicesManager.auto_summary
-        ["multi-head-graphical-hydra", "service-1", "service-&lt;br&gt;-2", "service-&lt;b&gt;name&lt;/b&gt;-3"].each do |item|
+        ["multi-head-graphical-hydra", "service-[14]", "service-&lt;br&gt;-[25]", "service-&lt;b&gt;name&lt;/b&gt;-[36]"].each do |item|
           expect(summary).to match(/#{item}/)
         end
       end

@@ -6,9 +6,19 @@
 <p><b><%= _('Default Target') %></b></p>
 <p><%= ERB::Util.html_escape(ServicesManagerTarget.export) %></p>
 
-<p><b><%= _('Enabled Services') %></b></p>
+<% services = ServicesManagerService.export %>
+
+<h2><%= _('Services') %></h2>
+<p><b><%= _('Enabled') %></b></p>
 <ul>
-<% ServicesManagerService.export.each do |service| %>
+<% services.fetch("enable", []).each do |service| %>
+  <li><%= ERB::Util.html_escape(service) %></li>
+<% end %>
+</ul>
+
+<p><b><%= _('Disabled') %></b></p>
+<ul>
+<% services.fetch("disable", []).each do |service| %>
   <li><%= ERB::Util.html_escape(service) %></li>
 <% end %>
 </ul>
