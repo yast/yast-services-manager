@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Thu Jul 17 15:12:50 CEST 2014 - locilka@suse.com
+
+- Fixed AutoYast summary to show both enabled and disabled services
+- Fixed reading targets - now they read in all cases except the
+  initial installation where systemctl doesn't work in chroot
+- Fixed AutoYast schema to allow service or listentry as AutoYast
+  by default exports all single entries as 'listentry'
+- All bnc#887695 and bnc#887115
+- 3.1.22
+
+-------------------------------------------------------------------
 Mon Jul 14 10:20:39 CEST 2014 - locilka@suse.com
 
 - ServicesManagerServiceClass and ServicesManagerTargetClass

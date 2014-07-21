@@ -30,7 +30,8 @@ runlevel_content = element runlevel { runlevel_default? & runlevel_services? }
 
 # current services-manager schema
 
-service = element service { text }
+# by default, AutoYast exports list entries as 'listentry'
+service = element service { text } | element listentry { text }
 
 enabled =
   element enabled {
