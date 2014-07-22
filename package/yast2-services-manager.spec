@@ -33,7 +33,8 @@ BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby
-Requires:       yast2 >= 3.1.82
+# ServicesManager library
+Requires:       yast2 >= 3.1.86
 Requires:       yast2-ruby-bindings >= 1.2.0
 # need new enough installation for its inst clients
 Conflicts:      yast2-installation < 3.1.32
@@ -44,7 +45,8 @@ Conflicts:      yast2-runlevel
 BuildRequires:  ruby
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
-BuildRequires:  yast2 >= 3.1.82
+# ServicesManager library
+BuildRequires:  yast2 >= 3.1.86
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem-yast-rake >= 0.1.7
 BuildRequires:  rubygem-rspec
