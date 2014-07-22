@@ -2,6 +2,7 @@ require "yast"
 
 module Yast
   import "Service"
+  import "ServicesProposal"
 
   class ServicesManagerServiceClass < Module
     include Yast::Logger
@@ -247,8 +248,8 @@ module Yast
       log.info "Export: enabled services: #{enabled_services.keys}, disabled services: #{disabled_services.keys}"
 
       {
-        'enable' => enabled_services.keys,
-        'disable' => disabled_services.keys,
+        'enable' => enabled_services.keys | ServicesProposal.enabled_services,
+        'disable' => disabled_services.keys | ServicesProposal.disabled_services,
       }
     end
 
