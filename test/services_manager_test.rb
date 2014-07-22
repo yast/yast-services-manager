@@ -40,13 +40,17 @@ module Yast
           'e' => { :enabled => true,  :loaded => false },
         }
 
+        # Services set during installation
+        ServicesProposal.enable_service('aaa')
+        ServicesProposal.disable_service('bbb')
+
         allow(ServicesManagerService).to receive(:services).and_return(services)
         expect(ServicesManagerTarget).to receive(:default_target).and_return('some_target')
 
         data = Yast::ServicesManager.export
         expect(data['default_target']).to eq('some_target')
-        expect(data['services']['enable'].sort).to eq(['a', 'c'].sort)
-        expect(data['services']['disable'].sort).to eq(['b'].sort)
+        expect(data['services']['enable'].sort).to eq(['a', 'c', 'aaa'].sort)
+        expect(data['services']['disable'].sort).to eq(['b', 'bbb'].sort)
       end
 
       context "when using AutoYast profile written in SLE 11 format" do
