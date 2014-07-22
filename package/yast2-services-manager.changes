@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jul 22 08:57:04 CEST 2014 - locilka@suse.com
+
+- Services Manager client for AutoYast marked as clonable (meaning:
+  can read the current system state) (bnc#887115)
+- 3.1.23
+
+-------------------------------------------------------------------
 Thu Jul 17 15:12:50 CEST 2014 - locilka@suse.com
 
 - Fixed AutoYast summary to show both enabled and disabled services
