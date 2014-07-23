@@ -139,5 +139,28 @@ module Yast
       expect(sshd[:active]).to eq(status)
       expect(sshd[:modified]).to eq(false)
     end
+
+    context "when enabling is failing" do
+      before do
+        stub_services
+        Service.stub(:Enable).and_return(false)
+        Service.stub(:Disable).and_return(false)
+        service.toggle 'postfix'
+        service.save
+      end
+
+      it "reports errors" do
+        expect(service.errors.size).to eq 1
+        expect(service.errors.first).to start_with 'Could not enable postfix'
+      end
+
+      it "cleans messages after reset" do
+        service.reset
+        expect(service.errors.size).to eq 0
+        service.toggle 'postfix'
+        service.save
+        expect(service.errors.size).to eq 1
+      end
+    end
   end
 end

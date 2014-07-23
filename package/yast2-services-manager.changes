@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Jul 25 12:40:31 UTC 2014 - ancor@suse.com
+
+- Ensures that the errors list is cleared if the user decides to
+  continue after a failure (by delegating ServiceManager.errors to
+  ServiceManagerService)
+- 3.1.27
+
+-------------------------------------------------------------------
 Thu Jul 24 11:55:32 CEST 2014 - locilka@suse.com
 
 - While saving services state (activate/deactivate), do not touch
