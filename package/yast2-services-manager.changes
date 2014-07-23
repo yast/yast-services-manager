@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jul 23 18:51:57 CEST 2014 - locilka@suse.com
+
+- Showing info that Services Manager hasn't been configured yet in
+  AutoYast till it's cloned from the system or user enters
+  the module and saves its configuration (bnc#887694)
+- 3.1.25
+
+-------------------------------------------------------------------
 Tue Jul 22 15:01:52 CEST 2014 - locilka@suse.com
 
 - Using new library ServicesProposal, that holds information about
