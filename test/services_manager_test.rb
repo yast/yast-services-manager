@@ -6,6 +6,9 @@ module Yast
   Yast.import 'ServicesManagerTarget'
   Yast.import 'ServicesManager'
 
+  extend Yast::I18n
+  Yast::textdomain "services-manager"
+
   TARGETS = {
     "multi-user"=>{
       :enabled=>true, :loaded=>true, :active=>true, :description=>"Multi-User System"
@@ -120,16 +123,26 @@ module Yast
         end
       end
 
-      it "returns HTML-formatted autoyast summary with HTML-escaped values" do
-        expect(ServicesManagerTarget).to receive(:export).and_return("multi-head-graphical-hydra")
-        expect(ServicesManagerService).to receive(:export).and_return({
-          "enable" => ["service-1", "service-<br>-2", "service-<b>name</b>-3"],
-          "disable" => ["service-4", "service-<br>-5", "service-<b>name</b>-6"],
-        })
+      context "when configuration hasn't been cloned/modified" do
+        it "returns information that it hasn't been configured yet" do
+          expect(ServicesManager).to receive(:modified?).and_return(false)
+          expect(ServicesManager.auto_summary).to eq(Yast::_("Not configured yet."))
+        end
+      end
 
-        summary = ServicesManager.auto_summary
-        ["multi-head-graphical-hydra", "service-[14]", "service-&lt;br&gt;-[25]", "service-&lt;b&gt;name&lt;/b&gt;-[36]"].each do |item|
-          expect(summary).to match(/#{item}/)
+      context "when configuration has been cloned/modified" do
+        it "returns HTML-formatted autoyast summary with HTML-escaped values" do
+          expect(ServicesManager).to receive(:modified?).and_return(true)
+          expect(ServicesManagerTarget).to receive(:export).and_return("multi-head-graphical-hydra")
+          expect(ServicesManagerService).to receive(:export).and_return({
+            "enable" => ["service-1", "service-<br>-2", "service-<b>name</b>-3"],
+            "disable" => ["service-4", "service-<br>-5", "service-<b>name</b>-6"],
+          })
+
+          summary = ServicesManager.auto_summary
+          ["multi-head-graphical-hydra", "service-[14]", "service-&lt;br&gt;-[25]", "service-&lt;b&gt;name&lt;/b&gt;-[36]"].each do |item|
+            expect(summary).to match(/#{item}/)
+          end
         end
       end
     end

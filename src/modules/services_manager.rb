@@ -27,8 +27,13 @@ module Yast
     end
 
     def auto_summary
-      erb_template = File.expand_path("../../data/services-manager/autoyast_summary.erb", __FILE__)
-      ERB.new(File.read(erb_template)).result(binding)
+      if !modified?
+        # AutoYast summary
+        _("Not configured yet.")
+      else
+        erb_template = File.expand_path("../../data/services-manager/autoyast_summary.erb", __FILE__)
+        ERB.new(File.read(erb_template)).result(binding)
+      end
     end
 
     def import data
