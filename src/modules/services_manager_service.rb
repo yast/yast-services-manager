@@ -3,6 +3,7 @@ require "yast"
 module Yast
   import "Service"
   import "ServicesProposal"
+  import "SystemdService"
 
   class ServicesManagerServiceClass < Module
     include Yast::Logger
@@ -382,11 +383,23 @@ module Yast
     end
 
     def switch_services
-        Builtins.y2milestone "Switching the services"
+      log.info "Switching services"
       services_switched = []
+
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified]
-        if switch!(service_name)
+
+        service = SystemdService.find(service_name)
+        unless service
+          log.error "Cannot find service #{service_name}"
+          next
+        end
+
+        # Do not start or stop services that are already in the desired state
+        # they might be coming from AutoYast import and thus they are :modified.
+        if service.loaded? == service_attributes[:loaded] || service.active? == service_attributes[:active]
+          log.info "Skipping service #{service_name} - it's already in desired state"
+        elsif switch!(service_name)
           services_switched << service_name
         else
           change  = active(service_name) ? 'stop' : 'start'
@@ -398,6 +411,7 @@ module Yast
           Builtins.y2error("Error: %1", message)
         end
       end
+
       services_switched
     end
 

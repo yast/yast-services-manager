@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Jul 24 11:55:32 CEST 2014 - locilka@suse.com
+
+- While saving services state (activate/deactivate), do not touch
+  a service, that is already in the desired state (bnc#884756)
+- 3.1.26
+
+-------------------------------------------------------------------
 Wed Jul 23 18:51:57 CEST 2014 - locilka@suse.com
 
 - Showing info that Services Manager hasn't been configured yet in
