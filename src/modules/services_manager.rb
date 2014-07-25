@@ -12,11 +12,8 @@ module Yast
     TARGET   = 'default_target'
     SERVICES = 'services'
 
-    attr_reader :errors
-
     def initialize
       textdomain 'services-manager'
-      @errors = []
     end
 
     def export
@@ -52,13 +49,19 @@ module Yast
       ServicesManagerService.read
     end
 
+    # Errors are delegated to ServiceManagerService
+    #
+    # @see ServiceManagerService#errors
+    def errors
+      ServicesManagerService.errors
+    end
+
     # Saves the current configuration
     #
     # @return Boolean if successful
     def save
       target_saved = ServicesManagerTarget.save
       services_saved = ServicesManagerService.save
-      errors << ServicesManagerService.errors
       !!(target_saved && services_saved)
     end
 

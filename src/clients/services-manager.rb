@@ -72,8 +72,6 @@ class ServicesManagerClient < Yast::Client
     success = ServicesManager.save
     UI.CloseDialog
     if !success
-      # FIXME if user select to continue the content of the popup is not discarded
-      # and new error messages will be displayed beneath the old ones
       success = ! Popup::ContinueCancel(
         _("Writing the configuration failed:\n" +
         ServicesManager.errors.join("\n")            +

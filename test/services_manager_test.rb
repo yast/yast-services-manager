@@ -31,6 +31,13 @@ module Yast
       allow(Yast::ServicesManagerTarget).to receive(:targets).and_return(TARGETS)
     end
 
+    describe ".errors" do
+      it "delegates errors to ServiceManagerService" do
+        allow(Yast::ServicesManagerService).to receive(:errors).and_return(["Error msg"])
+        expect(Yast::ServicesManager.errors).to eq ["Error msg"]
+      end
+    end
+
     context "Autoyast API" do
       it "exports systemd target and services" do
         services = {

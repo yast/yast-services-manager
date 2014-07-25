@@ -3,14 +3,17 @@
 require_relative "test_helper"
 
 module Yast
+  extend Yast::I18n
+  Yast::textdomain "services-manager"
+
   describe ServicesManagerService do
     attr_reader :service
 
     def stub_services
-      Service.stub(:Enable).and_return(true)
-      Service.stub(:Disable).and_return(true)
-      Service.stub(:Start).and_return(true)
-      Service.stub(:Stop).and_return(true)
+      allow(Service).to receive(:Enable).and_return true
+      allow(Service).to receive(:Disable).and_return true
+      allow(Service).to receive(:Start).and_return true
+      allow(Service).to receive(:Stop).and_return true
     end
 
     before do
@@ -138,6 +141,30 @@ module Yast
       sshd = service.all['sshd']
       expect(sshd[:active]).to eq(status)
       expect(sshd[:modified]).to eq(false)
+    end
+
+    context "when enabling is failing" do
+      before do
+        stub_services
+        allow(Service).to receive(:Enable).and_return false
+        allow(Service).to receive(:Disable).and_return false
+        service.toggle 'postfix'
+        service.save
+      end
+
+      it "reports errors" do
+        expect(service.errors.first).to start_with Yast::_('Could not enable postfix')
+      end
+
+      it "cleans messages after reset" do
+        expect(service.errors.size).to eq 1
+        service.reset
+        expect(service.errors.size).to eq 0
+        # Let's fail again
+        service.toggle 'postfix'
+        service.save
+        expect(service.errors.size).to eq 1
+      end
     end
   end
 end
