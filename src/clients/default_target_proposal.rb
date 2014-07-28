@@ -180,7 +180,15 @@ module Yast
             "Default target has been changed before by user manually to '#{ServicesManagerTarget.default_target}'"
           )
         end
-        change_default_target
+
+        # While autoyast installation default target will be set in the configuration file
+        # (bnc#889055)
+        if Mode.autoinst || Mode.autoupgrade
+          self.default_target = ServicesManagerTarget.default_target
+        else
+          change_default_target
+        end
+
         detect_warnings(default_target)
         Builtins.y2milestone("Systemd default target is set to '#{ServicesManagerTarget.default_target}'")
       end
