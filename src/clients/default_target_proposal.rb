@@ -181,7 +181,7 @@ module Yast
           )
         end
 
-        # While autoyast installation default target will be set in the configuration file
+        # While autoyast installation default target will be set by autoyast (file inst_autosetup.rb).
         # (bnc#889055)
         if Mode.autoinst || Mode.autoupgrade
           self.default_target = ServicesManagerTarget.default_target
