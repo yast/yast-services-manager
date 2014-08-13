@@ -202,7 +202,7 @@ module Yast
 
         return proposal if warnings.empty?
 
-        proposal.update 'warning_level' => :warning
+        proposal.update 'warning_level' => :none
         proposal.update 'warning'       => list(*warnings)
         proposal
       end
