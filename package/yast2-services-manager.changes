@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Aug 19 10:45:25 CEST 2014 - locilka@suse.com
+
+- Targets marked for translations, adjusting UI in a way that even
+  longer targets (translations) fit into it (bnc#892366)
+- 3.1.29
+
+-------------------------------------------------------------------
 Mon Jul 28 15:42:04 CEST 2014 - schubi@suse.de
 
 - Do not set default target while autoyast installation/update.
