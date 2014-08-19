@@ -82,15 +82,34 @@ class ServicesManagerClient < Yast::Client
     success
   end
 
+  def system_targets_items
+    ServicesManagerTarget.all.collect do |target, target_def|
+      label = target_def[:description] || target
+      Item(Id(target), label, (target == ServicesManagerTarget.default_target))
+    end
+  end
+
   # Fills the dialog contents
   def adjust_dialog
+    system_targets = system_targets_items
+    # Translated target names are known in runtime only
+    max_target_length = system_targets.collect{|i| i[1].length}.max
+
     contents = VBox(
-      Left(ComboBox(
-        Id(Id::DEFAULT_TARGET),
-        Opt(:notify),
-        _('Default System &Target'),
-        []
-      )),
+      Left(
+        HSquash(
+          MinWidth(
+            # Additional space for UI features
+            max_target_length + 2,
+            ComboBox(
+              Id(Id::DEFAULT_TARGET),
+              Opt(:notify),
+              _('Default System &Target'),
+              system_targets
+            )
+          )
+        )
+      ),
       VSpacing(1),
       Table(
         Id(Id::SERVICES_TABLE),
@@ -118,7 +137,6 @@ class ServicesManagerClient < Yast::Client
     Wizard.SetAbortButton(:abort, Label.CancelButton)
 
     redraw_services
-    redraw_system_targets
   end
 
   # Redraws the services dialog
@@ -165,13 +183,7 @@ class ServicesManagerClient < Yast::Client
     end
   end
 
-  def redraw_system_targets
-    targets = ServicesManagerTarget.all.collect do |target, target_def|
-      label = target_def[:description] || target
-      Item(Id(target), label, (target == ServicesManagerTarget.default_target))
-    end
-    UI.ChangeWidget(Id(Id::DEFAULT_TARGET), :Items, targets)
-  end
+
 
   def handle_dialog
     new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
