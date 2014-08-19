@@ -22,6 +22,14 @@ module Yast
         GRAPHICAL => N_("Graphical mode"),
         # Default systemd target (previously: runlevel 3) option #2
         MULTIUSER => N_("Text mode"),
+
+        # Systemd targets, bnc#892366
+        'emergency.target'          => N_("Emergency Mode"),
+        'graphical.target'          => N_("Graphical Interface"),
+        'initrd.target'             => N_("Initrd Default Target"),
+        'initrd-switch-root.target' => N_("Switch Root"),
+        'multi-user.target'         => N_("Multi-User System"),
+        'rescue.target'             => N_("Rescue Mode"),
       }
 
       def self.localize(target_name)
@@ -92,7 +100,7 @@ module Yast
           :enabled => target.enabled?,
           :loaded  => target.loaded?,
           :active  => target.active?,
-          :description => target.description
+          :description => BaseTargets.localize("#{target.name}.target")
         }
       end
 
