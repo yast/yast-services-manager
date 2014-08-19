@@ -83,7 +83,7 @@ class ServicesManagerClient < Yast::Client
   end
 
   def system_targets_items
-    targets = ServicesManagerTarget.all.collect do |target, target_def|
+    ServicesManagerTarget.all.collect do |target, target_def|
       label = target_def[:description] || target
       Item(Id(target), label, (target == ServicesManagerTarget.default_target))
     end
@@ -93,7 +93,7 @@ class ServicesManagerClient < Yast::Client
   def adjust_dialog
     system_targets = system_targets_items
     # Translated target names are known in runtime only
-    max_target_length = system_targets.collect{|i| i[1].length}.sort.last
+    max_target_length = system_targets.collect{|i| i[1].length}.max
 
     contents = VBox(
       Left(
