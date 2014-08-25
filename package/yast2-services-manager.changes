@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug 25 09:25:06 CEST 2014 - schubi@suse.de
+
+- Autoyast: Moved minimal configuration to a central place in
+  inst_finish. (bnc#886464)
+- 3.1.30
+
+-------------------------------------------------------------------
 Tue Aug 19 10:45:25 CEST 2014 - locilka@suse.com
 
 - Targets marked for translations, adjusting UI in a way that even
