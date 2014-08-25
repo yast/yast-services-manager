@@ -1,5 +1,3 @@
-require "installation/minimal_installation"
-
 module Yast
   import 'Directory'
   import 'Mode'
@@ -27,12 +25,10 @@ module Yast
     end
 
     def info
-      minimal_inst = ::Installation::MinimalInstallation.instance.enabled?
       {
         'steps' => 1,
         'title' => _('Saving default systemd target...'),
-        'when'  => minimal_inst ? [] :
-          [ :installation, :live_installation, :autoinst ]
+        'when'  => [ :installation, :live_installation, :autoinst ]
       }
     end
 
