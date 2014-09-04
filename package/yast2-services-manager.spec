@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        3.1.30
+Version:        3.1.31
 
 Release:        0
 BuildArch:      noarch
@@ -48,8 +48,8 @@ BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # ServicesManager library
 BuildRequires:  yast2 >= 3.1.86
 # Support for 'data' directory in rake install task
-BuildRequires:  rubygem-yast-rake >= 0.1.7
-BuildRequires:  rubygem-rspec
+BuildRequires:  rubygem(yast-rake) >= 0.1.7
+BuildRequires:  rubygem(rspec)
 
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
