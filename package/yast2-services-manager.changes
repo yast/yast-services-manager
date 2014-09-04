@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Sep  4 12:25:31 UTC 2014 - mvidner@suse.com
+
+- Use a more flexible rubygem requirement syntax (bnc#895069)
+- 3.1.31
+
+-------------------------------------------------------------------
 Mon Aug 25 09:25:06 CEST 2014 - schubi@suse.de
 
 - Autoyast: Moved minimal configuration to a central place in
