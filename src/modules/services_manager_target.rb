@@ -10,9 +10,7 @@ module Yast
     module BaseTargets
       extend Yast::I18n
 
-      def initialize
-        textdomain 'services-manager'
-      end
+      textdomain 'services-manager'
 
       GRAPHICAL = 'graphical'
       MULTIUSER = 'multi-user'
