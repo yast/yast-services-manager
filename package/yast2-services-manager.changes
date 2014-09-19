@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Sep 19 16:31:09 CEST 2014 - locilka@suse.com
+
+- Defining safe minimal width of the Default Target UI entry
+  (bnc#897443)
+- 3.1.33
+
+-------------------------------------------------------------------
 Fri Sep 19 15:46:18 CEST 2014 - locilka@suse.com
 
 - Defining textdomain in ServicesManagerTarget::BaseTargets module
