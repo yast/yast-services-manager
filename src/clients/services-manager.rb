@@ -9,6 +9,8 @@ class ServicesManagerClient < Yast::Client
   Yast.import "Message"
   Yast.import "Mode"
 
+  include Yast::Logger
+
   module Id
     SERVICES_TABLE = :services_table
     TOGGLE_RUNNING = :start_stop
@@ -93,7 +95,13 @@ class ServicesManagerClient < Yast::Client
   def adjust_dialog
     system_targets = system_targets_items
     # Translated target names are known in runtime only
-    max_target_length = system_targets.collect{|i| i[1].length}.max || 20
+    max_target_length = system_targets.collect{|i| i[1].length}.max
+
+    # FIXME: Hotfix: For a yet unknown reason, max_target_length is sometimes nil
+    unless max_target_length
+      log.error "max_target_length is not defined, system targets: #{system_targets.inspect}"
+      max_target_length = 20
+    end
 
     contents = VBox(
       Left(
