@@ -93,7 +93,7 @@ class ServicesManagerClient < Yast::Client
   def adjust_dialog
     system_targets = system_targets_items
     # Translated target names are known in runtime only
-    max_target_length = system_targets.collect{|i| i[1].length}.max
+    max_target_length = system_targets.collect{|i| i[1].length}.max || 20
 
     contents = VBox(
       Left(
