@@ -1,5 +1,9 @@
 # Yast Services Manager
 
+[![Travis Build](https://travis-ci.org/yast/yast-services-manager.svg?branch=master)](https://travis-ci.org/yast/yast-services-manager)
+[![Jenkins Build](http://img.shields.io/jenkins/s/https/ci.opensuse.org/yast-services-manager-master.svg)](https://ci.opensuse.org/view/Yast/job/yast-services-manager-master/)
+
+
 Systemd target and services configuration library for Yast
 
 ## Autoyast profile
