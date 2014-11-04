@@ -33,7 +33,10 @@ module Yast
     end
 
     def write
-      ServicesManagerTarget.default_target = Target::MULTIUSER if ServicesManagerTarget.default_target.empty?
+      # live installation already have set default target in its config (bnc#891213)
+      if ServicesManagerTarget.default_target.empty? && ! Mode.live_installation
+        ServicesManagerTarget.default_target = Target::MULTIUSER
+      end
       Builtins.y2milestone "Setting default target to #{ServicesManagerTarget.default_target}"
       ServicesManagerTarget.save
     end
