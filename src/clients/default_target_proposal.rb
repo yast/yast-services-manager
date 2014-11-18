@@ -216,7 +216,8 @@ module Yast
         # autodetection recommends a different one now, warn the user about this
         # and keep the default target unchanged.
         if ServicesManagerTarget.force && default_target != ServicesManagerTarget.default_target
-          warnings << _("The installer is recommending you the default target '%s' ") % default_target
+          localized_target = ServicesManagerTargetClass::BaseTargets.localize(default_target)
+          warnings << _("The installer is recommending you the default target '%s' ") % localized_target
           warnings << ServicesManagerTarget.proposal_reason
           self.default_target = ServicesManagerTarget.default_target
           return
