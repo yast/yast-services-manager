@@ -8,6 +8,7 @@ class ServicesManagerClient < Yast::Client
   Yast.import "Report"
   Yast.import "Message"
   Yast.import "Mode"
+  Yast.import "CommandLine"
 
   include Yast::Logger
 
@@ -21,6 +22,21 @@ class ServicesManagerClient < Yast::Client
 
   def main
     textdomain 'services-manager'
+
+    cmdline = {
+      "id"         => "services-manager",
+      # translators: command line help text for services-manager module
+      "help"       => _(
+                        "Systemd target and services configuration module.\n" +
+                        "Use systemctl for commandline services configuration."
+                        ),
+      "guihandler" => fun_ref(method(:gui_handler), "boolean ()")
+    }
+
+    CommandLine.Run(cmdline)
+  end
+
+  def gui_handler
     Wizard.CreateDialog
     success = false
     while true
