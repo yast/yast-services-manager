@@ -1,3 +1,11 @@
+-------------------------------------------------------------------
+Wed Dec  3 10:59:13 CET 2014 - locilka@suse.com
+
+- Fixed adjusting service state according to new settings, already
+  loaded services were ignored (bnc#906730)
+- 3.1.37
+
+-------------------------------------------------------------------
 Mon Nov 17 16:09:21 UTC 2014 - ancor@suse.com
 
 - From SLE12 maintenance: fixed installation to use the
