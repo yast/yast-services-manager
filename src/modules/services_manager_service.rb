@@ -395,9 +395,9 @@ module Yast
           next
         end
 
-        # Do not start or stop services that are already in the desired state
-        # they might be coming from AutoYast import and thus they are :modified.
-        if service.loaded? == service_attributes[:loaded] || service.active? == service_attributes[:active]
+        # Do not start or stop services that are already in the desired state.
+        # They might be coming from AutoYast import and thus marked as :modified.
+        if service.active? == service_attributes[:active]
           log.info "Skipping service #{service_name} - it's already in desired state"
         elsif switch!(service_name)
           services_switched << service_name
