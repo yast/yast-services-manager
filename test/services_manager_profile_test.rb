@@ -138,5 +138,21 @@ module Yast
         expect(profile.services).to be_empty
       end
     end
+
+    context "wrong services entries in profile" do
+      before do
+        @autoyast_profile = {
+          'services' => {
+            'wrong_entry' => ['wrong_entry']
+          }
+        }
+        @profile = ServicesManagerProfile.new(autoyast_profile)
+      end
+
+      it "provides empty list of services" do
+        expect(profile.services).to be_empty
+      end
+    end
+
   end
 end
