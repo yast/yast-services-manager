@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Dec 17 12:18:46 CET 2014 - schubi@suse.de
+
+- AutoYaST import: initialize Yast::I18n correctly
+  (bnc#909768)
+- 3.1.38
+
+-------------------------------------------------------------------
+
 Thu Dec  4 09:51:33 UTC 2014 - jreidinger@suse.com
 
 - remove X-KDE-Library from desktop file (bnc#899104)
