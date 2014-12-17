@@ -1,7 +1,6 @@
 require "yast"
 
 module Yast
-  import "Report"
 
   ###  Supported profiles
   #
@@ -57,9 +56,8 @@ module Yast
 
   class ServicesManagerProfile
     include Yast::Logger
-
-    extend Yast::I18n
-    textdomain "services-manager"
+    include Yast::I18n
+    Yast.import "Report"
 
     ENABLE  = 'enable'
     DISABLE = 'disable'
@@ -82,6 +80,7 @@ module Yast
     attr_reader :target
 
     def initialize autoyast_profile
+      textdomain "services-manager"
       @autoyast_profile = autoyast_profile
       @services = []
       extract_services

@@ -92,7 +92,7 @@ module Yast
 
           expect(ServicesManagerService).to receive(:import).and_call_original
           expect(ServicesManagerTarget).to receive(:import).and_call_original
-          expect(ServicesManager.import(data)).to be_true
+          expect(ServicesManager.import(data)).to eq(true)
         end
       end
 
@@ -107,7 +107,7 @@ module Yast
 
           expect(ServicesManagerService).to receive(:import).and_call_original
           expect(ServicesManagerTarget).to receive(:import).and_call_original
-          expect(ServicesManager.import(data)).to be_true
+          expect(ServicesManager.import(data)).to eq(true)
         end
       end
 
@@ -126,7 +126,7 @@ module Yast
 
           expect(ServicesManagerService).to receive(:import).and_call_original
           expect(ServicesManagerTarget).to receive(:import).and_call_original
-          expect(ServicesManager.import(data)).to be_true
+          expect(ServicesManager.import(data)).to eq(true)
         end
       end
 
