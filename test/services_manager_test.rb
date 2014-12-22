@@ -5,6 +5,9 @@ require_relative 'test_helper'
 module Yast
   Yast.import 'ServicesManagerTarget'
   Yast.import 'ServicesManager'
+  Yast.import 'Installation'
+  Yast.import 'Arch'
+  Yast.import 'Pkg'
 
   extend Yast::I18n
   Yast::textdomain "services-manager"
@@ -94,6 +97,26 @@ module Yast
           expect(ServicesManagerTarget).to receive(:import).and_call_original
           expect(ServicesManager.import(data)).to eq(true)
         end
+
+        it "imports data for systemd target runlevel 3" do
+          data = {
+            'default' => '3'
+          }
+
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to eq(true)
+          expect(ServicesManagerTarget.default_target).to eq("multi-user")
+        end
+
+        it "imports data for systemd target runlevel 5" do
+          data = {
+            'default' => '5'
+          }
+
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to eq(true)
+          expect(ServicesManagerTarget.default_target).to eq("graphical")
+        end
       end
 
       context "when using AutoYast profile written in pre-SLE 12 format" do
@@ -108,6 +131,44 @@ module Yast
           expect(ServicesManagerService).to receive(:import).and_call_original
           expect(ServicesManagerTarget).to receive(:import).and_call_original
           expect(ServicesManager.import(data)).to eq(true)
+        end
+
+        it "imports data for systemd target multi-user" do
+          data = {
+            'default_target' => 'multi-user',
+          }
+
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to eq(true)
+          expect(ServicesManagerTarget.default_target).to eq("multi-user")
+        end
+
+        it "imports data for systemd target graphical" do
+          data = {
+            'default_target' => 'graphical',
+          }
+
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import(data)).to eq(true)
+          expect(ServicesManagerTarget.default_target).to eq("graphical")
+        end
+      end
+
+      context "when using AutoYast profile without any default_target entry" do
+        it "setting to multi-user if X11 is not available" do
+          expect(Installation).to receive(:x11_setup_needed).and_return(false)
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import({})).to eq(true)
+          expect(ServicesManagerTarget.default_target).to eq("multi-user")
+        end
+
+        it "setting to graphical if X11 is available" do
+          expect(Installation).to receive(:x11_setup_needed).and_return(true)
+          expect(Arch).to receive(:x11_setup_needed).and_return(true)
+          expect(Pkg).to receive(:IsSelected).with("xorg-x11-server").and_return(true)
+          expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(ServicesManager.import({})).to eq(true)
+          expect(ServicesManagerTarget.default_target).to eq("graphical")
         end
       end
 

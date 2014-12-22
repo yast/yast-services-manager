@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Dec 19 12:14:11 CET 2014 - schubi@suse.de
+
+- AutoYaST: Moved code from autoyast2 package to import function of
+  services_manager_target. (bnc#909745)
+- 3.1.34.3
+
+-------------------------------------------------------------------
 Wed Dec 17 12:18:46 CET 2014 - schubi@suse.de
 
 - AutoYaST import: initialize Yast::I18n correctly
