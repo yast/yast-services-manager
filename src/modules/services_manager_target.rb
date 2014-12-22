@@ -121,8 +121,14 @@ module Yast
     end
 
     def import profile
-      return false if profile.target.nil? || profile.target.empty?
-      self.default_target = profile.target
+      if profile.target.nil? || profile.target.empty?
+        # setting default_target due the defined environment
+        self.default_target = (Installation.x11_setup_needed &&
+          Arch.x11_setup_needed &&
+          Pkg.IsSelected("xorg-x11-server")) ? BaseTargets::GRAPHICAL : BaseTargets::MULTIUSER
+      else
+        self.default_target = profile.target
+      end
     end
 
     def inspect
