@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Nov 12 16:46:54 UTC 2015 - igonzalezsosa@suse.com
+
+- Add X-SuSE-YaST-AutoInstSchema declaration so
+  services-manager.rnc could be included in yast2-schema package
+- Fix validation of AutoYaST profile (bsc#954412)
+- 3.1.34.4
+
+-------------------------------------------------------------------
 Fri Dec 19 12:14:11 CET 2014 - schubi@suse.de
 
 - AutoYaST: Moved code from autoyast2 package to import function of
