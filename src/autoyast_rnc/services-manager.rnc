@@ -33,22 +33,32 @@ runlevel_content = element runlevel { runlevel_default? & runlevel_services? }
 # by default, AutoYast exports list entries as 'listentry'
 service = element service { text } | element listentry { text }
 
-enabled =
-  element enabled {
-    attribute config:type { text }? &
-      service*
+sm_enable =
+  element enable {
+    LIST,
+    service*
   }
 
-disabled =
-  element disabled {
-    attribute config:type { text }? &
-      service*
+sm_disable =
+  element disable {
+    LIST,
+    service*
+  }
+
+new_services_list =
+  element services {
+    sm_disable? &
+    sm_enable?
+  }
+
+old_services_list =
+  element services {
+    LIST,
+    service*
   }
 
 services =
-  element services { attribute config:type { text }? & enabled  } |
-  element services { attribute config:type { text }? & disabled } |
-  element services { attribute config:type { text }? & service* }
+  old_services_list | new_services_list
 
 default_target = element default_target { text }
 
