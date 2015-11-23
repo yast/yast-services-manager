@@ -27,6 +27,7 @@ module Yast
       LOADED     = 'loaded'
       ACTIVE     = 'active'
       ACTIVATING = 'activating'
+      RELOADING  = 'reloading'
       INACTIVE   = 'inactive'
       ENABLED    = 'enabled'
       DISABLED   = 'disabled'
@@ -85,8 +86,13 @@ module Yast
           service.chomp! SERVICE_SUFFIX
           units[service] = {
             :status => status,
-            # bsc#956043 service can be 'just being activated'
-            :active => (active == Status::ACTIVE || active == Status::ACTIVATING),
+            # bsc#956043 service can be 'just being activated' or 'reloaded'
+            # See https://github.com/systemd/systemd/blob/7152869f0a4a4612022244064cc2b3905b1e3fc7/src/basic/unit-name.c#L844
+            :active => (
+              active == Status::ACTIVE ||
+              active == Status::ACTIVATING ||
+              active == Status::RELOADING
+            ),
             :description => description.join(' ')
           }
         end

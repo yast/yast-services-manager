@@ -25,7 +25,8 @@ module Yast
                      "swap.service     masked  \n"  +
                      "dbus.service     static  \n"  +
                      "xbus.service     enabled \n"  +
-                     "ybus.service     enabled \n",
+                     "ybus.service     enabled \n"  +
+                     "zbus.service     enabled \n",
           'stderr' => '',
           'exit'   => 0
         })
@@ -36,7 +37,8 @@ module Yast
                     "postfix.service loaded inactive dead    Postfix Mail Agent\n" +
                     "dbus.service  loaded active   running D-Bus System Message Bus\n" +
                     "xbus.service loaded activating start start YaST2 Second Stage (1)\n" +
-                    "ybus.service loaded deactivating stop start YaST2 Second Stage (2)\n",
+                    "ybus.service loaded deactivating stop start YaST2 Second Stage (2)\n" +
+                    "zbus.service loaded reloading stop start YaST2 Second Stage (3)\n",
           'stderr' => '',
           'exit'   => 0
         })
@@ -184,6 +186,14 @@ module Yast
         stub_services
         ybus_service = service.all['ybus']
         expect(ybus_service[:active]).to eq(false)
+      end
+    end
+
+    context "when service is in state 'reloading'" do
+      it "is considered to be active" do
+        stub_services
+        zbus_service = service.all['zbus']
+        expect(zbus_service[:active]).to eq(true)
       end
     end
   end
