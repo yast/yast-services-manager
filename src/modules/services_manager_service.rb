@@ -24,11 +24,12 @@ module Yast
     }
 
     module Status
-      LOADED   = 'loaded'
-      ACTIVE   = 'active'
-      INACTIVE = 'inactive'
-      ENABLED  = 'enabled'
-      DISABLED = 'disabled'
+      LOADED     = 'loaded'
+      ACTIVE     = 'active'
+      ACTIVATING = 'activating'
+      INACTIVE   = 'inactive'
+      ENABLED    = 'enabled'
+      DISABLED   = 'disabled'
       SUPPORTED_STATES = [ENABLED, DISABLED]
     end
 
@@ -84,7 +85,8 @@ module Yast
           service.chomp! SERVICE_SUFFIX
           units[service] = {
             :status => status,
-            :active => active == Status::ACTIVE,
+            # bsc#956043 service can be 'just being activated'
+            :active => (active == Status::ACTIVE || active == Status::ACTIVATING),
             :description => description.join(' ')
           }
         end
