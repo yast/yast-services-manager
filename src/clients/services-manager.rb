@@ -64,7 +64,7 @@ class ServicesManagerClient < Yast::Client
       Builtins.y2milestone('User returned %1', input)
 
       case input
-        when :abort
+        when :abort, :cancel
           break if Popup::ReallyAbort(ServicesManager.modified?)
         # Default for double-click in the table
         when Id::TOGGLE_ENABLED, Id::SERVICES_TABLE
