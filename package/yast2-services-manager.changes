@@ -1,7 +1,7 @@
 -------------------------------------------------------------------
 Wed Nov 25 00:20:00 CST 2015 - crojasaragonez@hotmail.com
 
-- Closing window with x icon fixed.
+- Closing window with x icon fixed (bsc#956917)
 - 3.1.41
 
 -------------------------------------------------------------------
