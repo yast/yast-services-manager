@@ -1,4 +1,18 @@
 -------------------------------------------------------------------
+Wed Jan 13 09:00:17 UTC 2016 - igonzalezsosa@suse.com
+
+- Add X-SuSE-YaST-AutoInstSchema declaration so
+  services-manager.rnc could be included in yast2-schema package
+- Fix validation of AutoYaST profile (bsc#954412)
+- 3.1.42
+
+-------------------------------------------------------------------
+Wed Nov 25 00:20:00 CST 2015 - crojasaragonez@hotmail.com
+
+- Closing window with x icon fixed (bsc#956917)
+- 3.1.41
+
+-------------------------------------------------------------------
 Mon Nov 23 09:50:44 CET 2015 - locilka@suse.com
 
 - Service state 'activating' is considered to be 'active',
