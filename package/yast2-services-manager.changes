@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Nov 15 11:33:19 UTC 2016 - igonzalezsosa@suse.com
+
+- Use the X-SuSE-YaST-AutoInstResourceAliases key to get rid
+  of the runlevel.desktop file (related to bsc#887115 and
+  bsc#1008301)
+- 3.1.43
+
+-------------------------------------------------------------------
 Wed Jan 13 09:00:17 UTC 2016 - igonzalezsosa@suse.com
 
 - Add X-SuSE-YaST-AutoInstSchema declaration so
