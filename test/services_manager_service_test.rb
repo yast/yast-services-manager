@@ -17,21 +17,20 @@ module Yast
     end
 
     before do
-      ServicesManagerServiceClass::ServiceLoader.any_instance
-        .stub(:list_unit_files)
+      allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:list_unit_files)
         .and_return({
-          'stdout'=> "sshd.service     enabled \n"  +
-                     "postfix.service  disabled\n " +
-                     "swap.service     masked  \n"  +
-                     "dbus.service     static  \n"  +
-                     "xbus.service     enabled \n"  +
-                     "ybus.service     enabled \n"  +
-                     "zbus.service     enabled \n",
+          'stdout'=> "sshd.service      enabled \n"  +
+                     "postfix.service   disabled\n " +
+                     "swap.service      masked  \n"  +
+                     "dbus.service      static  \n"  +
+                     "notloaded.service static  \n"  +
+                     "xbus.service      enabled \n"  +
+                     "ybus.service      enabled \n"  +
+                     "zbus.service      enabled \n",
           'stderr' => '',
           'exit'   => 0
         })
-      ServicesManagerServiceClass::ServiceLoader.any_instance
-        .stub(:list_units)
+      allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:list_units)
         .and_return({
           'stdout'=>"sshd.service  loaded active   running OpenSSH Daemon\n" +
                     "postfix.service loaded inactive dead    Postfix Mail Agent\n" +
@@ -43,14 +42,20 @@ module Yast
           'exit'   => 0
         })
 
+      allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:is_active?).and_return true
+
       @service = Yast::ServicesManagerServiceClass.new
     end
 
     it "provides a collection of supported services" do
       expect(service.modified).to eq(false)
       expect(service.all).not_to be_empty
-      expect(service.all.keys).to include('sshd', 'postfix')
-      expect(service.all).not_to include('swap', 'dbus')
+      expect(service.all.keys).to include('sshd', 'postfix', 'notloaded')
+      expect(service.all).not_to include('swap')
+    end
+
+    it "cannot enable services which have the status -static-" do
+      expect(service.can_be_enabled("dbus")).to eq(false)
     end
 
     it "can enable a service which is disabled" do
@@ -82,7 +87,6 @@ module Yast
     it "can start an inactive service" do
       stub_services
       postfix = service.all['postfix']
-      expect(postfix[:active]).to be(false)
       expect(postfix[:modified]).to be(false)
       service.activate 'postfix'
       expect(postfix[:active]).to be(true)
@@ -170,22 +174,6 @@ module Yast
         service.toggle 'postfix'
         service.save
         expect(service.errors.size).to eq 1
-      end
-    end
-
-    context "when service is in state 'activating'" do
-      it "is considered to be active" do
-        stub_services
-        xbus_service = service.all['xbus']
-        expect(xbus_service[:active]).to eq(true)
-      end
-    end
-
-    context "when service is in state 'deactivating'" do
-      it "is considered to be inactive" do
-        stub_services
-        ybus_service = service.all['ybus']
-        expect(ybus_service[:active]).to eq(false)
       end
     end
 

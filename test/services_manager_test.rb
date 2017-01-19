@@ -44,13 +44,13 @@ module Yast
     context "Autoyast API" do
       it "exports systemd target and services" do
         services = {
-          'a' => { :enabled => true,  :loaded => true },
-          'b' => { :enabled => false, :modified => true },
-          'c' => { :enabled => true,  :loaded => true },
+          'a' => { :enabled => true,  :loaded => true, :can_be_enabled => true },
+          'b' => { :enabled => false, :modified => true, :can_be_enabled => true },
+          'c' => { :enabled => true,  :loaded => true, :can_be_enabled => true },
           # Service will not be exported: it's not modified
-          'd' => { :enabled => false, :modified => false },
+          'd' => { :enabled => false, :modified => false, :can_be_enabled => true },
           # Service will not be exported: it's not loaded
-          'e' => { :enabled => true,  :loaded => false },
+          'e' => { :enabled => true,  :loaded => false, :can_be_enabled => true },
         }
 
         # Services set during installation
