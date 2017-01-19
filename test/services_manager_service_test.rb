@@ -35,6 +35,7 @@ module Yast
           'stdout'=>"sshd.service  loaded active   running OpenSSH Daemon\n" +
                     "postfix.service loaded inactive dead    Postfix Mail Agent\n" +
                     "dbus.service  loaded active   running D-Bus System Message Bus\n" +
+                    "lsb.service  loaded active   running LSB service\n" +
                     "xbus.service loaded activating start start YaST2 Second Stage (1)\n" +
                     "ybus.service loaded deactivating stop start YaST2 Second Stage (2)\n" +
                     "zbus.service loaded reloading stop start YaST2 Second Stage (3)\n",
@@ -50,7 +51,7 @@ module Yast
     it "provides a collection of supported services" do
       expect(service.modified).to eq(false)
       expect(service.all).not_to be_empty
-      expect(service.all.keys).to include('sshd', 'postfix', 'notloaded')
+      expect(service.all.keys).to include('sshd', 'postfix', 'notloaded', 'lsb')
       expect(service.all).not_to include('swap')
     end
 
