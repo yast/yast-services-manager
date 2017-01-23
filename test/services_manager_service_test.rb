@@ -14,6 +14,17 @@ module Yast
       allow(Service).to receive(:Disable).and_return true
       allow(Service).to receive(:Start).and_return true
       allow(Service).to receive(:Stop).and_return true
+      allow(Service).to receive(:Enabled).with("sshd").and_return true
+      allow(Service).to receive(:Enabled).with("postfix").and_return false
+      allow(Service).to receive(:Enabled).with("swap").and_return false
+      allow(Service).to receive(:Enabled).with("dbus").and_return false
+      allow(Service).to receive(:Enabled).with("notloaded").and_return false
+      allow(Service).to receive(:Enabled).with("xbus").and_return true
+      allow(Service).to receive(:Enabled).with("ybus").and_return true
+      allow(Service).to receive(:Enabled).with("zbus").and_return true
+      allow(Service).to receive(:Enabled).with("lsb").and_return false
+      allow(Service).to receive(:Enabled).with("").and_return true
+
     end
 
     before do
