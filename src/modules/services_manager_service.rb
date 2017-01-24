@@ -11,27 +11,25 @@ module Yast
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
     STATUS_COMMAND          = 'systemctl status'
+    IS_ACTIVE_COMMAND       = 'systemctl is-active'
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX          = '.service'
 
     DEFAULT_SERVICE_SETTINGS = {
-      :enabled     => false,  # Whether the service has been enabled
-      :modified    => false,  # Whether the service has been changed (got enabled/disabled)
-      :active      => false,  # The high-level unit activation state, i.e. generalization of SUB
-      :loaded      => false,  # Reflects whether the unit definition was properly loaded
-      :description => nil     # English description of the service
+      :enabled        => false, # Whether the service has been enabled
+      :can_be_enabled => true,  # Whether the service can be enabled/disabled by the user
+      :modified       => false, # Whether the service has been changed (got enabled/disabled)
+      :active         => false, # The high-level unit activation state, i.e. generalization of SUB
+      :loaded         => false, # Reflects whether the unit definition was properly loaded
+      :description    => nil    # English description of the service
     }
 
     module Status
       LOADED     = 'loaded'
-      ACTIVE     = 'active'
-      ACTIVATING = 'activating'
-      RELOADING  = 'reloading'
-      INACTIVE   = 'inactive'
-      ENABLED    = 'enabled'
-      DISABLED   = 'disabled'
-      SUPPORTED_STATES = [ENABLED, DISABLED]
+      NOTFOUND   = 'not-found'
+      MASKED     = 'masked' # The service has been marked as completely unstartable, automatically or manually.
+      STATIC     = 'static' # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
     end
 
     class ServiceLoader
@@ -47,16 +45,14 @@ module Yast
         load_units
 
         @supported_unit_files = unit_files.select do |_, status|
-          Status::SUPPORTED_STATES.member?(status)
+          status != Status::MASKED # masked services should not been shown at all
         end
 
-        @supported_units = units.reject do |name, _|
-          unit_files[name] && !Status::SUPPORTED_STATES.member?(unit_files[name])
+        @supported_units = units.reject do |name, attributes|
+          attributes[:status] == Status::NOTFOUND # definition file is not available anymore
         end
-        supported_units.select! { |_, attributes| attributes[:status] == Status::LOADED }
 
-        extract_services_from_units
-        extract_services_from_unit_files
+        extract_services
         services
       end
 
@@ -70,6 +66,18 @@ module Yast
       def list_units
         command = TERM_OPTIONS + LIST_UNITS_COMMAND + COMMAND_OPTIONS
         SCR.Execute(Path.new('.target.bash_output'), command)
+      end
+
+      # Checking if a service is active or not.
+      #
+      # @param service [String] Service name
+      # @return [Boolean] is it active or not
+      def is_active?(service)
+        # There is a active? method in SystemdUnit class but it checks the status
+        # active and activating only. Not sure if this correct. So we are taking the
+        # official call of systemctl command.
+        command = "#{TERM_OPTIONS}#{IS_ACTIVE_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
+        SCR.Execute(Path.new('.target.bash_output'), command)["exit"] == 0
       end
 
       def load_unit_files
@@ -86,38 +94,47 @@ module Yast
           service.chomp! SERVICE_SUFFIX
           units[service] = {
             :status => status,
-            # bsc#956043 service can be 'just being activated' or 'reloaded'
-            # See https://github.com/systemd/systemd/blob/7152869f0a4a4612022244064cc2b3905b1e3fc7/src/basic/unit-name.c#L844
-            :active => (
-              active == Status::ACTIVE ||
-              active == Status::ACTIVATING ||
-              active == Status::RELOADING
-            ),
             :description => description.join(' ')
           }
         end
       end
 
       def extract_services_from_unit_files
-        supported_unit_files.each do |name, status|
-          next if services[name]
+        @supported_unit_files.each do |name, status|
           services[name] = DEFAULT_SERVICE_SETTINGS.clone
-          services[name][:enabled] = status == Status::ENABLED
-          services[name][:active] = Yast::Service.Status(name).zero?
+          if @supported_units[name]
+            # Services are loaded into the system. Taking that one because there are more
+            # information
+            services[name][:loaded] = @supported_units[name][:status] == Status::LOADED
+            services[name][:description] = @supported_units[name][:description]
+          end
+          services[name][:can_be_enabled] = status == Status::STATIC ? false : true
         end
       end
 
       def extract_services_from_units
-        supported_units.each do |name, attributes|
+        @supported_units.each do |name, service|
+          next if services[name]
           services[name] = DEFAULT_SERVICE_SETTINGS.clone
-          if supported_unit_files[name]
-            services[name][:enabled] =  supported_unit_files[name] == Status::ENABLED
-          else
-            services[name][:enabled] = Yast::Service.Enabled(name)
+          services[name][:loaded] = service[:status] == Status::LOADED
+          services[name][:description] = service[:description]
+        end
+      end
+
+      def extract_services
+        extract_services_from_unit_files
+        # Add old LSB services (Services which are loaded but not available as a unit file)
+        extract_services_from_units
+
+        # Rest of settings
+        services.each_key do |name|
+          services[name][:enabled] = Yast::Service.Enabled(name)
+          services[name][:active] = is_active?(name)
+          if !services[name][:description] || services[name][:description].empty?
+            # Trying to evaluate description via the show command of systemctl
+            s = SystemdService.find(name)
+            services[name][:description] = SystemdService.find(name).description if s
           end
-          services[name][:loaded] = attributes[:status] == Status::LOADED
-          services[name][:active] = attributes[:active]
-          services[name][:description] = attributes[:description]
         end
       end
     end
@@ -143,7 +160,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean running
-    def activate service
+    def activate(service)
       exists?(service) do
         services[service][:active]  = true
         Builtins.y2milestone "Service #{service} has been marked for activation"
@@ -156,7 +173,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean running
-    def deactivate service
+    def deactivate(service)
       exists?(service) do
         services[service][:active]   = false
         services[service][:modified] = true
@@ -168,7 +185,7 @@ module Yast
     #
     # @param String service name
     # @return Boolean running
-    def active service
+    def active(service)
       exists?(service) { services[service][:active] }
     end
 
@@ -178,7 +195,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean new service status
-    def enable service
+    def enable(service)
       exists?(service) do
         services[service][:enabled]  = true
         services[service][:modified] = true
@@ -190,7 +207,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean new service status
-    def disable service
+    def disable(service)
       exists?(service) do
         services[service][:enabled]  = false
         services[service][:modified] = true
@@ -202,15 +219,25 @@ module Yast
     #
     # @param String service
     # @return Boolean enabled
-    def enabled service
+    def enabled(service)
       exists?(service) do
         services[service][:enabled]
       end
     end
 
+    # Returns whether the given service can be enabled/disabled by the user
+    #
+    # @param service [String] Service name
+    # @return [Boolean] is it enabled or not
+    def can_be_enabled(service)
+      exists?(service) do
+        services[service][:can_be_enabled]
+      end
+    end
+
     # Change the global modified status
     # Reverting modified to false also requires to set the flag for all services
-    def modified= required_status
+    def modified=(required_status)
       reload if required_status == false
       @modified = required_status
     end
@@ -245,7 +272,7 @@ module Yast
     # Returns only enabled services, the rest is expected to be disabled
     def export
       enabled_services = services.select do |service_name, properties|
-        enabled(service_name) && properties[:loaded]
+        enabled(service_name) && properties[:loaded] && can_be_enabled(service_name)
       end
 
       # Only services modifed by the user to be disabled are exported
@@ -265,7 +292,7 @@ module Yast
       }
     end
 
-    def import profile
+    def import(profile)
       log.info "List of services from autoyast profile: #{profile.services.map(&:name)}"
       non_existent_services = []
 
@@ -328,7 +355,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def switch service
+    def switch(service)
       active(service) ? deactivate(service) : activate(service)
     end
 
@@ -336,7 +363,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def switch! service_name
+    def switch!(service_name)
       if active(service_name)
         Yast::Service.Start(service_name)
       else
@@ -344,7 +371,7 @@ module Yast
       end
     end
 
-    def reset_service service
+    def reset_service(service)
       services[service][:modified] = false
     end
 
@@ -352,7 +379,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def toggle service
+    def toggle(service)
       enabled(service) ? disable(service) : enable(service)
     end
 
@@ -360,7 +387,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def toggle! service
+    def toggle!(service)
       enabled(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
     end
 
@@ -368,7 +395,7 @@ module Yast
     #
     # @param String service name
     # @return String full unformatted information
-    def status service
+    def status(service)
       command = "#{TERM_OPTIONS}#{STATUS_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
       SCR.Execute(path('.target.bash_output'), command)['stdout']
     end
@@ -381,7 +408,7 @@ module Yast
     #
     # @params [String] service name
     # @return [Boolean]
-    def exists? service
+    def exists?(service)
       exists = !!services[service]
       if exists && block_given?
         yield
@@ -441,21 +468,22 @@ module Yast
       services_toggled
     end
 
-    publish({:function => :active,    :type => "boolean ()"           })
-    publish({:function => :activate,  :type => "string (boolean)"     })
-    publish({:function => :all,       :type => "map <string, map> ()" })
-    publish({:function => :disable,   :type => "string (boolean)"     })
-    publish({:function => :enable,    :type => "string (boolean)"     })
-    publish({:function => :enabled,   :type => "boolean ()"           })
-    publish({:function => :errors,    :type => "list ()"              })
-    publish({:function => :export,    :type => "list <string> ()"     })
-    publish({:function => :import,    :type => "boolean (list <string>)" })
-    publish({:function => :modified,  :type => "boolean ()"           })
-    publish({:function => :modified=, :type => "boolean (boolean)"    })
-    publish({:function => :read,      :type => "map <string, map> ()" })
-    publish({:function => :reset,     :type => "boolean ()"           })
-    publish({:function => :save,      :type => "boolean ()"           })
-    publish({:function => :status,    :type => "string (string)"      })
+    publish({:function => :active,         :type => "boolean ()"              })
+    publish({:function => :activate,       :type => "string (boolean)"        })
+    publish({:function => :all,            :type => "map <string, map> ()"    })
+    publish({:function => :disable,        :type => "string (boolean)"        })
+    publish({:function => :enable,         :type => "string (boolean)"        })
+    publish({:function => :enabled,        :type => "boolean ()"              })
+    publish({:function => :can_be_enabled, :type => "boolean ()"              })
+    publish({:function => :errors,         :type => "list ()"                 })
+    publish({:function => :export,         :type => "list <string> ()"        })
+    publish({:function => :import,         :type => "boolean (list <string>)" })
+    publish({:function => :modified,       :type => "boolean ()"              })
+    publish({:function => :modified=,      :type => "boolean (boolean)"       })
+    publish({:function => :read,           :type => "map <string, map> ()"    })
+    publish({:function => :reset,          :type => "boolean ()"              })
+    publish({:function => :save,           :type => "boolean ()"              })
+    publish({:function => :status,         :type => "string (string)"         })
   end
 
   ServicesManagerService = ServicesManagerServiceClass.new

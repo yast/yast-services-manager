@@ -44,13 +44,13 @@ module Yast
     context "Autoyast API" do
       it "exports systemd target and services" do
         services = {
-          'a' => { :enabled => true,  :loaded => true },
-          'b' => { :enabled => false, :modified => true },
-          'c' => { :enabled => true,  :loaded => true },
+          'a' => { :enabled => true,  :loaded => true, :can_be_enabled => true },
+          'b' => { :enabled => false, :modified => true, :can_be_enabled => true },
+          'c' => { :enabled => true,  :loaded => true, :can_be_enabled => true },
           # Service will not be exported: it's not modified
-          'd' => { :enabled => false, :modified => false },
+          'd' => { :enabled => false, :modified => false, :can_be_enabled => true },
           # Service will not be exported: it's not loaded
-          'e' => { :enabled => true,  :loaded => false },
+          'e' => { :enabled => true,  :loaded => false, :can_be_enabled => true },
         }
 
         # Services set during installation
@@ -82,6 +82,16 @@ module Yast
                 'service_start' => '3',
               },
               {
+                'service_name' => 'YaST2-Second-Stage',
+                'service_status' => 'enable',
+                'service_start' => '3',
+              },
+              {
+                'service_name' => 'YaST2-Firstboot',
+                'service_status' => 'enable',
+                'service_start' => '3',
+              },
+              {
                 'service_name' => 'sc',
                 'service_status' => 'disable',
                 'service_start' => '3',
@@ -91,6 +101,8 @@ module Yast
 
           expect(ServicesManagerService).to receive(:exists?).with(/^s[abc]$/).at_least(:once).and_return(true)
           expect(ServicesManagerService).to receive(:enable).with(/^s[ab]$/).twice.and_return(true)
+          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Second-Stage")
+          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Firstboot")
           expect(ServicesManagerService).to receive(:disable).with(/^sc$/).once.and_return(true)
 
           expect(ServicesManagerService).to receive(:import).and_call_original
@@ -177,12 +189,14 @@ module Yast
           data = {
             'default_target' => 'multi-user',
             'services' => {
-              'enable'  => ['x', 'y', 'z'],
+              'enable'  => ['x', 'y', 'z', "YaST2-Firstboot", "YaST2-Second-Stage"],
               'disable' => ['d', 'e', 'f'],
             },
           }
           expect(ServicesManagerService).to receive(:exists?).with(/^[xyzdef]$/).at_least(:once).and_return(true)
           expect(ServicesManagerService).to receive(:enable).with(/^[xyz]$/).exactly(3).times.and_return(true)
+          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Second-Stage")
+          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Firstboot")
           expect(ServicesManagerService).to receive(:disable).with(/^[def]$/).exactly(3).times.and_return(true)
 
           expect(ServicesManagerService).to receive(:import).and_call_original
