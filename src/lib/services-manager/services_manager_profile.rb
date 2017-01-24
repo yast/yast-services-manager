@@ -133,7 +133,7 @@ module Yast
 
     # Filter out all YaST services
     def reject_yast_services
-       self.services.reject! {|service| YAST_SERVICES.include?(service.name)}
+       self.services.reject! {|s| YAST_SERVICES.include?(s.name)}
     end
 
     def load_from_simple_list services

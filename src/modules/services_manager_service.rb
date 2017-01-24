@@ -68,7 +68,11 @@ module Yast
         SCR.Execute(Path.new('.target.bash_output'), command)
       end
 
-      def is_active? service
+      # Checking if a service is active or not.
+      #
+      # @param service [String] Service name
+      # @return [Boolean] is it active or not
+      def is_active?(service)
         # There is a active? method in SystemdUnit class but it checks the status
         # active and activating only. Not sure if this correct. So we are taking the
         # official call of systemctl command.
@@ -95,7 +99,7 @@ module Yast
         end
       end
 
-      def extract_services
+      def extract_services_from_unit_files
         @supported_unit_files.each do |name, status|
           services[name] = DEFAULT_SERVICE_SETTINGS.clone
           if @supported_units[name]
@@ -106,20 +110,27 @@ module Yast
           end
           services[name][:can_be_enabled] = status == Status::STATIC ? false : true
         end
+      end
 
-        # Add old LSB services (Services which are loaded but not available as a unit file)
-        @supported_units.each do |name, status|
+      def extract_services_from_units
+        @supported_units.each do |name, service|
           next if services[name]
           services[name] = DEFAULT_SERVICE_SETTINGS.clone
-          services[name][:loaded] = @supported_units[name][:status] == Status::LOADED
-          services[name][:description] = @supported_units[name][:description]
+          services[name][:loaded] = service[:status] == Status::LOADED
+          services[name][:description] = service[:description]
         end
+      end
+
+      def extract_services
+        extract_services_from_unit_files
+        # Add old LSB services (Services which are loaded but not available as a unit file)
+        extract_services_from_units
 
         # Rest of settings
         services.each_key do |name|
           services[name][:enabled] = Yast::Service.Enabled(name)
           services[name][:active] = is_active?(name)
-          if !services[name][:description] || services[name][:description].length == 0
+          if !services[name][:description] || services[name][:description].empty?
             # Trying to evaluate description via the show command of systemctl
             s = SystemdService.find(name)
             services[name][:description] = SystemdService.find(name).description if s
@@ -149,7 +160,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean running
-    def activate service
+    def activate(service)
       exists?(service) do
         services[service][:active]  = true
         Builtins.y2milestone "Service #{service} has been marked for activation"
@@ -162,7 +173,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean running
-    def deactivate service
+    def deactivate(service)
       exists?(service) do
         services[service][:active]   = false
         services[service][:modified] = true
@@ -174,7 +185,7 @@ module Yast
     #
     # @param String service name
     # @return Boolean running
-    def active service
+    def active(service)
       exists?(service) { services[service][:active] }
     end
 
@@ -184,7 +195,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean new service status
-    def enable service
+    def enable(service)
       exists?(service) do
         services[service][:enabled]  = true
         services[service][:modified] = true
@@ -196,7 +207,7 @@ module Yast
     #
     # @param String service name
     # @param Boolean new service status
-    def disable service
+    def disable(service)
       exists?(service) do
         services[service][:enabled]  = false
         services[service][:modified] = true
@@ -208,7 +219,7 @@ module Yast
     #
     # @param String service
     # @return Boolean enabled
-    def enabled service
+    def enabled(service)
       exists?(service) do
         services[service][:enabled]
       end
@@ -216,9 +227,9 @@ module Yast
 
     # Returns whether the given service can be enabled/disabled by the user
     #
-    # @param String service
-    # @return Boolean
-    def can_be_enabled service
+    # @param service [String] Service name
+    # @return [Boolean] is it enabled or not
+    def can_be_enabled(service)
       exists?(service) do
         services[service][:can_be_enabled]
       end
@@ -226,7 +237,7 @@ module Yast
 
     # Change the global modified status
     # Reverting modified to false also requires to set the flag for all services
-    def modified= required_status
+    def modified=(required_status)
       reload if required_status == false
       @modified = required_status
     end
@@ -281,7 +292,7 @@ module Yast
       }
     end
 
-    def import profile
+    def import(profile)
       log.info "List of services from autoyast profile: #{profile.services.map(&:name)}"
       non_existent_services = []
 
@@ -344,7 +355,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def switch service
+    def switch(service)
       active(service) ? deactivate(service) : activate(service)
     end
 
@@ -352,7 +363,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def switch! service_name
+    def switch!(service_name)
       if active(service_name)
         Yast::Service.Start(service_name)
       else
@@ -360,7 +371,7 @@ module Yast
       end
     end
 
-    def reset_service service
+    def reset_service(service)
       services[service][:modified] = false
     end
 
@@ -368,7 +379,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def toggle service
+    def toggle(service)
       enabled(service) ? disable(service) : enable(service)
     end
 
@@ -376,7 +387,7 @@ module Yast
     #
     # @param [String] service name
     # @return [Boolean]
-    def toggle! service
+    def toggle!(service)
       enabled(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
     end
 
@@ -384,7 +395,7 @@ module Yast
     #
     # @param String service name
     # @return String full unformatted information
-    def status service
+    def status(service)
       command = "#{TERM_OPTIONS}#{STATUS_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
       SCR.Execute(path('.target.bash_output'), command)['stdout']
     end
@@ -397,7 +408,7 @@ module Yast
     #
     # @params [String] service name
     # @return [Boolean]
-    def exists? service
+    def exists?(service)
       exists = !!services[service]
       if exists && block_given?
         yield
