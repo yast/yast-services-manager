@@ -62,6 +62,8 @@ module Yast
     ENABLE  = 'enable'
     DISABLE = 'disable'
 
+    YAST_SERVICES = ["YaST2-Firstboot", "YaST2-Second-Stage"]
+
     # Service object with two attributes:
     # @attr [String] name of the service unit. Suffix '.service' is optional.
     # @attr [String] required status on the target system. Can be 'enable' or 'disable'.
@@ -103,6 +105,7 @@ module Yast
         Yast::Report.Error _("Unknown autoyast services profile schema for 'services-manager'")
         return
       end
+      reject_yast_services
       log.info "Extracted services from autoyast profile: #{self.services}"
     end
 
@@ -126,6 +129,11 @@ module Yast
             nil
           end
       end
+    end
+
+    # Filter out all YaST services
+    def reject_yast_services
+       self.services.reject! {|service| YAST_SERVICES.include?(service.name)}
     end
 
     def load_from_simple_list services
