@@ -181,7 +181,6 @@ class ServicesManagerClient < Yast::Client
 
   def redraw_service(service)
     enabled = ServicesManagerService.enabled(service)
-
     UI.ChangeWidget(
       Id(Id::SERVICES_TABLE),
       Cell(service, 1),
@@ -253,8 +252,11 @@ class ServicesManagerClient < Yast::Client
   def toggle_service
     service = UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
     Builtins.y2milestone('Toggling service status: %1', service)
-    ServicesManagerService.toggle(service)
-
+    if ServicesManagerService.can_be_enabled(service)
+      ServicesManagerService.toggle(service)
+    else
+      Popup.Error(_("This service cannot be enabled/disabled because it has no \"install\" section in the description file"))
+    end
     redraw_service(service)
     UI.SetFocus(Id(Id::SERVICES_TABLE))
     true

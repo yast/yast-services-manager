@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu Jan 19 17:10:47 CET 2017 - schubi@suse.de
+
+- Using systemctl calls (is-active, is-enabled) to evaluate if the
+  service is enabled/active (bnc#1017166, bnc#1012047)
+- AY-Import: Filter out all YaST services which should e.g. not be
+  restarted while installation.(bnc#956043)
+- 3.2.0
+
+-------------------------------------------------------------------
 Tue Nov 15 11:33:19 UTC 2016 - igonzalezsosa@suse.com
 
 - Use the X-SuSE-YaST-AutoInstResourceAliases key to get rid
