@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb 13 14:34:34 CET 2017 - schubi@suse.de
+
+- AutoYaST: "Write" can be called in first and second stage now.
+  (FATE#321738)
+- 3.1.43.1
+
+-------------------------------------------------------------------
 Tue Nov 15 11:33:19 UTC 2016 - igonzalezsosa@suse.com
 
 - Use the X-SuSE-YaST-AutoInstResourceAliases key to get rid
