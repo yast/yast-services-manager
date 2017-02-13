@@ -1,20 +1,3 @@
-require "installation/finish_client"
+require "services-manager/clients/services-manager_finish.rb"
 
-module Installation
-  module Clients
-  import "ServicesManagerTarget"
-  import "ServicesManagerService"
-
-    class ServicesManagerFinish < ::Installation::FinishClient
-      def title
-        textdomain "installation"
-        _("Setting default target and system services ...")
-      end
-
-      def write
-        ServicesManagerTarget.save
-        ServicesManagerService.save
-      end
-    end
-  end
-end
+::Servicesmanager::Clients::ServicesFinish.run

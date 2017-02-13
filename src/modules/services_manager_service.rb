@@ -386,10 +386,10 @@ module Yast
     # @params [String] service name
     # @return [Boolean]
     def exists?(service)
-      if Stage.initial
+      if Stage.initial && !services[service]
         # We are in inst-sys. So we cannot check for installed services but generate entries
         # for these services if they still not exists.
-        services[name] = DEFAULT_SERVICE_SETTINGS.clone unless services[name]
+        services[service] = DEFAULT_SERVICE_SETTINGS.clone
       end
 
       exists = !!services[service]
