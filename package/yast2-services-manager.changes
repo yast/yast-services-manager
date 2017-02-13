@@ -1,8 +1,8 @@
 -------------------------------------------------------------------
 Mon Feb 13 14:34:34 CET 2017 - schubi@suse.de
 
-- AutoYaST: "Write" can be called in first and second stage now.
-  (FATE#321738)
+- AutoYaST: "Write" can be called in first and second installation
+  stage (FATE#321738).
 - 3.1.43.1
 
 -------------------------------------------------------------------
