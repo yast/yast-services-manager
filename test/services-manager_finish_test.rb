@@ -4,7 +4,7 @@ require_relative "./test_helper"
 
 require "services-manager/clients/services-manager_finish.rb"
 
-describe ::Servicesmanager::Clients::ServicesManagerFinish do
+describe ::ServicesManager::Clients::ServicesManagerFinish do
   describe "#title" do
     it "returns string with title" do
       expect(subject.title).to be_a ::String
