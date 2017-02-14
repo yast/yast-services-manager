@@ -196,5 +196,24 @@ module Yast
         expect(zbus_service[:active]).to eq(true)
       end
     end
+
+    context "when running in installation-system" do
+      it "do not switch a service at all" do
+        stub_services
+        postfix = service.all['postfix']
+        status  = postfix[:active]
+        service.switch 'postfix' # locally only
+        allow(Stage).to receive(:initial).and_return true
+        expect(subject).to_not receive(:switch_services)
+        service.save
+      end
+      it "generates missing services entries" do
+        stub_services
+        allow(Stage).to receive(:initial).and_return true
+        service.enable("new_service")
+        expect(service.services["new_service"]).not_to be_nil
+      end
+    end
+
   end
 end
