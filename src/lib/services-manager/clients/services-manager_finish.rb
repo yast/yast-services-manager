@@ -1,9 +1,9 @@
 require "installation/finish_client"
 
-module Servicesmanager
+module ServicesManager
   module Clients
-  Yast.import "ServicesManagerTarget"
-  Yast.import "ServicesManagerService"
+    Yast.import "ServicesManagerTarget"
+    Yast.import "ServicesManagerService"
 
     class ServicesManagerFinish < ::Installation::FinishClient
       def title
