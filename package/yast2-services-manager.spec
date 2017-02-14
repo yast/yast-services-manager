@@ -81,6 +81,7 @@ rake install DESTDIR="%{buildroot}"
 %{yast_dir}/clients/*.rb
 %{yast_dir}/modules/*.rb
 %{yast_dir}/schema/autoyast/rnc/*.rnc
+%dir %{yast_dir}/lib/services-manager/
 %dir %{yast_dir}/lib/services-manager/clients
 %{yast_dir}/lib/services-manager/*.rb
 %{yast_dir}/lib/services-manager/clients/*.rb
