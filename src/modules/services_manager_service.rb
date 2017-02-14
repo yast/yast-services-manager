@@ -4,6 +4,7 @@ module Yast
   import "Service"
   import "ServicesProposal"
   import "SystemdService"
+  import "Stage"
 
   class ServicesManagerServiceClass < Module
     include Yast::Logger
@@ -338,12 +339,15 @@ module Yast
         return false
       end
 
-      # Then try to adjust services run (active/inactive)
-      # Might start or stop some services that would cause system instability
-      switch_services
-      if !errors.empty?
-        Builtins.y2error "There were some errors during saving: " + errors.join(', ')
-        return false
+      unless Stage.initial
+        # Then try to adjust services run (active/inactive)
+        # Might start or stop some services that would cause system instability
+        # This makes only sense in an installed system (not inst-sys)
+        switch_services
+        if !errors.empty?
+          Builtins.y2error "There were some errors during saving: " + errors.join(', ')
+          return false
+        end
       end
 
       modified_services.keys.each { |service_name| reset_service(service_name) }
@@ -409,6 +413,12 @@ module Yast
     # @params [String] service name
     # @return [Boolean]
     def exists?(service)
+      if Stage.initial && !services[service]
+        # We are in inst-sys. So we cannot check for installed services but generate entries
+        # for these services if they still not exists.
+        services[service] = DEFAULT_SERVICE_SETTINGS.clone
+      end
+
       exists = !!services[service]
       if exists && block_given?
         yield
