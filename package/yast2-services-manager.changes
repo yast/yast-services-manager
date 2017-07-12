@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jul 12 11:25:20 UTC 2017 - jreidinger@suse.com
+
+- Fix failing ERB template in ruby 2.4 (will be default for SLE15
+  so part of bsc#1044312)
+- 3.3.0
+
+-------------------------------------------------------------------
 Mon Feb 13 14:34:34 CET 2017 - schubi@suse.de
 
 - AutoYaST: "Write" can be called in first and second installation

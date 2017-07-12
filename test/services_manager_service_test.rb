@@ -24,7 +24,6 @@ module Yast
       allow(Service).to receive(:Enabled).with("zbus").and_return true
       allow(Service).to receive(:Enabled).with("lsb").and_return false
       allow(Service).to receive(:Enabled).with("").and_return true
-
     end
 
     before do

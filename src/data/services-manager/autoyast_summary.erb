@@ -5,12 +5,12 @@
 <h2><%= _('Services Manager') %></h2>
 <p><b><%= _('Default Target') %></b></p>
 <ul><li><%= ERB::Util.html_escape(
-  ServicesManagerTargetClass::BaseTargets.localize(
-    ServicesManagerTarget.export
+  Yast::ServicesManagerTargetClass::BaseTargets.localize(
+    Yast::ServicesManagerTarget.export
   )
 ) %></li></ul>
 
-<% services = ServicesManagerService.export %>
+<% services = Yast::ServicesManagerService.export %>
 
 <h2><%= _('Services') %></h2>
 <p><b><%= _('Enabled') %></b></p>

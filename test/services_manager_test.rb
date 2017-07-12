@@ -233,15 +233,11 @@ module Yast
       it "has available methods for both target and services" do
         public_methods = [ :save, :read, :reset, :modified ]
         public_methods.each do |method|
-          ServicesManagerService.stub(method)
-          ServicesManagerTarget.stub(method)
           expect(ServicesManagerService).to receive(method)
-          expect(ServicesManagerTarget).to  receive(method)
+          expect(ServicesManagerTarget).to receive(method)
           ServicesManager.__send__(method)
         end
 
-        ServicesManagerService.stub(:modified=)
-        ServicesManagerTarget.stub(:modified=)
         expect(ServicesManagerService).to receive(:modified=).with(true)
         expect(ServicesManagerTarget).to receive(:modified=).with(true)
         ServicesManager.__send__(:modify)

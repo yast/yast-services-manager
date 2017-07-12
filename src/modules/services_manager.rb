@@ -2,6 +2,19 @@ require 'yast'
 require 'services-manager/services_manager_profile'
 require 'erb'
 
+class ServicesManagerERBTemplate
+  include Yast::I18n
+
+  def initialize
+    textdomain "services-manager"
+  end
+
+  def render
+    erb_template = File.expand_path("../../data/services-manager/autoyast_summary.erb", __FILE__)
+    ERB.new(File.read(erb_template)).result(binding)
+  end
+end
+
 module Yast
   import "ServicesManagerTarget"
   import "ServicesManagerService"
@@ -28,8 +41,7 @@ module Yast
         # AutoYast summary
         _("Not configured yet.")
       else
-        erb_template = File.expand_path("../../data/services-manager/autoyast_summary.erb", __FILE__)
-        ERB.new(File.read(erb_template)).result(binding)
+        ServicesManagerERBTemplate.new.render
       end
     end
 
