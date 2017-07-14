@@ -126,6 +126,7 @@ module Yast
           }
 
           expect(ServicesManagerTarget).to receive(:import).and_call_original
+          expect(Yast::Pkg).to receive(:IsSelected).with("xorg-x11-server").and_return(true)
           expect(ServicesManager.import(data)).to eq(true)
           expect(ServicesManagerTarget.default_target).to eq("graphical")
         end
@@ -160,6 +161,7 @@ module Yast
             'default_target' => 'graphical',
           }
 
+          expect(Yast::Pkg).to receive(:IsSelected).with("xorg-x11-server").and_return(true)
           expect(ServicesManagerTarget).to receive(:import).and_call_original
           expect(ServicesManager.import(data)).to eq(true)
           expect(ServicesManagerTarget.default_target).to eq("graphical")

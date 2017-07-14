@@ -1,6 +1,8 @@
 require "yast"
 
 module Yast
+  import 'Pkg'
+  import 'Report'
   import 'Stage'
   import 'SystemdTarget'
 
@@ -48,6 +50,9 @@ module Yast
       reboot
       system-update
     )
+
+    # the name of the X server package
+    X_SERVER_PACKAGE = "xorg-x11-server".freeze
 
     # @return [Boolean] True if properties of the ServicesManagerTarget has been modified
     attr_accessor :modified
@@ -125,9 +130,16 @@ module Yast
         # setting default_target due the defined environment
         self.default_target = (Installation.x11_setup_needed &&
           Arch.x11_setup_needed &&
-          Pkg.IsSelected("xorg-x11-server")) ? BaseTargets::GRAPHICAL : BaseTargets::MULTIUSER
+          Pkg.IsSelected(X_SERVER_PACKAGE)) ? BaseTargets::GRAPHICAL : BaseTargets::MULTIUSER
       else
-        self.default_target = profile.target
+        # switch to textmode if X11 is not installed for the graphical target (bsc#1046083)
+        if profile.target == "graphical" && !Pkg.IsSelected(X_SERVER_PACKAGE)
+          Report.Warning(_("The graphical Systemd target requires the X11 system\n" \
+            "which is not selected to install, using the text mode fallback."))
+          self.default_target = BaseTargets::MULTIUSER
+        else
+          self.default_target = profile.target
+        end
       end
     end
 
