@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Aug  2 14:22:08 UTC 2017 - jreidinger@suse.com
+
+- Optimize services manager output for ncurses on 80x24
+  (bsc#993826)
+- 3.3.1
+
+-------------------------------------------------------------------
 Wed Jul 12 11:25:20 UTC 2017 - jreidinger@suse.com
 
 - Fix failing ERB template in ruby 2.4 (will be default for SLE15

@@ -124,7 +124,7 @@ class ServicesManagerClient < Yast::Client
         HSquash(
           MinWidth(
             # Additional space for UI features
-            max_target_length + 2,
+            max_service_name + 2,
             ComboBox(
               Id(Id::DEFAULT_TARGET),
               Opt(:notify),
@@ -168,7 +168,7 @@ class ServicesManagerClient < Yast::Client
     UI.OpenDialog(Label(_('Reading services status...')))
     services = ServicesManagerService.all.collect do |service, attributes|
       Item(Id(service),
-        service,
+        shortened_service_name(service),
         attributes[:enabled] ? _('Enabled') : _('Disabled'),
         attributes[:active] ? _('Active') : _('Inactive'),
         attributes[:description]
@@ -260,6 +260,21 @@ class ServicesManagerClient < Yast::Client
     redraw_service(service)
     UI.SetFocus(Id(Id::SERVICES_TABLE))
     true
+  end
+
+  def display_width
+    UI.GetDisplayInfo["Width"] || 80
+  end
+
+  def shortened_service_name(name)
+    return name if name.size < max_service_name
+
+    name[0..(max_service_name-3)] + "..."
+  end
+
+  def max_service_name
+    # use 60 for other elements in table we want to display, see bsc#993826
+    display_width - 60
   end
 end
 
