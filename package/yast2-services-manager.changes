@@ -13,6 +13,12 @@ Wed Jul 12 11:25:20 UTC 2017 - jreidinger@suse.com
 - 3.3.0
 
 -------------------------------------------------------------------
+Tue Feb 14 14:25:04 CET 2017 - schubi@suse.de
+
+- Added lib/services-manager/clients/*.rb to spec file
+  (FATE#321738).
+
+-------------------------------------------------------------------
 Mon Feb 13 14:34:34 CET 2017 - schubi@suse.de
 
 - AutoYaST: "Write" can be called in first and second installation
