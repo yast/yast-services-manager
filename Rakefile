@@ -1,6 +1,4 @@
 require "yast/rake"
-
-Yast::Tasks.submit_to :sle12sp3
 require 'tmpdir'
 
 Yast::Tasks.configuration do |conf|
