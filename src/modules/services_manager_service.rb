@@ -13,17 +13,33 @@ module Yast
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
     STATUS_COMMAND          = 'systemctl status'
     IS_ACTIVE_COMMAND       = 'systemctl is-active'
+    # WTF, duplicated in Yast::Systemctl
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX          = '.service'
 
+    # Used by ServicesManagerServiceClass to keep data about an individual service.
+    # (Not a real class; documents the structure of a Hash)
+    #
+    # Why does this hash exist if we have Yast::SystemdServiceClass::Service?
+    class Settings < Hash
+      # @!method [](k)
+      #   @option k :enabled  [Boolean] service has been enabled
+      #   @option k :can_be_enabled [Boolean] service can be enabled/disabled by the user
+      #   @option k :modified [Boolean] service has been changed (got enabled/disabled)
+      #   @option k :active   [Boolean] The high-level unit activation state, i.e. generalization of SUB
+      #   @option k :loaded   [Boolean] Reflects whether the unit definition was properly loaded
+      #   @option k :description [String] English description of the service
+    end
+
+    # @return [Settings]
     DEFAULT_SERVICE_SETTINGS = {
-      :enabled        => false, # Whether the service has been enabled
-      :can_be_enabled => true,  # Whether the service can be enabled/disabled by the user
-      :modified       => false, # Whether the service has been changed (got enabled/disabled)
-      :active         => false, # The high-level unit activation state, i.e. generalization of SUB
-      :loaded         => false, # Reflects whether the unit definition was properly loaded
-      :description    => nil    # English description of the service
+      :enabled        => false,
+      :can_be_enabled => true,
+      :modified       => false,
+      :active         => false,
+      :loaded         => false,
+      :description    => nil
     }
 
     module Status
@@ -33,10 +49,28 @@ module Yast
       STATIC     = 'static' # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
     end
 
+    # @api private
     class ServiceLoader
-      attr_reader :unit_files, :units, :services
-      attr_reader :supported_unit_files, :supported_units
+      # @return [Hash{String => String}] service name -> status, like "foo" => "active"
+      # @see Status
+      attr_reader :unit_files
+      # @return [Hash{String => Hash}]
+      #   like "foo" => { status: "active", description: "Features OO" }
+      attr_reader :units
+      # @return [Hash{String => Settings}]
+      #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
+      attr_reader :services
+      # Like {#unit_files} except those that are "masked"
+      # @return [Hash{String => String}] service name -> status, like "foo" => "active"
+      # @see Status
+      attr_reader :supported_unit_files
+      # Like {#units} except those with status: "not-found"
+      # @return [Hash{String => Hash}]
+      #   like "foo" => { status: "active", description: "Features OO" }
+      attr_reader :supported_units
 
+      # @return [Hash{String => Settings}]
+      #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
       def read
         @services   = {}
         @unit_files = {}
@@ -58,6 +92,8 @@ module Yast
       end
 
       private
+
+      # FIXME: use Yast::Systemctl for this, remember to chomp SERVICE_SUFFIX
 
       def list_unit_files
         command = TERM_OPTIONS + LIST_UNIT_FILES_COMMAND + COMMAND_OPTIONS
@@ -141,13 +177,19 @@ module Yast
     end
 
     attr_reader   :modified
-    attr_accessor :errors, :services
+
+    # @return [Array<String>]
+    attr_accessor :errors
 
     alias_method :modified?, :modified
 
+    # @return [Hash{String => Settings}]
+    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
     def services
       @services ||= read
     end
+
+    attr_writer :services
 
     alias_method :all, :services
 
@@ -159,8 +201,8 @@ module Yast
 
     # Sets whether service should be running after writing the configuration
     #
-    # @param String service name
-    # @param Boolean running
+    # @param [String] service name
+    # @return [Boolean] whether the service exists
     def activate(service)
       exists?(service) do
         services[service][:active]  = true
@@ -172,8 +214,8 @@ module Yast
 
     # Sets whether service should be running after writing the configuration
     #
-    # @param String service name
-    # @param Boolean running
+    # @param [String] service name
+    # @return [Boolean] whether the service exists
     def deactivate(service)
       exists?(service) do
         services[service][:active]   = false
@@ -182,10 +224,8 @@ module Yast
       end
     end
 
-    # Returns the current setting whether service should be running
-    #
-    # @param String service name
-    # @return Boolean running
+    # @param [String] service name
+    # @return [Boolean] the current setting whether service should be running
     def active(service)
       exists?(service) { services[service][:active] }
     end
@@ -255,7 +295,8 @@ module Yast
 
     # Reads all services' data
     #
-    # @return [Hash] map of services
+    # @return [Hash{String => Settings}]
+    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
     def read
       ServiceLoader.new.read
     end
@@ -410,8 +451,10 @@ module Yast
     # When passed a block, this will be executed only if the service exists
     # Whitout block it returns the boolean value
     #
-    # @params [String] service name
-    # @return [Boolean]
+    # @param [String] service name
+    # @yieldreturn [Boolean]
+    # @return [Boolean] false if the service does not exist,
+    #   otherwise what the block returned
     def exists?(service)
       if Stage.initial && !services[service]
         # We are in inst-sys. So we cannot check for installed services but generate entries
