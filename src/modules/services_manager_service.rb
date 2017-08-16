@@ -91,7 +91,7 @@ module Yast
 
       def load_units
         list_units['stdout'].each_line do |line|
-          service, status, active, _, *description = line.split(/[\s]+/)
+          service, status, _active, _sub_state, *description = line.split(/[\s]+/)
           service.chomp! SERVICE_SUFFIX
           units[service] = {
             :status => status,
