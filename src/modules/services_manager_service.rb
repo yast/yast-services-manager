@@ -95,14 +95,18 @@ module Yast
 
       # FIXME: use Yast::Systemctl for this, remember to chomp SERVICE_SUFFIX
 
+      # @return [Array<String>] "apache2.service   enabled\n"
       def list_unit_files
         command = TERM_OPTIONS + LIST_UNIT_FILES_COMMAND + COMMAND_OPTIONS
-        SCR.Execute(Path.new('.target.bash_output'), command)
+        out = SCR.Execute(Path.new('.target.bash_output'), command)['stdout']
+        out.lines
       end
 
+      # @return [Array<String>] "dbus.service   loaded active running D-Bus System Message Bus\n"
       def list_units
         command = TERM_OPTIONS + LIST_UNITS_COMMAND + COMMAND_OPTIONS
-        SCR.Execute(Path.new('.target.bash_output'), command)
+        out = SCR.Execute(Path.new('.target.bash_output'), command)['stdout']
+        out.lines
       end
 
       # Checking if a service is active or not.
@@ -118,7 +122,7 @@ module Yast
       end
 
       def load_unit_files
-        list_unit_files['stdout'].each_line do |line|
+        list_unit_files.each do |line|
           service, status = line.split(/[\s]+/)
           service.chomp! SERVICE_SUFFIX
           unit_files[service] = status
@@ -126,7 +130,7 @@ module Yast
       end
 
       def load_units
-        list_units['stdout'].each_line do |line|
+        list_units.each do |line|
           service, status, _active, _sub_state, *description = line.split(/[\s]+/)
           service.chomp! SERVICE_SUFFIX
           units[service] = {

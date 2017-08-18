@@ -29,30 +29,30 @@ module Yast
 
     before do
       allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:list_unit_files)
-        .and_return({
-          'stdout'=> "sshd.service      enabled \n"  +
-                     "postfix.service   disabled\n " +
-                     "swap.service      masked  \n"  +
-                     "dbus.service      static  \n"  +
-                     "notloaded.service static  \n"  +
-                     "xbus.service      enabled \n"  +
-                     "ybus.service      enabled \n"  +
-                     "zbus.service      enabled \n",
-          'stderr' => '',
-          'exit'   => 0
-        })
+        .and_return(
+          [
+                     "sshd.service      enabled \n",
+                     "postfix.service   disabled\n",
+                     "swap.service      masked  \n",
+                     "dbus.service      static  \n",
+                     "notloaded.service static  \n",
+                     "xbus.service      enabled \n",
+                     "ybus.service      enabled \n",
+                     "zbus.service      enabled \n"
+          ]
+        )
       allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:list_units)
-        .and_return({
-          'stdout'=>"sshd.service  loaded active   running OpenSSH Daemon\n" +
-                    "postfix.service loaded inactive dead    Postfix Mail Agent\n" +
-                    "dbus.service  loaded active   running D-Bus System Message Bus\n" +
-                    "lsb.service  loaded active   running LSB service\n" +
-                    "xbus.service loaded activating start start YaST2 Second Stage (1)\n" +
-                    "ybus.service loaded deactivating stop start YaST2 Second Stage (2)\n" +
-                    "zbus.service loaded reloading stop start YaST2 Second Stage (3)\n",
-          'stderr' => '',
-          'exit'   => 0
-        })
+        .and_return(
+          [
+            "sshd.service  loaded active   running OpenSSH Daemon\n",
+            "postfix.service loaded inactive dead    Postfix Mail Agent\n",
+            "dbus.service  loaded active   running D-Bus System Message Bus\n",
+            "lsb.service  loaded active   running LSB service\n",
+            "xbus.service loaded activating start start YaST2 Second Stage (1)\n",
+            "ybus.service loaded deactivating stop start YaST2 Second Stage (2)\n",
+            "zbus.service loaded reloading stop start YaST2 Second Stage (3)\n"
+          ]
+        )
 
       allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:is_active?).and_return true
 
