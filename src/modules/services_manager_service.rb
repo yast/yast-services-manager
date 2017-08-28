@@ -51,6 +51,8 @@ module Yast
 
     # @api private
     class ServiceLoader
+      include Yast::Logger
+
       # @return [Hash{String => String}] service name -> status, like "foo" => "active"
       # @see Status
       attr_reader :unit_files
@@ -169,10 +171,14 @@ module Yast
 
         # Rest of settings
         services.each_key do |name|
+          log.info "Extracting #{name}"
           sh = services[name] # service hash
           s = SystemdService.find(name)
+          log.info "  have #{sh}; found #{s.inspect}"
           sh[:enabled] = s && s.enabled?
+          log.info "  enabled #{sh[:enabled]}"
           sh[:active] = is_active?(name)
+          log.info "  active  #{sh[:active]}"
           if !sh[:description] || sh[:description].empty?
             sh[:description] = s.description if s
           end
