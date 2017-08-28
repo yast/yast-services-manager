@@ -120,8 +120,8 @@ module Yast
         # There is a active? method in SystemdUnit class but it checks the status
         # active and activating only. Not sure if this correct. So we are taking the
         # official call of systemctl command.
-        command = "#{TERM_OPTIONS}#{IS_ACTIVE_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
-        SCR.Execute(Path.new('.target.bash_output'), command)["exit"] == 0
+        out = Systemctl.execute("is-active #{service}#{SERVICE_SUFFIX} 2>&1")
+        out["exit"] == 0
       end
 
       def load_unit_files
@@ -456,8 +456,8 @@ module Yast
     # @param String service name
     # @return String full unformatted information
     def status(service)
-      command = "#{TERM_OPTIONS}#{STATUS_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
-      SCR.Execute(path('.target.bash_output'), command)['stdout']
+      out = Systemctl.execute("status #{service}#{SERVICE_SUFFIX} 2>&1")
+      out['stdout']
     end
 
     private
