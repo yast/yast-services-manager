@@ -1,4 +1,5 @@
 require "yast"
+require "yast/profiler"
 
 module Yast
   import "Service"
@@ -165,6 +166,8 @@ module Yast
       end
 
       def extract_services
+        log.info "EXTRACT begin"
+        Yast::Profiler.start
         extract_services_from_unit_files
         # Add old LSB services (Services which are loaded but not available as a unit file)
         extract_services_from_units
@@ -183,6 +186,8 @@ module Yast
             sh[:description] = s.description if s
           end
         end
+        Yast::Profiler.stop($stdout)
+        log.info "EXTRACT end"
       end
     end
 
