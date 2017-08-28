@@ -169,11 +169,12 @@ module Yast
 
         # Rest of settings
         services.each_key do |name|
+          sh = services[name] # service hash
           s = SystemdService.find(name)
-          services[name][:enabled] = s && s.enabled?
-          services[name][:active] = is_active?(name)
-          if !services[name][:description] || services[name][:description].empty?
-            services[name][:description] = s.description if s
+          sh[:enabled] = s && s.enabled?
+          sh[:active] = is_active?(name)
+          if !sh[:description] || sh[:description].empty?
+            sh[:description] = s.description if s
           end
         end
       end
