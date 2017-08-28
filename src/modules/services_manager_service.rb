@@ -169,7 +169,8 @@ module Yast
 
         # Rest of settings
         services.each_key do |name|
-          services[name][:enabled] = Yast::Service.Enabled(name)
+          ss = SystemdService.find(name)
+          services[name][:enabled] = ss && ss.enabled?
           services[name][:active] = is_active?(name)
           if !services[name][:description] || services[name][:description].empty?
             # Trying to evaluate description via the show command of systemctl

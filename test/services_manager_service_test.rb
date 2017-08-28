@@ -14,17 +14,20 @@ module Yast
       allow(Service).to receive(:Disable).and_return true
       allow(Service).to receive(:Start).and_return true
       allow(Service).to receive(:Stop).and_return true
-      allow(Service).to receive(:Enabled).with("sshd").and_return true
-      allow(Service).to receive(:Enabled).with("postfix").and_return false
-      allow(Service).to receive(:Enabled).with("swap").and_return false
-      allow(Service).to receive(:Enabled).with("dbus").and_return false
-      allow(Service).to receive(:Enabled).with("notloaded").and_return false
-      allow(Service).to receive(:Enabled).with("xbus").and_return true
-      allow(Service).to receive(:Enabled).with("ybus").and_return true
-      allow(Service).to receive(:Enabled).with("zbus").and_return true
-      allow(Service).to receive(:Enabled).with("lsb").and_return false
-      allow(Service).to receive(:Enabled).with("").and_return true
 
+      enabled = double(description: "ON", enabled?: true, active?: 42)
+      disabled = double(description: "OFF", enabled?: false, active?: 42)
+
+      allow(SystemdService).to receive(:find).with("sshd").and_return enabled
+      allow(SystemdService).to receive(:find).with("postfix").and_return disabled
+      allow(SystemdService).to receive(:find).with("swap").and_return disabled
+      allow(SystemdService).to receive(:find).with("dbus").and_return disabled
+      allow(SystemdService).to receive(:find).with("notloaded").and_return disabled
+      allow(SystemdService).to receive(:find).with("xbus").and_return enabled
+      allow(SystemdService).to receive(:find).with("ybus").and_return enabled
+      allow(SystemdService).to receive(:find).with("zbus").and_return enabled
+      allow(SystemdService).to receive(:find).with("lsb").and_return disabled
+      allow(SystemdService).to receive(:find).with("").and_return enabled
     end
 
     before do
