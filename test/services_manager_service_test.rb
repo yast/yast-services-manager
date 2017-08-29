@@ -15,22 +15,31 @@ module Yast
       allow(Service).to receive(:Start).and_return true
       allow(Service).to receive(:Stop).and_return true
 
-      enabled = double(description: "ON", enabled?: true, active?: 42)
-      disabled = double(description: "OFF", enabled?: false, active?: 42)
+      all_services = {}
+      declare_service = lambda do |name, enabled|
+        d = double(description: "Stub #{name}", enabled?: enabled, active?: 42)
+        all_services[name] = d
+      end
 
-      allow(SystemdService).to receive(:find).with("sshd").and_return enabled
-      allow(SystemdService).to receive(:find).with("postfix").and_return disabled
-      allow(SystemdService).to receive(:find).with("swap").and_return disabled
-      allow(SystemdService).to receive(:find).with("dbus").and_return disabled
-      allow(SystemdService).to receive(:find).with("notloaded").and_return disabled
-      allow(SystemdService).to receive(:find).with("xbus").and_return enabled
-      allow(SystemdService).to receive(:find).with("ybus").and_return enabled
-      allow(SystemdService).to receive(:find).with("zbus").and_return enabled
-      allow(SystemdService).to receive(:find).with("lsb").and_return disabled
-      allow(SystemdService).to receive(:find).with("").and_return enabled
+      declare_service.call("sshd", true)
+      declare_service.call("postfix", false)
+      declare_service.call("dbus", false)
+      declare_service.call("notloaded", false)
+      declare_service.call("xbus", true)
+      declare_service.call("ybus", true)
+      declare_service.call("zbus", true)
+      declare_service.call("lsb", false)
+
+      keys = all_services.sort.map(&:first)
+      values = all_services.sort.map(&:last)
+      allow(SystemdService)
+        .to receive(:find_many).with(keys)
+              .and_return(values)
     end
 
     before do
+      stub_services
+
       allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:list_unit_files)
         .and_return(
           [
@@ -74,7 +83,6 @@ module Yast
     end
 
     it "can enable a service which is disabled" do
-      stub_services
       postfix = service.all['postfix']
       expect(postfix[:enabled]).to eq(false)
       expect(postfix[:modified]).to eq(false)
@@ -87,7 +95,6 @@ module Yast
     end
 
     it "can disable a service which is enabled" do
-      stub_services
       sshd = service.all['sshd']
       expect(sshd[:enabled]).to eq(true)
       expect(sshd[:modified]).to eq(false)
@@ -100,7 +107,6 @@ module Yast
     end
 
     it "can start an inactive service" do
-      stub_services
       postfix = service.all['postfix']
       expect(postfix[:modified]).to be(false)
       service.activate 'postfix'
@@ -112,7 +118,6 @@ module Yast
     end
 
     it "can stop an active service" do
-      stub_services
       sshd = service.all['sshd']
       expect(sshd[:active]).to be(true)
       expect(sshd[:modified]).to be(false)
@@ -125,7 +130,6 @@ module Yast
     end
 
     it "can toggle a service" do
-      stub_services
       sshd = service.all['sshd']
       status = sshd[:enabled]
       service.toggle 'sshd'
@@ -135,7 +139,6 @@ module Yast
     end
 
     it "can switch a service" do
-      stub_services
       postfix = service.all['postfix']
       status  = postfix[:active]
       service.switch 'postfix'
@@ -170,7 +173,6 @@ module Yast
 
     context "when enabling is failing" do
       before do
-        stub_services
         allow(Service).to receive(:Enable).and_return false
         allow(Service).to receive(:Disable).and_return false
         service.toggle 'postfix'
@@ -194,7 +196,6 @@ module Yast
 
     context "when service is in state 'reloading'" do
       it "is considered to be active" do
-        stub_services
         zbus_service = service.all['zbus']
         expect(zbus_service[:active]).to eq(true)
       end
@@ -202,7 +203,6 @@ module Yast
 
     context "when running in installation-system" do
       it "do not switch a service at all" do
-        stub_services
         postfix = service.all['postfix']
         status  = postfix[:active]
         service.switch 'postfix' # locally only
@@ -211,7 +211,6 @@ module Yast
         service.save
       end
       it "generates missing services entries" do
-        stub_services
         allow(Stage).to receive(:initial).and_return true
         service.enable("new_service")
         expect(service.services["new_service"]).not_to be_nil

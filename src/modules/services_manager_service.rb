@@ -171,7 +171,7 @@ module Yast
         # Add old LSB services (Services which are loaded but not available as a unit file)
         extract_services_from_units
 
-        service_names = services.keys
+        service_names = services.keys.sort
         ss = SystemdService.find_many(service_names)
         log.info "EXTRACT half"
         # Rest of settings
