@@ -171,11 +171,12 @@ module Yast
         # Add old LSB services (Services which are loaded but not available as a unit file)
         extract_services_from_units
 
+        service_names = services.keys
+        ss = SystemdService.find_many(service_names)
+        log.info "EXTRACT half"
         # Rest of settings
-        services.each_key do |name|
-          log.info "Extracting #{name}"
+        service_names.zip(ss).each do |name, s|
           sh = services[name] # service hash
-          s = SystemdService.find(name)
           log.info "  have #{sh}; found #{s.inspect}"
           sh[:enabled] = s && s.enabled?
           log.info "  enabled #{sh[:enabled]}"
