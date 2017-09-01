@@ -43,10 +43,15 @@ module Yast
       :description    => nil
     }
 
+    # FIXME: this is a mixture of LoadState (unit) and UnitFileState (unit file)
     module Status
+      # LoadState
       LOADED     = 'loaded'
+      # LoadState
       NOTFOUND   = 'not-found'
+      # masked is both a LoadState and a UnitFileState :-/
       MASKED     = 'masked' # The service has been marked as completely unstartable, automatically or manually.
+      # UnitFileState
       STATIC     = 'static' # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
     end
 
@@ -54,22 +59,28 @@ module Yast
     class ServiceLoader
       include Yast::Logger
 
-      # @return [Hash{String => String}] service name -> status, like "foo" => "active"
+      # @return [Hash{String => String}] service name -> status, like "foo" => "enabled" (UnitFileState)
       # @see Status
       attr_reader :unit_files
+
       # @return [Hash{String => Hash}]
-      #   like "foo" => { status: "active", description: "Features OO" }
+      #   like "foo" => { status: "loaded", description: "Features OO" }
+      # @see Status
       attr_reader :units
+
       # @return [Hash{String => Settings}]
       #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
       attr_reader :services
+
       # Like {#unit_files} except those that are "masked"
-      # @return [Hash{String => String}] service name -> status, like "foo" => "active"
+      # @return [Hash{String => String}] service name -> status, like "foo" => "enabled" (UnitFileState)
       # @see Status
       attr_reader :supported_unit_files
+
       # Like {#units} except those with status: "not-found"
       # @return [Hash{String => Hash}]
-      #   like "foo" => { status: "active", description: "Features OO" }
+      #   like "foo" => { status: "loaded", description: "Features OO" }
+      # @see Status
       attr_reader :supported_units
 
       # @return [Hash{String => Settings}]
