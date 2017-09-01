@@ -17,7 +17,7 @@ module Yast
 
       all_services = {}
       declare_service = lambda do |name, enabled|
-        d = double(description: "Stub #{name}", enabled?: enabled, active?: 42)
+        d = double(description: "Stub #{name}", enabled?: enabled, active?: true)
         all_services[name] = d
       end
 
@@ -65,8 +65,6 @@ module Yast
             "zbus.service loaded reloading stop start YaST2 Second Stage (3)\n"
           ]
         )
-
-      allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:is_active?).and_return true
 
       @service = Yast::ServicesManagerServiceClass.new
     end

@@ -13,7 +13,6 @@ module Yast
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
     STATUS_COMMAND          = 'systemctl status'
-    IS_ACTIVE_COMMAND       = 'systemctl is-active'
     # WTF, duplicated in Yast::Systemctl
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
@@ -38,7 +37,7 @@ module Yast
       :enabled        => false,
       :can_be_enabled => true,
       :modified       => false,
-      :active         => false,
+      :active         => nil,
       :loaded         => false,
       :description    => nil
     }
@@ -123,18 +122,6 @@ module Yast
         out.lines
       end
 
-      # Checking if a service is active or not.
-      #
-      # @param service [String] Service name
-      # @return [Boolean] is it active or not
-      def is_active?(service)
-        # There is a active? method in SystemdUnit class but it checks the status
-        # active and activating only. Not sure if this correct. So we are taking the
-        # official call of systemctl command.
-        out = Systemctl.execute("is-active #{service}#{SERVICE_SUFFIX} 2>&1")
-        out["exit"] == 0
-      end
-
       def load_unit_files
         list_unit_files.each do |line|
           service, status = line.split(/[\s]+/)
@@ -193,7 +180,7 @@ module Yast
           log.info "  have #{sh}; found #{s.inspect}"
           sh[:enabled] = s && s.enabled?
           log.info "  enabled #{sh[:enabled]}"
-          sh[:active] = is_active?(name)
+          sh[:active] = s && s.active?
           log.info "  active  #{sh[:active]}"
           if !sh[:description] || sh[:description].empty?
             sh[:description] = s.description if s
