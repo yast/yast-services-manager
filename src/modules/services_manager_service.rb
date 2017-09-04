@@ -171,15 +171,11 @@ module Yast
 
         service_names = services.keys.sort
         ss = SystemdService.find_many(service_names)
-        log.info "EXTRACT half"
         # Rest of settings
         service_names.zip(ss).each do |name, s|
           sh = services[name] # service hash
-          log.info "  have #{sh}; found #{s.inspect}"
           sh[:enabled] = s && s.enabled?
-          log.info "  enabled #{sh[:enabled]}"
           sh[:active] = s && s.active?
-          log.info "  active  #{sh[:active]}"
           if !sh[:description] || sh[:description].empty?
             sh[:description] = s.description if s
           end
