@@ -100,7 +100,7 @@ module Yast
           attributes[:status] == Status::NOTFOUND # definition file is not available anymore
         end
 
-        maybe_profile { extract_services }
+        extract_services
         services
       end
 
@@ -167,6 +167,7 @@ module Yast
 
       def extract_services
         log.info "EXTRACT begin"
+        Yast::Profiler.start
         extract_services_from_unit_files
         # Add old LSB services (Services which are loaded but not available as a unit file)
         extract_services_from_units
@@ -186,20 +187,8 @@ module Yast
             sh[:description] = s.description if s
           end
         end
+        Yast::Profiler.stop($stdout)
         log.info "EXTRACT end"
-      end
-
-      def maybe_profile(&block)
-        if ENV["Y2PROFILER"] == "2"
-          begin
-            Yast::Profiler.start
-            block.call
-          ensure
-            Yast::Profiler.stop($stdout)
-          end
-        else
-          block.call
-        end
       end
     end
 
