@@ -24,7 +24,6 @@ module Yast
       function = args.shift.to_s
       service_id = args.find {|i| i == 'chosen_id'}.to_s
       #TODO implement behaviour if force_reset parameter provided
-      _force_reset = !!(args.find {|i| i == 'force_reset'})
 
       case function
         when 'MakeProposal' then proposal.read

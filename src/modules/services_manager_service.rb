@@ -12,7 +12,7 @@ module Yast
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
     STATUS_COMMAND          = 'systemctl status'
-    # WTF, duplicated in Yast::Systemctl
+    # FIXME: duplicated in Yast::Systemctl
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX          = '.service'
@@ -41,16 +41,20 @@ module Yast
       :description    => nil
     }
 
-    # FIXME: this is a mixture of LoadState (unit) and UnitFileState (unit file)
+    # FIXME: this is a mixture of
+    # LoadState (the LOAD column of systemctl list-units) and
+    # UnitFileState (STATE of systemctl list-unit-files)
     module Status
       # LoadState
       LOADED     = 'loaded'
       # LoadState
       NOTFOUND   = 'not-found'
       # masked is both a LoadState and a UnitFileState :-/
-      MASKED     = 'masked' # The service has been marked as completely unstartable, automatically or manually.
+      # The service has been marked as completely unstartable, automatically or manually.
+      MASKED     = 'masked'
       # UnitFileState
-      STATIC     = 'static' # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
+      # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
+      STATIC     = 'static'
     end
 
     # @api private
@@ -126,6 +130,7 @@ module Yast
           service, status = line.split(/[\s]+/)
           service.chomp! SERVICE_SUFFIX
           # Unit template, errors out when inquired with `systemctl show`
+          # See systemd.unit(5)
           next if service.end_with?("@")
           unit_files[service] = status
         end

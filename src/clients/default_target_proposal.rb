@@ -35,7 +35,6 @@ module Yast
     def call args
       function = args.shift.to_s
       #TODO implement behaviour if force_reset parameter provided
-      _force_reset = !!args.shift
       case function
         when 'MakeProposal' then Proposal.new.create
         when 'AskUser'      then Dialog.new.show
