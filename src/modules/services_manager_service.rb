@@ -182,7 +182,7 @@ module Yast
           sh[:enabled] = s && s.enabled?
           sh[:active] = s && s.active?
           if !sh[:description] || sh[:description].empty?
-            sh[:description] = s.description if s
+            sh[:description] = s ? s.description : ""
           end
         end
       end
