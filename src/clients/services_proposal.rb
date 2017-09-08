@@ -24,7 +24,6 @@ module Yast
       function = args.shift.to_s
       service_id = args.find {|i| i == 'chosen_id'}.to_s
       #TODO implement behaviour if force_reset parameter provided
-      force_reset = !!(args.find {|i| i == 'force_reset'})
 
       case function
         when 'MakeProposal' then proposal.read
@@ -37,7 +36,7 @@ module Yast
 
     def ask_user service_id
       Builtins.y2milestone "Services proposal wanted to change with id %1", service_id
-      if service_id.match /\Atoggle_service_\d+\z/
+      if service_id.match(/\Atoggle_service_\d+\z/)
         Builtins.y2milestone "User requested #{service_id}"
         toggle_service(service_id)
       else

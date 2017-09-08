@@ -12,31 +12,81 @@ module Yast
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
     STATUS_COMMAND          = 'systemctl status'
-    IS_ACTIVE_COMMAND       = 'systemctl is-active'
+    # FIXME: duplicated in Yast::Systemctl
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX          = '.service'
 
-    DEFAULT_SERVICE_SETTINGS = {
-      :enabled        => false, # Whether the service has been enabled
-      :can_be_enabled => true,  # Whether the service can be enabled/disabled by the user
-      :modified       => false, # Whether the service has been changed (got enabled/disabled)
-      :active         => false, # The high-level unit activation state, i.e. generalization of SUB
-      :loaded         => false, # Reflects whether the unit definition was properly loaded
-      :description    => nil    # English description of the service
-    }
-
-    module Status
-      LOADED     = 'loaded'
-      NOTFOUND   = 'not-found'
-      MASKED     = 'masked' # The service has been marked as completely unstartable, automatically or manually.
-      STATIC     = 'static' # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
+    # Used by ServicesManagerServiceClass to keep data about an individual service.
+    # (Not a real class; documents the structure of a Hash)
+    #
+    # Why does this hash exist if we have Yast::SystemdServiceClass::Service?
+    class Settings < Hash
+      # @!method [](k)
+      #   @option k :enabled  [Boolean] service has been enabled
+      #   @option k :can_be_enabled [Boolean] service can be enabled/disabled by the user
+      #   @option k :modified [Boolean] service has been changed (got enabled/disabled)
+      #   @option k :active   [Boolean] The high-level unit activation state, i.e. generalization of SUB
+      #   @option k :loaded   [Boolean] Reflects whether the unit definition was properly loaded
+      #   @option k :description [String] English description of the service
     end
 
-    class ServiceLoader
-      attr_reader :unit_files, :units, :services
-      attr_reader :supported_unit_files, :supported_units
+    # @return [Settings]
+    DEFAULT_SERVICE_SETTINGS = {
+      :enabled        => false,
+      :can_be_enabled => true,
+      :modified       => false,
+      :active         => nil,
+      :loaded         => false,
+      :description    => nil
+    }
 
+    # FIXME: this is a mixture of
+    # LoadState (the LOAD column of systemctl list-units) and
+    # UnitFileState (STATE of systemctl list-unit-files)
+    module Status
+      # LoadState
+      LOADED     = 'loaded'
+      # LoadState
+      NOTFOUND   = 'not-found'
+      # masked is both a LoadState and a UnitFileState :-/
+      # The service has been marked as completely unstartable, automatically or manually.
+      MASKED     = 'masked'
+      # UnitFileState
+      # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
+      STATIC     = 'static'
+    end
+
+    # @api private
+    class ServiceLoader
+      include Yast::Logger
+
+      # @return [Hash{String => String}] service name -> status, like "foo" => "enabled" (UnitFileState)
+      # @see Status
+      attr_reader :unit_files
+
+      # @return [Hash{String => Hash}]
+      #   like "foo" => { status: "loaded", description: "Features OO" }
+      # @see Status
+      attr_reader :units
+
+      # @return [Hash{String => Settings}]
+      #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
+      attr_reader :services
+
+      # Like {#unit_files} except those that are "masked"
+      # @return [Hash{String => String}] service name -> status, like "foo" => "enabled" (UnitFileState)
+      # @see Status
+      attr_reader :supported_unit_files
+
+      # Like {#units} except those with status: "not-found"
+      # @return [Hash{String => Hash}]
+      #   like "foo" => { status: "loaded", description: "Features OO" }
+      # @see Status
+      attr_reader :supported_units
+
+      # @return [Hash{String => Settings}]
+      #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
       def read
         @services   = {}
         @unit_files = {}
@@ -59,39 +109,36 @@ module Yast
 
       private
 
+      # FIXME: use Yast::Systemctl for this, remember to chomp SERVICE_SUFFIX
+
+      # @return [Array<String>] "apache2.service   enabled\n"
       def list_unit_files
         command = TERM_OPTIONS + LIST_UNIT_FILES_COMMAND + COMMAND_OPTIONS
-        SCR.Execute(Path.new('.target.bash_output'), command)
+        out = SCR.Execute(Path.new('.target.bash_output'), command)['stdout']
+        out.lines
       end
 
+      # @return [Array<String>] "dbus.service   loaded active running D-Bus System Message Bus\n"
       def list_units
         command = TERM_OPTIONS + LIST_UNITS_COMMAND + COMMAND_OPTIONS
-        SCR.Execute(Path.new('.target.bash_output'), command)
-      end
-
-      # Checking if a service is active or not.
-      #
-      # @param service [String] Service name
-      # @return [Boolean] is it active or not
-      def is_active?(service)
-        # There is a active? method in SystemdUnit class but it checks the status
-        # active and activating only. Not sure if this correct. So we are taking the
-        # official call of systemctl command.
-        command = "#{TERM_OPTIONS}#{IS_ACTIVE_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
-        SCR.Execute(Path.new('.target.bash_output'), command)["exit"] == 0
+        out = SCR.Execute(Path.new('.target.bash_output'), command)['stdout']
+        out.lines
       end
 
       def load_unit_files
-        list_unit_files['stdout'].each_line do |line|
+        list_unit_files.each do |line|
           service, status = line.split(/[\s]+/)
           service.chomp! SERVICE_SUFFIX
+          # Unit template, errors out when inquired with `systemctl show`
+          # See systemd.unit(5)
+          next if service.end_with?("@")
           unit_files[service] = status
         end
       end
 
       def load_units
-        list_units['stdout'].each_line do |line|
-          service, status, active, _, *description = line.split(/[\s]+/)
+        list_units.each do |line|
+          service, status, _active, _sub_state, *description = line.split(/[\s]+/)
           service.chomp! SERVICE_SUFFIX
           units[service] = {
             :status => status,
@@ -127,27 +174,34 @@ module Yast
         # Add old LSB services (Services which are loaded but not available as a unit file)
         extract_services_from_units
 
+        service_names = services.keys.sort
+        ss = SystemdService.find_many(service_names)
         # Rest of settings
-        services.each_key do |name|
-          services[name][:enabled] = Yast::Service.Enabled(name)
-          services[name][:active] = is_active?(name)
-          if !services[name][:description] || services[name][:description].empty?
-            # Trying to evaluate description via the show command of systemctl
-            s = SystemdService.find(name)
-            services[name][:description] = SystemdService.find(name).description if s
+        service_names.zip(ss).each do |name, s|
+          sh = services[name] # service hash
+          sh[:enabled] = s && s.enabled?
+          sh[:active] = s && s.active?
+          if !sh[:description] || sh[:description].empty?
+            sh[:description] = s ? s.description : ""
           end
         end
       end
     end
 
     attr_reader   :modified
-    attr_accessor :errors, :services
+
+    # @return [Array<String>]
+    attr_accessor :errors
 
     alias_method :modified?, :modified
 
+    # @return [Hash{String => Settings}]
+    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
     def services
       @services ||= read
     end
+
+    attr_writer :services
 
     alias_method :all, :services
 
@@ -159,8 +213,8 @@ module Yast
 
     # Sets whether service should be running after writing the configuration
     #
-    # @param String service name
-    # @param Boolean running
+    # @param [String] service name
+    # @return [Boolean] whether the service exists
     def activate(service)
       exists?(service) do
         services[service][:active]  = true
@@ -172,8 +226,8 @@ module Yast
 
     # Sets whether service should be running after writing the configuration
     #
-    # @param String service name
-    # @param Boolean running
+    # @param [String] service name
+    # @return [Boolean] whether the service exists
     def deactivate(service)
       exists?(service) do
         services[service][:active]   = false
@@ -182,10 +236,8 @@ module Yast
       end
     end
 
-    # Returns the current setting whether service should be running
-    #
-    # @param String service name
-    # @return Boolean running
+    # @param [String] service name
+    # @return [Boolean] the current setting whether service should be running
     def active(service)
       exists?(service) { services[service][:active] }
     end
@@ -255,7 +307,8 @@ module Yast
 
     # Reads all services' data
     #
-    # @return [Hash] map of services
+    # @return [Hash{String => Settings}]
+    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
     def read
       ServiceLoader.new.read
     end
@@ -400,8 +453,8 @@ module Yast
     # @param String service name
     # @return String full unformatted information
     def status(service)
-      command = "#{TERM_OPTIONS}#{STATUS_COMMAND} #{service}#{SERVICE_SUFFIX} 2>&1"
-      SCR.Execute(path('.target.bash_output'), command)['stdout']
+      out = Systemctl.execute("status #{service}#{SERVICE_SUFFIX} 2>&1")
+      out['stdout']
     end
 
     private
@@ -410,8 +463,10 @@ module Yast
     # When passed a block, this will be executed only if the service exists
     # Whitout block it returns the boolean value
     #
-    # @params [String] service name
-    # @return [Boolean]
+    # @param [String] service name
+    # @yieldreturn [Boolean]
+    # @return [Boolean] false if the service does not exist,
+    #   otherwise what the block returned
     def exists?(service)
       if Stage.initial && !services[service]
         # We are in inst-sys. So we cannot check for installed services but generate entries

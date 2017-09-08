@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Aug 30 14:12:29 UTC 2017 - mvidner@suse.com
+
+- Use fewer calls of systemctl to speed up startup (bsc#1045658)
+- 3.2.2
+
+-------------------------------------------------------------------
 Tue Feb 14 14:25:04 CET 2017 - schubi@suse.de
 
 - Added lib/services-manager/clients/*.rb to spec file
