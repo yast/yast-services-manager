@@ -35,7 +35,6 @@ module Yast
     def call args
       function = args.shift.to_s
       #TODO implement behaviour if force_reset parameter provided
-      force_reset = !!args.shift
       case function
         when 'MakeProposal' then Proposal.new.create
         when 'AskUser'      then Dialog.new.show
@@ -149,7 +148,7 @@ module Yast
         recommendation = para _("When you are not sure what would be the best option " +
            "for you then go with graphical target.")
 
-        header + intro + multiuser + graphical + recommendation
+        header + intro + default + multiuser + graphical + recommendation
       end
 
       def generate_content

@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Aug 30 14:12:29 UTC 2017 - mvidner@suse.com
+
+- Use fewer calls of systemctl to speed up startup (bsc#1045658)
+- 4.0.0
+
+-------------------------------------------------------------------
 Wed Aug  2 14:22:08 UTC 2017 - jreidinger@suse.com
 
 - Optimize services manager output for ncurses on 80x24
