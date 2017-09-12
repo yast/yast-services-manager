@@ -33,7 +33,7 @@ Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby
 # ServicesManager library
-Requires:       yast2 >= 3.2.37.2
+Requires:       yast2 >= 4.0.5
 Requires:       yast2-ruby-bindings >= 1.2.0
 # need new enough installation for its inst clients
 Conflicts:      yast2-installation < 3.1.32
