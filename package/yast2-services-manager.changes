@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Oct 16 12:22:31 UTC 2017 - jreidinger@suse.com
+
+- respect target level specified in control file (bsc#1063216)
+- 4.0.1
+
+-------------------------------------------------------------------
 Wed Aug 30 14:12:29 UTC 2017 - mvidner@suse.com
 
 - Use fewer calls of systemctl to speed up startup (bsc#1045658)
