@@ -213,7 +213,7 @@ module Yast
         self.default_target = ProductFeatures.GetFeature('globals', 'default_target')
         if default_target.nil? || default_target.empty?
           detect_target
-        elsif Targea::SUPPORTED.include?(default_target)
+        elsif Target::SUPPORTED.include?(default_target)
           log.info " Using target '#{default_target}' from control file."
         else
           raise "Invalid value in control file for default_target: '#{default_target}'"
