@@ -168,6 +168,7 @@ module Yast
     class Proposal < Client
       include Warnings
       include UIElements
+      include Yast::Logger
 
       attr_accessor :default_target
 
@@ -210,7 +211,13 @@ module Yast
 
       def change_default_target
         self.default_target = ProductFeatures.GetFeature('globals', 'default_target')
-        detect_target
+        if default_target.nil? || default_target.empty?
+          detect_target
+        elsif Targea::SUPPORTED.include?(default_target)
+          log.info " Using target '#{default_target}' from control file."
+        else
+          raise "Invalid value in control file for default_target: '#{default_target}'"
+        end
         # Check if the user forced a particular target before; if he did and the
         # autodetection recommends a different one now, warn the user about this
         # and keep the default target unchanged.
