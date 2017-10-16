@@ -23,8 +23,12 @@ describe Yast::TargetProposal do
         allow(Yast::Mode).to receive(:autoinst).and_return(true)
       end
 
-      # TODO how to test it?
-      it "keep default target as it is before"
+      it "keep default target as it was before" do
+        Yast::ServicesManagerTarget.default_target = "multi-user"
+
+        expect(Yast::ServicesManagerTarget).to_not receive(:default_target=)
+        subject.new.call(["MakeProposal"])
+      end
     end
 
     context "non-auto mode" do
@@ -42,7 +46,7 @@ describe Yast::TargetProposal do
         expect(Yast::ServicesManagerTarget.default_target).to eq "multi-user"
       end
 
-      it "proposes target when control file not specify" do
+      it "proposes target when it is not specified in control file" do
         allow(Yast::ProductFeatures).to receive(:GetFeature).with("globals", "default_target")
           .and_return(nil)
 
