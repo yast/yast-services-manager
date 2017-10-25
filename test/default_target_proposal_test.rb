@@ -38,7 +38,7 @@ describe Yast::TargetProposal do
       end
 
       it "sets target level according to control file" do
-        allow(Yast::ProductFeatures).to receive(:GetFeature).with("globals", "default_target")
+        allow(Yast::ProductFeatures).to receive(:GetStringFeature).with("globals", "default_target")
           .and_return("multi-user")
 
         subject.new.call(["MakeProposal"])
@@ -47,8 +47,8 @@ describe Yast::TargetProposal do
       end
 
       it "proposes target when it is not specified in control file" do
-        allow(Yast::ProductFeatures).to receive(:GetFeature).with("globals", "default_target")
-          .and_return(nil)
+        allow(Yast::ProductFeatures).to receive(:GetStringFeature).with("globals", "default_target")
+          .and_return("")
 
         subject.new.call(["MakeProposal"])
 
@@ -56,7 +56,7 @@ describe Yast::TargetProposal do
       end
 
       it "raises exception if control file contain invalid value" do
-        allow(Yast::ProductFeatures).to receive(:GetFeature).with("globals", "default_target")
+        allow(Yast::ProductFeatures).to receive(:GetStringFeature).with("globals", "default_target")
           .and_return("COBE invalid value")
 
         expect{subject.new.call(["MakeProposal"])}.to raise_error(RuntimeError)
