@@ -210,7 +210,7 @@ module Yast
       private
 
       def change_default_target
-        self.default_target = ProductFeatures.GetFeature('globals', 'default_target')
+        self.default_target = ProductFeatures.GetStringFeature('globals', 'default_target').strip
         if default_target.nil? || default_target.empty?
           detect_target
         elsif Target::SUPPORTED.include?(default_target)
