@@ -3,12 +3,18 @@ language: bash
 services:
   - docker
 
+notifications:
+  email:
+    on_success: never
+    recipients:
+      - lslezak@suse.cz
+      - mvidner@suse.cz
+
 before_install:
   - docker build -t yast-services-manager-image .
   # list the installed packages (just for easier debugging)
   - docker run --rm -it yast-services-manager-image rpm -qa | sort
 
 script:
-  # the "yast-travis-ruby" script is included in the base yastdevel/ruby image
-  # see https://github.com/yast/docker-yast-ruby/blob/master/yast-travis-ruby
-  - docker run -it -e TRAVIS=1 -e TRAVIS_JOB_ID="$TRAVIS_JOB_ID" yast-services-manager-image yast-travis-ruby
+  # scan for changed systemd service statuses
+  - docker run -it -e TRAVIS=1 -e TRAVIS_JOB_ID="$TRAVIS_JOB_ID" yast-services-manager-image bash -c "cd devel && ./systemd_status_check.rb"
