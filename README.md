@@ -4,6 +4,8 @@
 [![Jenkins Build](http://img.shields.io/jenkins/s/https/ci.opensuse.org/yast-services-manager-master.svg)](https://ci.opensuse.org/view/Yast/job/yast-services-manager-master/)
 [![Coverage Status](https://coveralls.io/repos/github/yast/yast-services-manager/badge.svg?branch=master)](https://coveralls.io/github/yast/yast-services-manager?branch=master)
 
+Systemd status check: [![Build Status](https://travis-ci.org/yast/yast-services-manager.svg?branch=systemd_states_check)](https://travis-ci.org/yast/yast-services-manager/branches)
+
 
 Systemd target and services configuration library for Yast
 
