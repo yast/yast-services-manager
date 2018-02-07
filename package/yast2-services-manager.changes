@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Oct 25 06:35:16 UTC 2017 - jsrain@suse.cz
+
+- fix setting default target from control file (bsc#1064876)
+- 4.0.2
+
+-------------------------------------------------------------------
 Mon Oct 16 12:22:31 UTC 2017 - jreidinger@suse.com
 
 - respect target level specified in control file (bsc#1063216)
