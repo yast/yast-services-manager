@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Feb 12 08:00:08 UTC 2018 - knut.anderssen@suse.com
+
+- Replace xinetd service protection by xvnc.socket (fate#323373)
+- 4.0.2
+
+-------------------------------------------------------------------
 Mon Oct 16 12:22:31 UTC 2017 - jreidinger@suse.com
 
 - respect target level specified in control file (bsc#1063216)
