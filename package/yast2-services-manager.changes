@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb 12 08:47:13 UTC 2018 - jreidinger@suse.com
+
+- Drop xinetd service protected for xvnc as it now uses service
+  (fate#323373)
+- 4.0.2
+
+-------------------------------------------------------------------
 Mon Oct 16 12:22:31 UTC 2017 - jreidinger@suse.com
 
 - respect target level specified in control file (bsc#1063216)
