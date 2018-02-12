@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.0.2
+Version:        4.0.3
 Release:        0
 BuildArch:      noarch
 
@@ -32,8 +32,8 @@ BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby
-# ServicesManager library
-Requires:       yast2 >= 4.0.5
+# Firewalld interfaces helpers
+Requires:       yast2 >= 4.0.51
 Requires:       yast2-ruby-bindings >= 1.2.0
 # need new enough installation for its inst clients
 Conflicts:      yast2-installation < 3.1.32
@@ -44,8 +44,8 @@ Conflicts:      yast2-runlevel
 BuildRequires:  ruby
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
-# ServicesManager library
-BuildRequires:  yast2 >= 4.0.5
+# Firewalld interfaces helpers
+BuildRequires:  yast2 >= 4.0.51
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(yast-rake) >= 0.1.7
 BuildRequires:  rubygem(rspec)
