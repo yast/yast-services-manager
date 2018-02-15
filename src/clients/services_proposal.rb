@@ -1,4 +1,6 @@
 require 'services-manager/ui_elements'
+require "y2firewall/firewalld"
+require "y2firewall/helpers/interfaces"
 
 module Yast
   import "ServicesManagerService"
@@ -9,9 +11,9 @@ module Yast
   import "Linuxrc"
   import "Report"
   import "Package"
-  import "SuSEFirewall"
 
   class ServicesProposal < Client
+    include Y2Firewall::Helpers::Interfaces
     attr_reader :proposal
 
     def initialize
@@ -92,7 +94,7 @@ module Yast
         @default_services = ProductFeatures.GetFeature('globals', 'services_proposal')
         @default_services = [] if default_services.to_s.empty?
         Builtins.y2error("Missing services_proposal") if default_services.empty?
-        SuSEFirewall.Read
+        firewalld.read
         load_services_details
         @proposal = {
           'preformatted_proposal' => proposal_summary,
@@ -130,7 +132,7 @@ module Yast
       def proposal_summary
         messages = []
         proposed_services.each_with_index do |service, index|
-          if !service['firewall_plugins'].empty? && SuSEFirewall.IsEnabled
+          if !service['firewall_plugins'].empty? && firewalld.enabled?
             if service['enabled']
               toggled  = bold('enabled')
               firewall = 'open'
@@ -244,7 +246,7 @@ module Yast
           handle_missing_packages(proposed_service)
           success = manage_service(proposed_service)
         end
-        SuSEFirewall.Write
+        firewalld.write
         success
       end
 
@@ -293,7 +295,7 @@ module Yast
           end
 
           firewall_plugins = service['firewall_plugins']
-          if SuSEFirewall.IsEnabled && !firewall_plugins.empty?
+          if firewalld.enabled? && !firewall_plugins.empty?
             Builtins.y2milestone "Firewall plugins: #{firewall_plugins}"
             open_firewall_ports(firewall_plugins)
           end
@@ -313,18 +315,16 @@ module Yast
       end
 
       def open_firewall_ports plugins
-        plugins = plugins.map { |p| "service:#{p}" }
-        interfaces = SuSEFirewall.GetAllKnowInterfaces.map do |interface|
-          interface['id'] unless interface['id'].to_s.empty?
-        end.compact
-        Builtins.y2milestone "Available firewall interfaces: #{interfaces}"
-        zones = if interfaces.empty?
-          SuSEFirewall.GetKnownFirewallZones
+        zone_names = known_interfaces.map { |i| i["zone"] || firewalld.default_zone }
+
+        zones = if zone_names.empty?
+          firewalld.zones.select { |z| !["block", "drop", "trusted"].include?(z.name) }
         else
-          SuSEFirewall.GetZonesOfInterfacesWithAnyFeatureSupported(interfaces)
+          firewalld.zones.select { |z| zone_names.include?(z.name) }
         end
-        Builtins.y2milestone "Found firewall zones #{zones}"
-        SuSEFirewall.SetServicesForZones(plugins, zones, true)
+
+        Builtins.y2milestone "Found firewall zones: #{zones.map { |z| z.name} }"
+        zones.map { |z| plugins.map { |p| z.add_service(p) } }
       end
 
       def protected_service? service_name
