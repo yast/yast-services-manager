@@ -11,6 +11,7 @@ module Yast
 
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
+    LIST_SOCKETS_COMMAND    = 'systemctl list-sockets --all --type socket'
     STATUS_COMMAND          = 'systemctl status'
     # FIXME: duplicated in Yast::Systemctl
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
@@ -57,6 +58,39 @@ module Yast
       STATIC     = 'static'
     end
 
+    class SocketMapping
+      # @param [Hash<String, String>]
+      def initialize(mapping)
+        @mapping = mapping
+        @reverse_mapping = mapping.invert
+      end
+
+      def self.load
+        command = TERM_OPTIONS + LIST_SOCKETS_COMMAND + COMMAND_OPTIONS
+        out = SCR.Execute(Path.new('.target.bash_output'), command)['stdout']
+        lines = out.lines
+        result = {}
+        lines.each do |line|
+          # line look like
+          # audit 1                         systemd-journald-audit.socket   systemd-journald.service
+          # and socket and service should not contain whitespace ( TODO: verify )
+          # TODO: there is --format json, but it does not work at least for me
+          next unless line =~ /.*\s(\S+)\s+(\S+)\n/
+          _, socket, service = Regexp.last_match.to_a
+          result[socket] = service
+        end
+        new(result)
+      end
+
+      def find_socket(service)
+        @reverse_mapping[service]
+      end
+
+      def find_service(socket)
+        @mapping[socket]
+      end
+    end
+
     # @api private
     class ServiceLoader
       include Yast::Logger
@@ -91,6 +125,7 @@ module Yast
         @services   = {}
         @unit_files = {}
         @units      = {}
+        @socket_mapping = SocketMapping.load
 
         load_unit_files
         load_units
@@ -169,6 +204,10 @@ module Yast
         end
       end
 
+      def socket_enabled(socket)
+        
+      end
+
       def extract_services
         extract_services_from_unit_files
         # Add old LSB services (Services which are loaded but not available as a unit file)
@@ -179,7 +218,14 @@ module Yast
         # Rest of settings
         service_names.zip(ss).each do |name, s|
           sh = services[name] # service hash
-          sh[:enabled] = s && s.enabled?
+          service_enabled = s && s.enabled?
+          socket = @socket_mapping.find_socket(name + SERVICE_SUFFIX)
+          if socket
+            socket_enabled = socket_enabled(socket)
+          else
+            socket_enabled = false
+          end
+          sh[:enabled] = service_enabled || socket_enabled
           sh[:active] = s && s.active?
           if !sh[:description] || sh[:description].empty?
             sh[:description] = s ? s.description : ""
