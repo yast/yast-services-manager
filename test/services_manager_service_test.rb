@@ -17,7 +17,7 @@ module Yast
 
       all_services = {}
       declare_service = lambda do |name, enabled|
-        d = double(description: "Stub #{name}", enabled?: enabled, active?: true)
+        d = double(description: "Stub #{name}", enabled?: enabled, active?: true, socket: nil)
         all_services[name] = d
       end
 
@@ -215,5 +215,30 @@ module Yast
       end
     end
 
+    context "when a service is disabled" do
+      let(:dbus) do
+        double("dbus", enabled?: false, active?: true, description: "CUPS", socket: socket)
+      end
+
+      before do
+        allow(SystemdService).to receive(:find_many).and_return([dbus])
+      end
+
+      context "but its socket is enabled" do
+        let(:socket) { double("dbus_socket", enabled?: true) }
+
+        it "considers the system as enabled" do
+          expect(service.all["dbus"][:enabled]).to eq(true)
+        end
+      end
+
+      context "and its socket is disabled" do
+        let(:socket) { double("dbus_socket", enabled?: false) }
+
+        it "considers the system as enabled" do
+          expect(service.all["dbus"][:enabled]).to eq(false)
+        end
+      end
+    end
   end
 end
