@@ -179,7 +179,7 @@ module Yast
         # Rest of settings
         service_names.zip(ss).each do |name, s|
           sh = services[name] # service hash
-          sh[:enabled] = s && s.enabled?
+          sh[:enabled] = s && (s.enabled? || !!(s.socket && s.socket.enabled?))
           sh[:active] = s && s.active?
           if !sh[:description] || sh[:description].empty?
             sh[:description] = s ? s.description : ""
