@@ -35,10 +35,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
   #
   # @return [Boolean]
   def exist_widget?(tree, id)
-    return false unless tree.is_a?(Yast::Term)
-    return true if tree.value == :id && tree.params.first == id
-
-    tree.params.any? { |t| exist_widget?(t, id) }
+    !tree.nested_find { |w| w.is_a?(Yast::Term) && w.value == :id && w[0] == id }.nil?
   end
 
   subject { described_class.new }
@@ -59,14 +56,16 @@ describe Y2ServicesManager::Clients::ServicesManager do
       allow(Yast::SystemdTarget).to receive(:get_default).and_return(default_target)
       allow(Yast::SystemdTarget).to receive(:all).and_return(tagets)
 
-      allow_any_instance_of(Yast::ServicesManagerServiceClass::ServiceLoader)
-        .to receive(:list_unit_files).and_return(units_files_output)
-      allow_any_instance_of(Yast::ServicesManagerServiceClass::ServiceLoader)
-        .to receive(:list_units).and_return(units_output)
+      allow(Yast::ServicesManagerServiceClass::ServiceLoader).to receive(:new).and_return(loader)
+
+      allow(loader).to receive(:list_unit_files).and_return(units_files_output)
+      allow(loader).to receive(:list_units).and_return(units_output)
 
       allow(Yast::SystemdService).to receive(:find_many)
         .with(services.map(&:name).sort).and_return(services)
     end
+
+    let(:loader) { Yast::ServicesManagerServiceClass::ServiceLoader.new }
 
     let(:default_target) { multi_user_target }
 
@@ -152,12 +151,14 @@ describe Y2ServicesManager::Clients::ServicesManager do
         allow(sshd_service).to receive(:id) { "sshd.service" }
         allow(sshd_service).to receive(:socket).and_return(socket)
 
-        allow_any_instance_of(Y2Journal::EntriesDialog).to receive(:run)
+        allow(Y2Journal::EntriesDialog).to receive(:new).and_return(entries_dialog)
       end
 
       let(:table_id) { Id(described_class::Id::SERVICES_TABLE) }
 
       let(:socket) { nil }
+
+      let(:entries_dialog) { instance_double(Y2Journal::EntriesDialog, run: nil) }
 
       def expect_query_units(*units)
         expect(Y2Journal::Query).to receive(:new) do |params|
