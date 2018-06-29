@@ -59,9 +59,6 @@ describe Y2ServicesManager::Clients::ServicesManager do
       allow(Yast::SystemdTarget).to receive(:get_default).and_return(default_target)
       allow(Yast::SystemdTarget).to receive(:all).and_return(tagets)
 
-      allow(Yast::PackageSystem).to receive(:PackageInstalled)
-        .with("yast2-journal").and_return(journal_installed)
-
       allow_any_instance_of(Yast::ServicesManagerServiceClass::ServiceLoader)
         .to receive(:list_unit_files).and_return(units_files_output)
       allow_any_instance_of(Yast::ServicesManagerServiceClass::ServiceLoader)
@@ -117,13 +114,9 @@ describe Y2ServicesManager::Clients::ServicesManager do
       )
     end
 
-    let(:journal_installed) { nil }
-
     let(:user_input) { [:abort] }
 
     context "when yast2-journal is installed" do
-      let(:journal_installed) { true }
-
       it "offers a button to show the logs" do
         expect(Yast::Wizard).to receive(:SetContentsButtons) do |_, content, *|
           expect(exist_widget?(content, :show_logs)).to eq(true)
@@ -134,7 +127,9 @@ describe Y2ServicesManager::Clients::ServicesManager do
     end
 
     context "when yast2-journal is not installed" do
-      let(:journal_installed) { false }
+      before do
+        allow(subject).to receive(:journal_loaded?).and_return(false)
+      end
 
       it "does not offer a button to show the logs" do
         expect(Yast::Wizard).to receive(:SetContentsButtons) do |_, content, *|

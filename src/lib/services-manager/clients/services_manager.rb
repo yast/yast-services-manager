@@ -20,7 +20,6 @@
 # find current contact information at www.suse.com.
 
 require "yast"
-require "y2journal"
 
 Yast.import "ServicesManager"
 Yast.import "UI"
@@ -47,6 +46,15 @@ module Y2ServicesManager
         DEFAULT_TARGET = :default_target
         SHOW_DETAILS   = :show_details
         SHOW_LOGS      = :show_logs
+      end
+
+      # Constructor
+      #
+      # Journal package (yast2-journal) is not an strong dependency (only suggested).
+      # Here the journal is tried to be loaded, avoiding to fail when the package is
+      # not installed (see {#load_journal}).
+      def initialize
+        load_journal
       end
 
       def run
@@ -81,6 +89,22 @@ module Y2ServicesManager
       end
 
     private
+
+      # Tries to load the journal package
+      #
+      # @return [Boolean] true if the package is correctly loaded; false otherwise.
+      def load_journal
+        require "y2journal"
+      rescue LoadError
+        false
+      end
+
+      # Checks whether the journal is loaded
+      #
+      # @return [Boolean]
+      def journal_loaded?
+        !defined?(::Y2Journal).nil?
+      end
 
       # Main dialog function
       #
@@ -209,7 +233,7 @@ module Y2ServicesManager
           PushButton(Id(Id::SHOW_DETAILS), _('Show &Details'))
         ]
 
-        if journal_installed?
+        if journal_loaded?
           buttons += [
             HSpacing(1),
             PushButton(Id(Id::SHOW_LOGS), _("Show &Log"))
@@ -217,13 +241,6 @@ module Y2ServicesManager
         end
 
         HBox(*buttons)
-      end
-
-      # Checks whether journal package is installed
-      #
-      # @return [Boolean]
-      def journal_installed?
-        PackageSystem.PackageInstalled("yast2-journal")
       end
 
       # Redraws the services dialog
