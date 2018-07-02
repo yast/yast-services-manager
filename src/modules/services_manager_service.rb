@@ -424,6 +424,37 @@ module Yast
       enabled(service) ? disable(service) : enable(service)
     end
 
+    # Sets start_mode for a service (in memory only, use save())
+    #
+    # @param service [String] service name
+    # @param mode    [Symbol] Start mode
+    # @see Yast::SystemdServiceClass::Service#start_modes
+    def set_start_mode(service, mode)
+      exists?(service) do
+        services[service][:start_mode] = mode
+        services[service][:modified] = true
+        self.modified = true
+      end
+    end
+
+    def set_start_mode!(name)
+      service = Yast::SystemdService.find(name)
+      return false unless service
+      service.start_mode = services[name][:start_mode]
+    end
+
+    def start_mode(service)
+      exists?(service) do
+        services[service][:start_mode]
+      end
+    end
+
+    def start_modes(service)
+      exists?(service) do
+        services[service][:start_modes]
+      end
+    end
+
     # Enable or disable the service
     #
     # @param [String] service name
@@ -503,7 +534,7 @@ module Yast
       services_toggled = []
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified]
-        if toggle! service_name
+        if set_start_mode!(service_name)
           services_toggled << service_name
         else
           change  = enabled(service_name) ? 'enable' : 'disable'

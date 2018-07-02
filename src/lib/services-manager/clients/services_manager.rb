@@ -217,7 +217,7 @@ module Y2ServicesManager
           Opt(:immediate),
           Header(
             _('Service'),
-            _('Enabled'),
+            _('Start'),
             _('Active'),
             _('Description')
           ),
@@ -254,7 +254,7 @@ module Y2ServicesManager
         services = ServicesManagerService.all.collect do |service, attributes|
           Item(Id(service),
             shortened_service_name(service),
-            attributes[:enabled] ? _('Enabled') : _('Disabled'),
+            start_mode_to_human(attributes[:start_mode]),
             attributes[:active] ? _('Active') : _('Inactive'),
             attributes[:description]
           )
@@ -418,6 +418,16 @@ module Y2ServicesManager
 
       def current_service
         UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
+      end
+
+      START_MODE = {
+        on_boot:   N_('On Boot'),
+        on_demand: N_('On Demand'),
+        manual:    N_('Manual')
+      }.freeze
+
+      def start_mode_to_human(mode)
+        _(START_MODE[mode])
       end
     end
   end
