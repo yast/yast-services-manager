@@ -160,7 +160,7 @@ module Yast
     end
 
     def reload
-      self.services = ServiceLoader.new.read
+      self.services = Y2ServicesManager::ServiceLoader.new.read
     end
 
     # Reads all services' data
@@ -168,7 +168,7 @@ module Yast
     # @return [Hash{String => Settings}]
     #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
     def read
-      ServiceLoader.new.read
+      Y2ServicesManager::ServiceLoader.new.read
     end
 
     # Resets the global status of the object
