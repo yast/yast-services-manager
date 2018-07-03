@@ -178,9 +178,7 @@ module Yast
         extract_services_from_units
 
         service_names = services.keys.sort
-        ss = SystemdService.find_many(service_names)
-        # FIXME: define find_may in SystemService
-        ss = ss.compact.map { |s| Yast2::SystemService.new(s) }
+        ss = Yast2::SystemService.find_many(service_names)
         # Rest of settings
         service_names.zip(ss).each do |name, s|
           sh = services[name] # service hash
@@ -438,7 +436,7 @@ module Yast
     end
 
     def set_start_mode!(name)
-      service = Yast::SystemdService.find(name)
+      service = Yast2::SystemService.find(name)
       return false unless service
       service.start_mode = services[name][:start_mode]
     end
@@ -504,7 +502,7 @@ module Yast
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified]
 
-        service = SystemdService.find(service_name)
+        service = Yast2::SystemService.find(service_name)
         unless service
           log.error "Cannot find service #{service_name}"
           next
