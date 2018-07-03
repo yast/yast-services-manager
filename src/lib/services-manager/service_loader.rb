@@ -20,9 +20,44 @@
 # find current contact information at www.suse.com.
 
 module Y2ServicesManager
+  # FIXME: this is a mixture of
+  # LoadState (the LOAD column of systemctl list-units) and
+  # UnitFileState (STATE of systemctl list-unit-files)
+  module Status
+    # LoadState
+    LOADED     = 'loaded'
+    # LoadState
+    NOTFOUND   = 'not-found'
+    # masked is both a LoadState and a UnitFileState :-/
+    # The service has been marked as completely unstartable, automatically or manually.
+    MASKED     = 'masked'
+    # UnitFileState
+    # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
+    STATIC     = 'static'
+  end
+
   # @api private
   class ServiceLoader
     include Yast::Logger
+
+    LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
+    LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
+    STATUS_COMMAND          = 'systemctl status'
+    # FIXME: duplicated in Yast::Systemctl
+    COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
+    TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
+    SERVICE_SUFFIX          = '.service'
+
+    # @return [Settings]
+    DEFAULT_SERVICE_SETTINGS = {
+      :start_mode     => :manual,
+      :start_modes    => [:boot, :manual],
+      :can_be_enabled => true,
+      :modified       => false,
+      :active         => nil,
+      :loaded         => false,
+      :description    => nil
+    }
 
     # @return [Hash{String => String}] service name -> status, like "foo" => "enabled" (UnitFileState)
     # @see Status

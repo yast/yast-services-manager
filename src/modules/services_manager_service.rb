@@ -12,12 +12,6 @@ module Yast
     include Yast::Logger
     extend Yast::I18n
 
-    LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
-    LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
-    STATUS_COMMAND          = 'systemctl status'
-    # FIXME: duplicated in Yast::Systemctl
-    COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
-    TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX          = '.service'
 
     START_MODE = {
@@ -39,33 +33,6 @@ module Yast
       #   @option k :active   [Boolean] The high-level unit activation state, i.e. generalization of SUB
       #   @option k :loaded   [Boolean] Reflects whether the unit definition was properly loaded
       #   @option k :description [String] English description of the service
-    end
-
-    # @return [Settings]
-    DEFAULT_SERVICE_SETTINGS = {
-      :start_mode     => :manual,
-      :start_modes    => [:boot, :manual],
-      :can_be_enabled => true,
-      :modified       => false,
-      :active         => nil,
-      :loaded         => false,
-      :description    => nil
-    }
-
-    # FIXME: this is a mixture of
-    # LoadState (the LOAD column of systemctl list-units) and
-    # UnitFileState (STATE of systemctl list-unit-files)
-    module Status
-      # LoadState
-      LOADED     = 'loaded'
-      # LoadState
-      NOTFOUND   = 'not-found'
-      # masked is both a LoadState and a UnitFileState :-/
-      # The service has been marked as completely unstartable, automatically or manually.
-      MASKED     = 'masked'
-      # UnitFileState
-      # The service is missing the [Install] section in its init script, so you cannot enable or disable it.
-      STATIC     = 'static'
     end
 
     attr_reader   :modified
@@ -416,7 +383,7 @@ module Yast
       if Stage.initial && !services[service]
         # We are in inst-sys. So we cannot check for installed services but generate entries
         # for these services if they still not exists.
-        services[service] = DEFAULT_SERVICE_SETTINGS.clone
+        services[service] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
       end
 
       exists = !!services[service]
