@@ -134,7 +134,7 @@ module Y2ServicesManager
               show_logs
             when Id::SHOW_DETAILS
               show_details
-            when *START_MODE.keys
+            when *ServicesManagerService.all_start_modes
               set_start_mode(input)
             when :next
               break
@@ -232,7 +232,7 @@ module Y2ServicesManager
       # The log button only is included if YaST Journal is installed.
       def service_buttons(service)
         start_stop_label = ServicesManagerService.active(service) ? _('&Stop') : _('&Start')
-        start_mode_label = start_mode_to_human(ServicesManagerService.start_mode(service))
+        start_mode_label = ServicesManagerService.start_mode_to_human_for(service)
         buttons = [
           PushButton(Id(Id::TOGGLE_RUNNING), start_stop_label),
           HSpacing(1),
@@ -254,9 +254,9 @@ module Y2ServicesManager
       def start_options_for(service)
         start_modes = ServicesManagerService.start_modes(service)
 
-        [:on_boot, :on_demand, :manual].each_with_object([]) do |mode, all|
+        ServicesManagerService.all_start_modes.each_with_object([]) do |mode, all|
           next unless start_modes.include?(mode)
-          all << Item(Id(mode), start_mode_to_human(mode))
+          all << Item(Id(mode), ServicesManagerService.start_mode_to_human(mode))
         end
       end
 
@@ -266,7 +266,7 @@ module Y2ServicesManager
         services = ServicesManagerService.all.collect do |service, attributes|
           Item(Id(service),
             shortened_service_name(service),
-            start_mode_to_human(attributes[:start_mode]),
+            ServicesManagerService.start_mode_to_human_for(service),
             attributes[:active] ? _('Active') : _('Inactive'),
             attributes[:description]
           )
@@ -278,11 +278,10 @@ module Y2ServicesManager
       end
 
       def redraw_service(service)
-        start_mode = ServicesManagerService.start_mode(service)
         UI.ChangeWidget(
           Id(Id::SERVICES_TABLE),
           Cell(service, 1),
-          start_mode_to_human(start_mode)
+          ServicesManagerService.start_mode_to_human_for(service)
         )
 
         enabled = ServicesManagerService.enabled(service)
@@ -437,16 +436,6 @@ module Y2ServicesManager
 
       def current_service
         UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
-      end
-
-      START_MODE = {
-        on_boot:   N_('On Boot'),
-        on_demand: N_('On Demand'),
-        manual:    N_('Manual')
-      }.freeze
-
-      def start_mode_to_human(mode)
-        _(START_MODE[mode])
       end
     end
   end

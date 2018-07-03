@@ -9,6 +9,7 @@ module Yast
 
   class ServicesManagerServiceClass < Module
     include Yast::Logger
+    extend Yast::I18n
 
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
@@ -17,6 +18,12 @@ module Yast
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX          = '.service'
+
+    START_MODE = {
+      on_boot:   N_('On Boot'),
+      on_demand: N_('On Demand'),
+      manual:    N_('Manual')
+    }.freeze
 
     # Used by ServicesManagerServiceClass to keep data about an individual service.
     # (Not a real class; documents the structure of a Hash)
@@ -468,6 +475,29 @@ module Yast
     def status(service)
       out = Systemctl.execute("status #{service}#{SERVICE_SUFFIX} 2>&1")
       out['stdout']
+    end
+
+    # Translate start mode for a given service
+    #
+    # @param service [String] service name
+    # @return [String] Translated start mode
+    def start_mode_to_human_for(service)
+      start_mode_to_human(start_mode(service))
+    end
+
+    # List of supported start modes
+    #
+    # @return [Array<String>] Supported start modes
+    def all_start_modes
+      START_MODE.keys
+    end
+
+    # Localized start mode
+    #
+    # @param mode [String] Start mode
+    # @return [String] Localized start mode
+    def start_mode_to_human(mode)
+      _(START_MODE[mode])
     end
 
     private
