@@ -134,6 +134,8 @@ module Y2ServicesManager
               show_logs
             when Id::SHOW_DETAILS
               show_details
+            when *START_MODE.keys
+              set_start_mode(input)
             when :next
               break
             else
@@ -230,10 +232,11 @@ module Y2ServicesManager
       # The log button only is included if YaST Journal is installed.
       def service_buttons(service)
         start_stop_label = ServicesManagerService.active(service) ? _('&Stop') : _('&Start')
+        start_mode_label = start_mode_to_human(ServicesManagerService.start_mode(service))
         buttons = [
           PushButton(Id(Id::TOGGLE_RUNNING), start_stop_label),
           HSpacing(1),
-          PushButton(Id(Id::TOGGLE_ENABLED), _('&Enable/Disable')),
+          MenuButton(Id(Id::TOGGLE_ENABLED), start_mode_label, start_options_for(service)),
           HStretch(),
           PushButton(Id(Id::SHOW_DETAILS), _('Show &Details'))
         ]
@@ -246,6 +249,15 @@ module Y2ServicesManager
         end
 
         HBox(*buttons)
+      end
+
+      def start_options_for(service)
+        start_modes = ServicesManagerService.start_modes(service)
+
+        [:on_boot, :on_demand, :manual].each_with_object([]) do |mode, all|
+          next unless start_modes.include?(mode)
+          all << Item(Id(mode), start_mode_to_human(mode))
+        end
       end
 
       # Redraws the services dialog
@@ -266,13 +278,14 @@ module Y2ServicesManager
       end
 
       def redraw_service(service)
-        enabled = ServicesManagerService.enabled(service)
+        start_mode = ServicesManagerService.start_mode(service)
         UI.ChangeWidget(
           Id(Id::SERVICES_TABLE),
           Cell(service, 1),
-          (enabled ? _('Enabled') : _('Disabled'))
+          start_mode_to_human(start_mode)
         )
 
+        enabled = ServicesManagerService.enabled(service)
         running = ServicesManagerService.active(service)
 
         # The current state matches the futural state
@@ -369,6 +382,12 @@ module Y2ServicesManager
 
         UI.SetFocus(Id(Id::SERVICES_TABLE))
         true
+      end
+
+      def set_start_mode(mode)
+        ServicesManagerService.set_start_mode(current_service, mode)
+        redraw_service(current_service)
+        UI.SetFocus(Id(Id::SERVICES_TABLE))
       end
 
       # Switches (starts/stops) the currently selected service
