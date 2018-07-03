@@ -41,7 +41,7 @@ module Yast
       end
     end
 
-    context "Autoyast API" do
+    xcontext "Autoyast API" do
       it "exports systemd target and services" do
         services = {
           'a' => { :enabled => true,  :loaded => true, :can_be_enabled => true },
