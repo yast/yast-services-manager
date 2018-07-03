@@ -1,4 +1,5 @@
 require "yast"
+require "yast2/system_service"
 
 module Yast
   import "Service"
@@ -8,6 +9,7 @@ module Yast
 
   class ServicesManagerServiceClass < Module
     include Yast::Logger
+    extend Yast::I18n
 
     LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
@@ -17,13 +19,20 @@ module Yast
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
     SERVICE_SUFFIX          = '.service'
 
+    START_MODE = {
+      on_boot:   N_('On Boot'),
+      on_demand: N_('On Demand'),
+      manual:    N_('Manual')
+    }.freeze
+
     # Used by ServicesManagerServiceClass to keep data about an individual service.
     # (Not a real class; documents the structure of a Hash)
     #
     # Why does this hash exist if we have Yast::SystemdServiceClass::Service?
     class Settings < Hash
       # @!method [](k)
-      #   @option k :enabled  [Boolean] service has been enabled
+      #   @option k :start_mode  [Symbol] service's start mode
+      #   @option k :start_modes [Symbol] supported start modes
       #   @option k :can_be_enabled [Boolean] service can be enabled/disabled by the user
       #   @option k :modified [Boolean] service has been changed (got enabled/disabled)
       #   @option k :active   [Boolean] The high-level unit activation state, i.e. generalization of SUB
@@ -33,7 +42,8 @@ module Yast
 
     # @return [Settings]
     DEFAULT_SERVICE_SETTINGS = {
-      :enabled        => false,
+      :start_mode     => :manual,
+      :start_modes    => [:boot, :manual],
       :can_be_enabled => true,
       :modified       => false,
       :active         => nil,
@@ -175,12 +185,15 @@ module Yast
         extract_services_from_units
 
         service_names = services.keys.sort
-        ss = SystemdService.find_many(service_names)
+        ss = Yast2::SystemService.find_many(service_names)
         # Rest of settings
         service_names.zip(ss).each do |name, s|
           sh = services[name] # service hash
-          sh[:enabled] = s && s.enabled?
-          sh[:active] = s && s.active?
+          if s
+            sh[:start_mode] = s.start_mode
+            sh[:start_modes] = s.start_modes
+            sh[:active] = s.active?
+          end
           if !sh[:description] || sh[:description].empty?
             sh[:description] = s ? s.description : ""
           end
@@ -244,37 +257,13 @@ module Yast
 
     alias_method :active?, :active
 
-    # Enables a given service (in memory only, use save() later)
-    #
-    # @param String service name
-    # @param Boolean new service status
-    def enable(service)
-      exists?(service) do
-        services[service][:enabled]  = true
-        services[service][:modified] = true
-        self.modified = true
-      end
-    end
-
-    # Disables a given service (in memory only, use save() later)
-    #
-    # @param String service name
-    # @param Boolean new service status
-    def disable(service)
-      exists?(service) do
-        services[service][:enabled]  = false
-        services[service][:modified] = true
-        self.modified = true
-      end
-    end
-
     # Returns whether the given service has been enabled
     #
     # @param String service
     # @return Boolean enabled
     def enabled(service)
       exists?(service) do
-        services[service][:enabled]
+        services[service][:start_mode] != :manual
       end
     end
 
@@ -440,6 +429,37 @@ module Yast
       enabled(service) ? disable(service) : enable(service)
     end
 
+    # Sets start_mode for a service (in memory only, use save())
+    #
+    # @param service [String] service name
+    # @param mode    [Symbol] Start mode
+    # @see Yast::SystemdServiceClass::Service#start_modes
+    def set_start_mode(service, mode)
+      exists?(service) do
+        services[service][:start_mode] = mode
+        services[service][:modified] = true
+        self.modified = true
+      end
+    end
+
+    def set_start_mode!(name)
+      service = Yast2::SystemService.find(name)
+      return false unless service
+      service.start_mode = services[name][:start_mode]
+    end
+
+    def start_mode(service)
+      exists?(service) do
+        services[service][:start_mode]
+      end
+    end
+
+    def start_modes(service)
+      exists?(service) do
+        services[service][:start_modes]
+      end
+    end
+
     # Enable or disable the service
     #
     # @param [String] service name
@@ -455,6 +475,29 @@ module Yast
     def status(service)
       out = Systemctl.execute("status #{service}#{SERVICE_SUFFIX} 2>&1")
       out['stdout']
+    end
+
+    # Translate start mode for a given service
+    #
+    # @param service [String] service name
+    # @return [String] Translated start mode
+    def start_mode_to_human_for(service)
+      start_mode_to_human(start_mode(service))
+    end
+
+    # List of supported start modes
+    #
+    # @return [Array<String>] Supported start modes
+    def all_start_modes
+      START_MODE.keys
+    end
+
+    # Localized start mode
+    #
+    # @param mode [String] Start mode
+    # @return [String] Localized start mode
+    def start_mode_to_human(mode)
+      _(START_MODE[mode])
     end
 
     private
@@ -489,7 +532,7 @@ module Yast
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified]
 
-        service = SystemdService.find(service_name)
+        service = Yast2::SystemService.find(service_name)
         unless service
           log.error "Cannot find service #{service_name}"
           next
@@ -519,7 +562,7 @@ module Yast
       services_toggled = []
       services.each do |service_name, service_attributes|
         next unless service_attributes[:modified]
-        if toggle! service_name
+        if set_start_mode!(service_name)
           services_toggled << service_name
         else
           change  = enabled(service_name) ? 'enable' : 'disable'

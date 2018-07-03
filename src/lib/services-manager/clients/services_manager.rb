@@ -38,14 +38,16 @@ module Y2ServicesManager
   module Clients
     class ServicesManager < Yast::Client
       include Yast::Logger
+      extend Yast::I18n
 
       module Id
-        SERVICES_TABLE = :services_table
-        TOGGLE_RUNNING = :start_stop
-        TOGGLE_ENABLED = :enable_disable
-        DEFAULT_TARGET = :default_target
-        SHOW_DETAILS   = :show_details
-        SHOW_LOGS      = :show_logs
+        SERVICE_BUTTONS = :services_buttons
+        SERVICES_TABLE  = :services_table
+        TOGGLE_RUNNING  = :start_stop
+        TOGGLE_ENABLED  = :enable_disable
+        DEFAULT_TARGET  = :default_target
+        SHOW_DETAILS    = :show_details
+        SHOW_LOGS       = :show_logs
       end
 
       # Constructor
@@ -120,8 +122,10 @@ module Y2ServicesManager
             when :abort, :cancel
               break if Popup::ReallyAbort(Yast::ServicesManager.modified?)
             # Default for double-click in the table
-            when Id::TOGGLE_ENABLED, Id::SERVICES_TABLE
+            when Id::TOGGLE_ENABLED
               toggle_service
+            when Id::SERVICES_TABLE
+              handle_table
             when Id::TOGGLE_RUNNING
               switch_service
             when Id::DEFAULT_TARGET
@@ -130,6 +134,8 @@ module Y2ServicesManager
               show_logs
             when Id::SHOW_DETAILS
               show_details
+            when *ServicesManagerService.all_start_modes
+              set_start_mode(input)
             when :next
               break
             else
@@ -186,7 +192,7 @@ module Y2ServicesManager
           ),
           VSpacing(1),
           services_table,
-          buttons
+          ReplacePoint(Id(Id::SERVICE_BUTTONS), Empty())
         )
 
         caption = _('Services Manager')
@@ -210,10 +216,10 @@ module Y2ServicesManager
       def services_table
         Table(
           Id(Id::SERVICES_TABLE),
-          Opt(:notify),
+          Opt(:immediate),
           Header(
             _('Service'),
-            _('Enabled'),
+            _('Start'),
             _('Active'),
             _('Description')
           ),
@@ -224,11 +230,13 @@ module Y2ServicesManager
       # Buttons for actions over a selected service
       #
       # The log button only is included if YaST Journal is installed.
-      def buttons
+      def service_buttons(service)
+        start_stop_label = ServicesManagerService.active(service) ? _('&Stop') : _('&Start')
+        start_mode_label = ServicesManagerService.start_mode_to_human_for(service)
         buttons = [
-          PushButton(Id(Id::TOGGLE_RUNNING), _('&Start/Stop')),
+          PushButton(Id(Id::TOGGLE_RUNNING), start_stop_label),
           HSpacing(1),
-          PushButton(Id(Id::TOGGLE_ENABLED), _('&Enable/Disable')),
+          MenuButton(Id(Id::TOGGLE_ENABLED), start_mode_label, start_options_for(service)),
           HStretch(),
           PushButton(Id(Id::SHOW_DETAILS), _('Show &Details'))
         ]
@@ -243,13 +251,22 @@ module Y2ServicesManager
         HBox(*buttons)
       end
 
+      def start_options_for(service)
+        start_modes = ServicesManagerService.start_modes(service)
+
+        ServicesManagerService.all_start_modes.each_with_object([]) do |mode, all|
+          next unless start_modes.include?(mode)
+          all << Item(Id(mode), ServicesManagerService.start_mode_to_human(mode))
+        end
+      end
+
       # Redraws the services dialog
       def redraw_services
         UI.OpenDialog(Label(_('Reading services status...')))
         services = ServicesManagerService.all.collect do |service, attributes|
           Item(Id(service),
             shortened_service_name(service),
-            attributes[:enabled] ? _('Enabled') : _('Disabled'),
+            ServicesManagerService.start_mode_to_human_for(service),
             attributes[:active] ? _('Active') : _('Inactive'),
             attributes[:description]
           )
@@ -257,16 +274,17 @@ module Y2ServicesManager
         UI.CloseDialog
         UI.ChangeWidget(Id(Id::SERVICES_TABLE), :Items, services)
         UI.SetFocus(Id(Id::SERVICES_TABLE))
+        redraw_service_buttons
       end
 
       def redraw_service(service)
-        enabled = ServicesManagerService.enabled(service)
         UI.ChangeWidget(
           Id(Id::SERVICES_TABLE),
           Cell(service, 1),
-          (enabled ? _('Enabled') : _('Disabled'))
+          ServicesManagerService.start_mode_to_human_for(service)
         )
 
+        enabled = ServicesManagerService.enabled(service)
         running = ServicesManagerService.active(service)
 
         # The current state matches the futural state
@@ -284,12 +302,27 @@ module Y2ServicesManager
             (running ? _('Active (will start)') : _('Inactive (will stop)'))
           )
         end
+
+        redraw_service_buttons
+      end
+
+      def redraw_service_buttons
+        UI.ReplaceWidget(Id(Id::SERVICE_BUTTONS), service_buttons(current_service))
       end
 
       def handle_dialog
         new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
         Builtins.y2milestone("Setting new default target '#{new_default_target}'")
         ServicesManagerTarget.default_target = new_default_target
+      end
+
+      def handle_table
+        if @prev_service == current_service
+          toggle_service
+        else
+          @prev_service = current_service
+          redraw_service_buttons
+        end
       end
 
       # Opens a dialog with the logs for the currently selected service (for current boot)
@@ -350,6 +383,12 @@ module Y2ServicesManager
         true
       end
 
+      def set_start_mode(mode)
+        ServicesManagerService.set_start_mode(current_service, mode)
+        redraw_service(current_service)
+        UI.SetFocus(Id(Id::SERVICES_TABLE))
+      end
+
       # Switches (starts/stops) the currently selected service
       #
       # @return Boolean if successful
@@ -393,6 +432,10 @@ module Y2ServicesManager
       def max_service_name
         # use 60 for other elements in table we want to display, see bsc#993826
         display_width - 60
+      end
+
+      def current_service
+        UI.QueryWidget(Id(Id::SERVICES_TABLE), :CurrentItem)
       end
     end
   end
