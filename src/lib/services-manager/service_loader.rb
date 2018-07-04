@@ -112,14 +112,14 @@ module Y2ServicesManager
     # @return [Array<String>] "apache2.service   enabled\n"
     def list_unit_files
       command = TERM_OPTIONS + LIST_UNIT_FILES_COMMAND + COMMAND_OPTIONS
-      out = SCR.Execute(Path.new('.target.bash_output'), command)['stdout']
+      out = Yast::SCR.Execute(Yast::Path.new('.target.bash_output'), command)['stdout']
       out.lines
     end
 
     # @return [Array<String>] "dbus.service   loaded active running D-Bus System Message Bus\n"
     def list_units
       command = TERM_OPTIONS + LIST_UNITS_COMMAND + COMMAND_OPTIONS
-      out = SCR.Execute(Path.new('.target.bash_output'), command)['stdout']
+      out = Yast::SCR.Execute(Yast::Path.new('.target.bash_output'), command)['stdout']
       out.lines
     end
 
