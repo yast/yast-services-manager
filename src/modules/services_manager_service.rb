@@ -232,7 +232,7 @@ module Yast
     # @param service [String] service name
     # @return [Yast2::SystemService, nil]
     def find(service)
-      services[name][:service]
+      services[service][:service]
     end
 
     # Sets whether service should be running after writing the configuration
