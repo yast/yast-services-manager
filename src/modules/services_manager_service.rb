@@ -190,9 +190,12 @@ module Yast
         service_names.zip(ss).each do |name, s|
           sh = services[name] # service hash
           if s
+            sh[:service] = s
             sh[:start_mode] = s.start_mode
             sh[:start_modes] = s.start_modes
             sh[:active] = s.active?
+            sh[:active_state] = s.active_state
+            sh[:sub_state] = s.sub_state
           end
           if !sh[:description] || sh[:description].empty?
             sh[:description] = s ? s.description : ""
@@ -222,6 +225,14 @@ module Yast
       textdomain 'services-manager'
       @errors   = []
       @modified = false
+    end
+
+    # Finds a service
+    #
+    # @param service [String] service name
+    # @return [Yast2::SystemService, nil]
+    def find(service)
+      services[name][:service]
     end
 
     # Sets whether service should be running after writing the configuration
@@ -265,6 +276,33 @@ module Yast
       exists?(service) do
         services[service][:start_mode] != :manual
       end
+    end
+
+    # Service state (ActiveState systemd property)
+    #
+    # @param service [String] service name
+    # @return [String]
+    def state(service)
+      return nil unless exists?(service)
+      services[service][:active_state]
+    end
+
+    # Service substate (SubState systemd property)
+    #
+    # @param service [String] service name
+    # @return [String]
+    def substate(service)
+      return nil unless exists?(service)
+      services[service][:sub_state]
+    end
+
+    # Service description
+    #
+    # @param service [String] service name
+    # @return [String]
+    def description(service)
+      return nil unless exists?(service)
+      services[service][:description]
     end
 
     # Returns whether the given service can be enabled/disabled by the user
