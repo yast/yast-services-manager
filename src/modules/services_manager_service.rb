@@ -31,7 +31,6 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
-      @errors   = []
       @modified = false
     end
 
@@ -207,6 +206,13 @@ module Yast
       services.values.each { |s| s.save(ignore_status: Stage.initial) }
       services.values.each(&:reload)
       true
+    end
+
+    # @return [Array<Hash<Symbol,Object>>] Errors for each service
+    def errors
+      services.each_with_object({}) do |(name, err), all|
+        all[name] = err unless err.empty?
+      end
     end
 
     # Activates the service in cache
