@@ -223,18 +223,6 @@ module Yast
       active(service) ? deactivate(service) : activate(service)
     end
 
-    # Starts or stops the service
-    #
-    # @param [String] service name
-    # @return [Boolean]
-    def switch!(service_name)
-      if active(service_name)
-        Yast::Service.Start(service_name)
-      else
-        Yast::Service.Stop(service_name)
-      end
-    end
-
     def reset_service(service)
       services[service].reload
     end
@@ -259,12 +247,6 @@ module Yast
       end
     end
 
-    def set_start_mode!(name)
-      service = Yast2::SystemService.find(name)
-      return false unless service
-      service.start_mode = services[name][:start_mode]
-    end
-
     def start_mode(service)
       exists?(service) do
         services[service].start_mode
@@ -275,14 +257,6 @@ module Yast
       exists?(service) do
         services[service].start_modes
       end
-    end
-
-    # Enable or disable the service
-    #
-    # @param [String] service name
-    # @return [Boolean]
-    def toggle!(service)
-      enabled(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
     end
 
     # Returns full information about the service as returned from systemctl command
@@ -351,57 +325,6 @@ module Yast
       else
         exists
       end
-    end
-
-    def switch_services
-      log.info "Switching services"
-      services_switched = []
-
-      services.each do |service_name, service_attributes|
-        next unless service_attributes[:modified]
-
-        service = Yast2::SystemService.find(service_name)
-        unless service
-          log.error "Cannot find service #{service_name}"
-          next
-        end
-
-        # Do not start or stop services that are already in the desired state.
-        # They might be coming from AutoYast import and thus marked as :modified.
-        if service.active? == service_attributes[:active]
-          log.info "Skipping service #{service_name} - it's already in desired state"
-        elsif switch!(service_name)
-          services_switched << service_name
-        else
-          change  = active(service_name) ? 'stop' : 'start'
-          status  = enabled(service_name) ? 'enabled' : 'disabled'
-          message = _("Could not %{change} %{service} which is currently %{status}. ") %
-            { :change => change, :service => service_name, :status => status }
-          message << status(service_name)
-          errors << message
-          Builtins.y2error("Error: %1", message)
-        end
-      end
-
-      services_switched
-    end
-
-    def toggle_services
-      services_toggled = []
-      services.each do |service_name, service_attributes|
-        next unless service_attributes[:modified]
-        if set_start_mode!(service_name)
-          services_toggled << service_name
-        else
-          change  = enabled(service_name) ? 'enable' : 'disable'
-          message = _("Could not %{change} %{service}. ") %
-            { :change => change, :service => service_name }
-          message << status(service_name)
-          errors << message
-          Builtins.y2error("Error: %1", message)
-        end
-      end
-      services_toggled
     end
 
     publish({:function => :active,         :type => "boolean ()"              })
