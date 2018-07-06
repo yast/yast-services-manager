@@ -20,30 +20,7 @@ module Yast
       manual:    N_('Manual')
     }.freeze
 
-    # Used by ServicesManagerServiceClass to keep data about an individual service.
-    # (Not a real class; documents the structure of a Hash)
-    #
-    # Why does this hash exist if we have Yast::SystemdServiceClass::Service?
-    class Settings < Hash
-      # @!method [](k)
-      #   @option k :start_mode  [Symbol] service's start mode
-      #   @option k :start_modes [Symbol] supported start modes
-      #   @option k :can_be_enabled [Boolean] service can be enabled/disabled by the user
-      #   @option k :modified [Boolean] service has been changed (got enabled/disabled)
-      #   @option k :active   [Boolean] The high-level unit activation state, i.e. generalization of SUB
-      #   @option k :loaded   [Boolean] Reflects whether the unit definition was properly loaded
-      #   @option k :description [String] English description of the service
-    end
-
-    attr_reader   :modified
-
-    # @return [Array<String>]
-    attr_accessor :errors
-
-    alias_method :modified?, :modified
-
-    # @return [Hash{String => Settings}]
-    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
+    # @return [Hash{String => Yast2::SystemService}]
     def services
       @services ||= read
     end
@@ -63,7 +40,7 @@ module Yast
     # @param service [String] service name
     # @return [Yast2::SystemService, nil]
     def find(service)
-      services[service][:service]
+      services[service]
     end
 
     # Sets whether service should be running after writing the configuration
@@ -72,10 +49,9 @@ module Yast
     # @return [Boolean] whether the service exists
     def activate(service)
       exists?(service) do
-        services[service][:active]  = true
-        Builtins.y2milestone "Service #{service} has been marked for activation"
-        services[service][:modified] = true
-        self.modified = true
+        services[service].active = true
+        log.info "Service #{service} has been marked for activation"
+        true
       end
     end
 
@@ -85,16 +61,16 @@ module Yast
     # @return [Boolean] whether the service exists
     def deactivate(service)
       exists?(service) do
-        services[service][:active]   = false
-        services[service][:modified] = true
-        self.modified = true
+        services[service].active = false
+        log.info "Service #{service} has been marked for de-activation"
+        true
       end
     end
 
     # @param [String] service name
     # @return [Boolean] the current setting whether service should be running
     def active(service)
-      exists?(service) { services[service][:active] }
+      exists?(service) { services[service].active? }
     end
 
     alias_method :active?, :active
@@ -105,7 +81,7 @@ module Yast
     # @return Boolean enabled
     def enabled(service)
       exists?(service) do
-        services[service][:start_mode] != :manual
+        services[service].start_mode != :manual
       end
     end
 
@@ -115,7 +91,7 @@ module Yast
     # @return [String]
     def state(service)
       return nil unless exists?(service)
-      services[service][:state]
+      services[service].active_state
     end
 
     # Service substate
@@ -124,7 +100,7 @@ module Yast
     # @return [String]
     def substate(service)
       return nil unless exists?(service)
-      services[service][:substate]
+      services[service].sub_state
     end
 
     # Service description
@@ -133,7 +109,7 @@ module Yast
     # @return [String]
     def description(service)
       return nil unless exists?(service)
-      services[service][:description]
+      services[service].description
     end
 
     # Returns whether the given service can be enabled/disabled by the user
@@ -142,21 +118,12 @@ module Yast
     # @return [Boolean] is it enabled or not
     def can_be_enabled(service)
       exists?(service) do
-        services[service][:can_be_enabled]
+        services[service].can_be_enabled?
       end
-    end
-
-    # Change the global modified status
-    # Reverting modified to false also requires to set the flag for all services
-    def modified=(required_status)
-      reload if required_status == false
-      @modified = required_status
     end
 
     def modified_services
-      services.select do |name, attributes|
-        attributes[:modified]
-      end
+      services.values.select(&:changed?)
     end
 
     def reload
@@ -175,8 +142,7 @@ module Yast
     #
     # @return [Boolean]
     def reset
-      self.errors = []
-      self.modified = false
+      services.values.each(&:reload)
       true
     end
 
@@ -231,38 +197,15 @@ module Yast
     def save
       Builtins.y2milestone "Saving systemd services..."
 
-      if !modified
+      if modified_services.empty?
         Builtins.y2milestone "No service has been changed, nothing to do..."
         return true
       end
 
-      Builtins.y2milestone "Modified services: #{modified_services}"
+      Builtins.y2milestone "Modified services: #{modified_services.map(&:name)}"
 
-      if !errors.empty?
-        Builtins.y2error "Not saving the changes due to errors: " + errors.join(', ')
-        return false
-      end
-
-      # Set the services enabled/disabled first
-      toggle_services
-      if !errors.empty?
-        Builtins.y2error "There were some errors during saving: " + errors.join(', ')
-        return false
-      end
-
-      unless Stage.initial
-        # Then try to adjust services run (active/inactive)
-        # Might start or stop some services that would cause system instability
-        # This makes only sense in an installed system (not inst-sys)
-        switch_services
-        if !errors.empty?
-          Builtins.y2error "There were some errors during saving: " + errors.join(', ')
-          return false
-        end
-      end
-
-      modified_services.keys.each { |service_name| reset_service(service_name) }
-      self.modified = false
+      services.values.each { |s| s.save(ignore_status: Stage.initial) }
+      services.values.each(&:reload)
       true
     end
 
@@ -287,7 +230,7 @@ module Yast
     end
 
     def reset_service(service)
-      services[service][:modified] = false
+      services[service].reload
     end
 
     # Enables the service in cache
@@ -305,9 +248,8 @@ module Yast
     # @see Yast::SystemdServiceClass::Service#start_modes
     def set_start_mode(service, mode)
       exists?(service) do
-        services[service][:start_mode] = mode
-        services[service][:modified] = true
-        self.modified = true
+        services[service].start_mode = mode
+        services[service].active = active(service) ? true : false
       end
     end
 
@@ -319,13 +261,13 @@ module Yast
 
     def start_mode(service)
       exists?(service) do
-        services[service][:start_mode]
+        services[service].start_mode
       end
     end
 
     def start_modes(service)
       exists?(service) do
-        services[service][:start_modes]
+        services[service].start_modes
       end
     end
 
@@ -368,6 +310,17 @@ module Yast
     def start_mode_to_human(mode)
       _(START_MODE[mode])
     end
+
+    # Determine whether some service has been modified
+    #
+    # @return [Boolean] true if some service has been modified; false otherwise
+    #
+    # @see Yast2::SystemService#changed?
+    def modified
+      modified_services.any?
+    end
+
+    alias_method :modified?, :modified
 
     private
 
