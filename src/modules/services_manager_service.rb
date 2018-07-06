@@ -74,6 +74,13 @@ module Yast
 
     alias_method :active?, :active
 
+    # @param service [String] service name
+    # @param key [Symbol] value that has been changed (:active and :start_mode)
+    # @return [Boolean] true if the key has changed
+    def changed_value?(service, key)
+      exists?(service) { services[service].changed_value?(:active) }
+    end
+
     # Returns whether the given service has been enabled
     #
     # @param String service

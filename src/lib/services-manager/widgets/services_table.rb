@@ -276,10 +276,10 @@ module Y2ServicesManager
       #
       # @param service_name [String]
       def refresh_state_value(service_name)
-        is_active = ServicesManagerService.find(service_name).active?
+        active_changed = ServicesManagerService.find(service_name).changed_value?(:active)
         will_be_active = ServicesManagerService.active?(service_name)
 
-        state = if is_active != will_be_active
+        state = if active_changed
           will_be_active ? _('Active (will start)') : _('Inactive (will stop)')
         else
           state_value(service_name)
