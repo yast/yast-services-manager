@@ -155,7 +155,7 @@ module Y2ServicesManager
       #
       # @return [Array<Yast::Term>]
       def items
-        services_names.map { |s| Item(*values_for(s)) }
+        services_names.sort_by { |s| s.downcase }.map { |s| Item(*values_for(s)) }
       end
 
       # Values to show in the table for a specific service
