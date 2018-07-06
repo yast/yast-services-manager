@@ -48,7 +48,7 @@ module Yast
     # @return [Boolean] whether the service exists
     def activate(service)
       exists?(service) do
-        services[service].active = true
+        services[service].start
         log.info "Service #{service} has been marked for activation"
         true
       end
@@ -60,7 +60,7 @@ module Yast
     # @return [Boolean] whether the service exists
     def deactivate(service)
       exists?(service) do
-        services[service].active = false
+        services[service].stop
         log.info "Service #{service} has been marked for de-activation"
         true
       end
@@ -90,7 +90,7 @@ module Yast
     # @return [String]
     def state(service)
       return nil unless exists?(service)
-      services[service].active_state
+      services[service].state
     end
 
     # Service substate
@@ -99,7 +99,7 @@ module Yast
     # @return [String]
     def substate(service)
       return nil unless exists?(service)
-      services[service].sub_state
+      services[service].substate
     end
 
     # Service description
@@ -243,7 +243,11 @@ module Yast
     def set_start_mode(service, mode)
       exists?(service) do
         services[service].start_mode = mode
-        services[service].active = active(service) ? true : false
+        if active(service)
+          services[service].start
+        else
+          services[service].stop
+        end
       end
     end
 
