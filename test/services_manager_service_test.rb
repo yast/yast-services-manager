@@ -45,7 +45,7 @@ module Yast
     before do
       stub_services
 
-      allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:list_unit_files)
+      allow_any_instance_of(Y2ServicesManager::ServiceLoader).to receive(:list_unit_files)
         .and_return(
           [
                      "sshd.service      enabled \n",
@@ -58,7 +58,7 @@ module Yast
                      "zbus.service      enabled \n"
           ]
         )
-      allow_any_instance_of(ServicesManagerServiceClass::ServiceLoader).to receive(:list_units)
+      allow_any_instance_of(Y2ServicesManager::ServiceLoader).to receive(:list_units)
         .and_return(
           [
             "sshd.service  loaded active   running OpenSSH Daemon\n",

@@ -56,7 +56,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
       allow(Yast::SystemdTarget).to receive(:get_default).and_return(default_target)
       allow(Yast::SystemdTarget).to receive(:all).and_return(tagets)
 
-      allow(Yast::ServicesManagerServiceClass::ServiceLoader).to receive(:new).and_return(loader)
+      allow(Y2ServicesManager::ServiceLoader).to receive(:new).and_return(loader)
 
       allow(loader).to receive(:list_unit_files).and_return(units_files_output)
       allow(loader).to receive(:list_units).and_return(units_output)
@@ -65,7 +65,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
         .with(services.map(&:name).sort).and_return(services)
     end
 
-    let(:loader) { Yast::ServicesManagerServiceClass::ServiceLoader.new }
+    let(:loader) { Y2ServicesManager::ServiceLoader.new }
 
     let(:default_target) { multi_user_target }
 
