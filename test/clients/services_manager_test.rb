@@ -168,7 +168,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
     let(:selected_service_name) { "sshd" }
 
     context "when the selected service is running" do
-      it "shows an 'stop' button" do
+      it "shows a 'stop' button" do
         expect_buttons_to { |buttons| contain_button?(buttons, "&Stop") }
 
         subject.run
@@ -178,7 +178,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
     context "when the selected service is not running" do
       let(:selected_service_name) { "postfix" }
 
-      it "shows an 'start' button" do
+      it "shows a 'start' button" do
         expect_buttons_to { |buttons| contain_button?(buttons, "&Start") }
 
         subject.run

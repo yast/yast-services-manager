@@ -40,7 +40,7 @@ module Y2ServicesManager
     # Services Manager client
     #
     # TODO: The whole ServicesManager client should be rewritten to use CWM dialogs, widgets, etc,
-    # and the logic should be splitted into the proper classes instead of having an only one client
+    # and the logic should be splitted into the proper classes instead of having only one client
     # class with everything.
     class ServicesManager < Yast::Client
       include Yast::Logger

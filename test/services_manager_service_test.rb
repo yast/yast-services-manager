@@ -283,7 +283,7 @@ module Yast
       end
 
       context "if the service is not found" do
-        let(:service_name) { "unkown" }
+        let(:service_name) { "unknown" }
 
         it "returns nil" do
           expect(service.substate(service_name)).to be_nil
