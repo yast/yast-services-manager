@@ -81,7 +81,7 @@ module Y2ServicesManager
         @services_names = services_names
       end
 
-      # @return [YaST::Term]
+      # @return [Yast::Term]
       def widget
         @table ||= Table(id, Opt(:immediate), header, items)
       end
@@ -137,14 +137,14 @@ module Y2ServicesManager
 
       # Table widget id
       #
-      # @return [YaST::Term]
+      # @return [Yast::Term]
       def id
         Id(@id)
       end
 
       # Table header
       #
-      # @return [YaST::Term]
+      # @return [Yast::Term]
       def header
         Header(
           *columns.map { |c| send("#{c}_title") }
@@ -153,7 +153,7 @@ module Y2ServicesManager
 
       # Content of the table
       #
-      # @return [Array<YaST::Term>]
+      # @return [Array<Yast::Term>]
       def items
         services_names.map { |s| Item(*values_for(s)) }
       end
@@ -161,7 +161,7 @@ module Y2ServicesManager
       # Values to show in the table for a specific service
       #
       # @param service_name [String]
-      # @return [Array<YaST::Term, String>]
+      # @return [Array<Yast::Term, String>]
       def values_for(service_name)
         [row_id(service_name)] + columns.map { |c| send("#{c}_value", service_name) }
       end
@@ -204,7 +204,7 @@ module Y2ServicesManager
       # Id for a table row of a service
       #
       # @param service_name [String]
-      # @return [YaST::Term]
+      # @return [Yast::Term]
       def row_id(service_name)
         Id(service_name)
       end
