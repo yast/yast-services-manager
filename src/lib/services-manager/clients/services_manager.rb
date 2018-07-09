@@ -37,6 +37,11 @@ Yast.import "PackageSystem"
 
 module Y2ServicesManager
   module Clients
+    # Services Manager client
+    #
+    # TODO: The whole ServicesManager client should be rewritten to use CWM dialogs, widgets, etc,
+    # and the logic should be splitted into the proper classes instead of having only one client
+    # class with everything.
     class ServicesManager < Yast::Client
       include Yast::Logger
 
@@ -184,8 +189,8 @@ module Y2ServicesManager
 
       # Widget to select the systemd target
       #
-      # @param targets_items [Array<YaST::Term>]
-      # @return [YaST::Term]
+      # @param targets_items [Array<Yast::Term>]
+      # @return [Yast::Term]
       def target_selector(targets_items)
         ComboBox(
           Id(Id::DEFAULT_TARGET),
@@ -197,7 +202,7 @@ module Y2ServicesManager
 
       # All possible systemd targets
       #
-      # @return [Array<YaST::Term>]
+      # @return [Array<Yast::Term>]
       def system_targets_items
         ServicesManagerTarget.all.collect do |target, target_def|
           label = target_def[:description] || target
@@ -217,7 +222,7 @@ module Y2ServicesManager
       # The log button only is included if YaST Journal is installed.
       #
       # @param service_name [String]
-      # @return [YaST::Term]
+      # @return [Yast::Term]
       def service_buttons(service_name)
         start_stop_label = ServicesManagerService.active(service_name) ? _('&Stop') : _('&Start')
         start_mode_label = ServicesManagerService.start_mode_to_human_for(service_name)
@@ -327,10 +332,9 @@ module Y2ServicesManager
 
       # Opens a dialog with the logs (from current boot) for the currently selected service
       #
-      # In case the service is associated to a socket, the log entries for the socket unit
-      # are also included, see {#selected_units_names}.
+      # @see Yast2::SystemService#search_terms
       def show_logs
-        query = Y2Journal::Query.new(interval: "0", filters: { "unit" => selected_units_names })
+        query = Y2Journal::Query.new(interval: "0", filters: { "unit" => selected_service.search_terms })
         Y2Journal::EntriesDialog.new(query: query).run
 
         services_table.focus
@@ -385,21 +389,6 @@ module Y2ServicesManager
         ServicesManagerService.all.keys
       end
 
-      # Names of the units associated to the currently selected service
-      #
-      # It includes the name of the socket unit when needed
-      #
-      # @return [Array<String>] e.g., ["tftp.service", "tftp.socket"]
-      def selected_units_names
-        if selected_service
-          units = [selected_service.service.id]
-          units << selected_service.socket.id if selected_service.socket?
-          units
-        else
-          [selected_service_name]
-        end
-      end
-
       # Name of the currently selected service (taken from the table widget)
       #
       # @return [String]
@@ -409,7 +398,7 @@ module Y2ServicesManager
 
       # Currently selected service
       #
-      # @return [Yast2::Systemdervice, nil] nil if the service is not found
+      # @return [Yast2::SystemService]
       def selected_service
         services_table.selected_service
       end

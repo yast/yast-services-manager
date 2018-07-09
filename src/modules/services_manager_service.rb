@@ -12,7 +12,7 @@ module Yast
     include Yast::Logger
     extend Yast::I18n
 
-    SERVICE_SUFFIX          = '.service'
+    SERVICE_SUFFIX = '.service'
 
     START_MODE = {
       on_boot:   N_('On Boot'),
@@ -109,22 +109,22 @@ module Yast
       end
     end
 
-    # Service state (ActiveState systemd property)
+    # Service state
     #
     # @param service [String] service name
     # @return [String]
     def state(service)
       return nil unless exists?(service)
-      services[service][:active_state]
+      services[service][:state]
     end
 
-    # Service substate (SubState systemd property)
+    # Service substate
     #
     # @param service [String] service name
     # @return [String]
     def substate(service)
       return nil unless exists?(service)
-      services[service][:sub_state]
+      services[service][:substate]
     end
 
     # Service description

@@ -178,6 +178,9 @@ module Y2ServicesManager
       service_names.zip(ss).each do |name, s|
         sh = services[name] # service hash
         if s
+          sh[:service] = s
+          sh[:state] = s.state
+          sh[:substate] = s.substate
           sh[:start_mode] = s.start_mode
           sh[:start_modes] = s.start_modes
           sh[:active] = s.active?
