@@ -22,20 +22,76 @@
 
 require_relative '../test_helper'
 
+require "y2journal"
+
 require "yast"
 require "services-manager/clients/services_manager"
 
 describe Y2ServicesManager::Clients::ServicesManager do
   include Yast::UIShortcuts
 
-  # Finds in the widgets tree a widget with the given id
+  # Checks whether a widgets tree contains the given id
   #
   # @param tree [Yast::Term]
   # @param id [Symbol]
   #
   # @return [Boolean]
-  def exist_widget?(tree, id)
-    !tree.nested_find { |w| w.is_a?(Yast::Term) && w.value == :id && w[0] == id }.nil?
+  def contain_widget?(tree, id)
+    !find_widget(tree, value: :id, param: id).nil?
+  end
+
+  # Finds a widget in the widgets tree
+  #
+  # @param tree [Yast::Term]
+  # @param value [Symbol]
+  # @param param [Object]
+  #
+  # @return [Yast::Term, nil]
+  def find_widget(tree, value: nil, param: nil)
+    return nil unless tree.is_a?(Yast::Term)
+
+    tree.nested_find do |widget|
+      widget.is_a?(Yast::Term) &&
+        widget.value == value &&
+        widget.params.any?(param)
+      end
+  end
+
+  # Checks whether the widgets tree contains a button with a specific label
+  #
+  # @param tree [Yast::Term]
+  # @param label [String]
+  #
+  # @return [Boolean]
+  def contain_button?(tree, label)
+    !find_widget(tree, value: :PushButton, param: label).nil?
+  end
+
+  # Checks whether the widgets tree contains a menu button with a specific label and
+  # options (optional)
+  #
+  # @param tree [Yast::Term]
+  # @param label [String]
+  # @param options [Array<Symbol>]
+  #
+  # @return [Boolean]
+  def contain_menu_button?(tree, label, options: [])
+    widget = find_widget(tree, value: :MenuButton, param: label)
+
+    return false if widget.nil?
+
+    options.all? do |option|
+      widget.params.last.any? { |opts| contain_widget?(opts, option) }
+    end
+  end
+
+  # Helper for buttons expectations
+  #
+  # @param block [Proc]
+  def expect_buttons_to(&block)
+    expect(Yast::UI).to receive(:ReplaceWidget) do |_, content|
+      expect(block.call(content)).to eq(true)
+    end
   end
 
   subject { described_class.new }
@@ -53,26 +109,51 @@ describe Y2ServicesManager::Clients::ServicesManager do
       allow(Yast::UI).to receive(:UserInput).and_return(*user_input)
       allow(Yast::Popup).to receive(:ReallyAbort).and_return(true)
 
+      allow(Yast::Wizard).to receive(:SetContentsButtons)
+
       allow(Yast::SystemdTarget).to receive(:get_default).and_return(default_target)
       allow(Yast::SystemdTarget).to receive(:all).and_return(tagets)
 
-      allow(Y2ServicesManager::ServiceLoader).to receive(:new).and_return(loader)
+      allow(Yast::UI).to receive(:QueryWidget).with(Id(:services_table), :CurrentItem)
+        .and_return(selected_service_name)
 
-      allow(loader).to receive(:list_unit_files).and_return(units_files_output)
-      allow(loader).to receive(:list_units).and_return(units_output)
-
-      allow(Yast::SystemdService).to receive(:find_many)
-        .with(services.map(&:name).sort).and_return(services)
+      stub_services(services_specs)
     end
 
-    let(:loader) { Y2ServicesManager::ServiceLoader.new }
+    let(:services_specs) { [sshd_specs, postfix_specs] }
+
+    let(:sshd_specs) do
+      {
+        unit:            "sshd.service",
+        unit_file_state: "enabled",
+        start_mode:      :manual,
+        start_modes:     [:on_boot, :manual],
+        load:            "loaded",
+        active:          "active",
+        sub:             "running",
+        description:     "running OpenSSH Daemon"
+      }
+    end
+
+    let(:postfix_specs) do
+      {
+        unit:            "postfix.service",
+        unit_file_state: "disabled",
+        start_mode:      :on_boot,
+        start_modes:     [:on_boot, :on_demand, :manual],
+        load:            "loaded",
+        active:          "inactive",
+        sub:             "dead",
+        description:     "Postfix Mail Agent"
+      }
+    end
 
     let(:default_target) { multi_user_target }
 
     let(:tagets) { [multi_user_target] }
 
     let(:multi_user_target) do
-      double("target",
+      instance_double(Yast::SystemdTargetClass::Target,
         name:           "multi-user",
         allow_isolate?: true,
         enabled?:       true,
@@ -81,45 +162,61 @@ describe Y2ServicesManager::Clients::ServicesManager do
       )
     end
 
-    let(:units_files_output) do
-      [
-        "sshd.service      enabled \n",
-        "postfix.service   disabled\n"
-      ]
-    end
-
-    let(:units_output) do
-      [
-        "sshd.service  loaded active   running OpenSSH Daemon\n",
-        "postfix.service loaded inactive dead    Postfix Mail Agent\n"
-      ]
-    end
-
-    let(:services) { [sshd_service, postfix_service] }
-
-    let(:sshd_service) do
-      double("service",
-        name:     "sshd",
-        enabled?: true,
-        active?:  true
-      )
-    end
-
-    let(:postfix_service) do
-      double("service",
-        name:     "postfix",
-        enabled?: false,
-        active?:  true
-      )
-    end
-
+    # Only to finish
     let(:user_input) { [:abort] }
 
-    context "when yast2-journal is installed" do
-      it "offers a button to show the logs" do
-        expect(Yast::Wizard).to receive(:SetContentsButtons) do |_, content, *|
-          expect(exist_widget?(content, :show_logs)).to eq(true)
+    let(:selected_service_name) { "sshd" }
+
+    context "when the selected service is running" do
+      it "shows an 'stop' button" do
+        expect_buttons_to { |buttons| contain_button?(buttons, "&Stop") }
+
+        subject.run
+      end
+    end
+
+    context "when the selected service is not running" do
+      let(:selected_service_name) { "postfix" }
+
+      it "shows an 'start' button" do
+        expect_buttons_to { |buttons| contain_button?(buttons, "&Start") }
+
+        subject.run
+      end
+    end
+
+    context "when the selected service supports to start on demand" do
+      let(:selected_service_name) { "postfix" }
+
+      it "allows to select 'On demand' start mode" do
+        expect_buttons_to do |buttons|
+          contain_menu_button?(buttons, "On Boot", options: [:on_boot, :on_demand, :manual])
         end
+
+        subject.run
+      end
+    end
+
+    context "when the selected service does not support to start on demand" do
+      let(:selected_service_name) { "sshd" }
+
+      it "does not allow to select 'On demand' start mode" do
+        expect_buttons_to do |buttons|
+          contain_menu_button?(buttons, "Manual", options: [:on_boot, :manual]) &&
+            !contain_menu_button?(buttons, "Manual", options: [:on_demand])
+        end
+
+        subject.run
+      end
+    end
+
+    context "when yast2-journal is installed" do
+      before do
+        allow(subject).to receive(:journal_loaded?).and_return(true)
+      end
+
+      it "offers a button to show the logs" do
+        expect_buttons_to { |buttons| contain_button?(buttons, "Show &Log") }
 
         subject.run
       end
@@ -131,9 +228,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
       end
 
       it "does not offer a button to show the logs" do
-        expect(Yast::Wizard).to receive(:SetContentsButtons) do |_, content, *|
-          expect(exist_widget?(content, :show_logs)).to eq(false)
-        end
+        expect_buttons_to { |buttons| !contain_button?(buttons, "Show &Log") }
 
         subject.run
       end
@@ -142,45 +237,23 @@ describe Y2ServicesManager::Clients::ServicesManager do
     context "when log button is used" do
       let(:user_input) { [:show_logs, :abort] }
 
-      before do
-        allow(Yast::UI).to receive(:QueryWidget).with(table_id, :CurrentItem)
-          .and_return(sshd_service.name)
-        allow(Yast::SystemdService).to receive(:find).with(sshd_service.name)
-          .and_return(sshd_service)
-
-        allow(sshd_service).to receive(:id) { "sshd.service" }
-        allow(sshd_service).to receive(:socket).and_return(socket)
-
-        allow(Y2Journal::EntriesDialog).to receive(:new).and_return(entries_dialog)
-      end
-
-      let(:table_id) { Id(described_class::Id::SERVICES_TABLE) }
-
-      let(:socket) { nil }
-
       let(:entries_dialog) { instance_double(Y2Journal::EntriesDialog, run: nil) }
 
-      def expect_query_units(*units)
-        expect(Y2Journal::Query).to receive(:new) do |params|
-          filtered_units = params[:filters]["unit"]
-          expect(filtered_units).to contain_exactly(*units)
-        end
-      end
+      let(:selected_service_name) { "sshd" }
+
+      let(:services_specs) { [sshd_specs2, postfix_specs] }
+
+      let(:sshd_specs2) { sshd_specs.merge(search_terms: search_terms) }
+
+      let(:search_terms) { ["sshd.service", "sshd.socket"] }
 
       it "shows the systemd journal entries for the selected service" do
-        expect_query_units("sshd.service")
+        expect(Y2Journal::EntriesDialog).to receive(:new) do |params|
+          filters = params[:query].filters["unit"]
+          expect(filters).to contain_exactly(*search_terms)
+        end.and_return(entries_dialog)
 
         subject.run
-      end
-
-      context "and the service has an associated socked unit" do
-        let(:socket) { double("socket", id: "sshd.socket") }
-
-        it "also shows the systemd journal entries for the socked unit" do
-          expect_query_units("sshd.service", "sshd.socket")
-
-          subject.run
-        end
       end
     end
   end

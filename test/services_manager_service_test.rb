@@ -1,4 +1,24 @@
 #!/usr/bin/env rspec
+# encoding: utf-8
+
+# Copyright (c) [2014-2018] SUSE LLC
+#
+# All Rights Reserved.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 2 of the GNU General Public License as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, contact SUSE LLC.
+#
+# To contact SUSE LLC about this file by physical or electronic mail, you may
+# find current contact information at www.suse.com.
 
 require_relative "test_helper"
 
@@ -9,69 +29,88 @@ module Yast
   describe ServicesManagerService do
     attr_reader :service
 
-    def stub_services
+    before do
       allow(Service).to receive(:Enable).and_return true
       allow(Service).to receive(:Disable).and_return true
       allow(Service).to receive(:Start).and_return true
       allow(Service).to receive(:Stop).and_return true
 
-      all_services = {}
-      declare_service = lambda do |name, enabled|
-        start_mode = enabled ? :boot : :manual
-        d = double(
-          description: "Stub #{name}", start_mode: start_mode, enabled?: enabled, active?: true,
-          start_modes: [:boot, :manual], :start_mode= => nil
-        )
-        all_services[name] = d
-      end
+      @service = Yast::ServicesManagerServiceClass.new
 
-      declare_service.call("sshd", true)
-      declare_service.call("postfix", false)
-      declare_service.call("dbus", false)
-      declare_service.call("notloaded", false)
-      declare_service.call("xbus", true)
-      declare_service.call("ybus", true)
-      declare_service.call("zbus", true)
-      declare_service.call("lsb", false)
-
-      keys = all_services.sort.map(&:first)
-      values = all_services.sort.map(&:last)
-      allow(Yast2::SystemService)
-        .to receive(:find_many).with(keys)
-        .and_return(values)
-      allow(Yast2::SystemService).to receive(:find) { |n| all_services[n] }
+      stub_services(services_specs)
     end
 
-    before do
-      stub_services
-
-      allow_any_instance_of(Y2ServicesManager::ServiceLoader).to receive(:list_unit_files)
-        .and_return(
-          [
-                     "sshd.service      enabled \n",
-                     "postfix.service   disabled\n",
-                     "swap.service      masked  \n",
-                     "dbus.service      static  \n",
-                     "notloaded.service static  \n",
-                     "xbus.service      enabled \n",
-                     "ybus.service      enabled \n",
-                     "zbus.service      enabled \n"
-          ]
-        )
-      allow_any_instance_of(Y2ServicesManager::ServiceLoader).to receive(:list_units)
-        .and_return(
-          [
-            "sshd.service  loaded active   running OpenSSH Daemon\n",
-            "postfix.service loaded inactive dead    Postfix Mail Agent\n",
-            "dbus.service  loaded active   running D-Bus System Message Bus\n",
-            "lsb.service  loaded active   running LSB service\n",
-            "xbus.service loaded activating start start YaST2 Second Stage (1)\n",
-            "ybus.service loaded deactivating stop start YaST2 Second Stage (2)\n",
-            "zbus.service loaded reloading stop start YaST2 Second Stage (3)\n"
-          ]
-        )
-
-      @service = Yast::ServicesManagerServiceClass.new
+    let(:services_specs) do
+      [
+        {
+          unit:            "sshd.service",
+          unit_file_state: "enabled",
+          load:            "loaded",
+          active:          "active",
+          sub:             "running",
+          description:     "running OpenSSH Daemon"
+        },
+        {
+          unit:            "postfix.service",
+          unit_file_state: "disabled",
+          load:            "loaded",
+          active:          "inactive",
+          sub:             "dead",
+          description:     "Postfix Mail Agent"
+        },
+        {
+          unit:            "swap.service",
+          unit_file_state: "masked"
+        },
+        {
+          unit:            "dbus.service",
+          unit_file_state: "static",
+          load:            "loaded",
+          active:          "active",
+          sub:             "running",
+          description:     "D-Bus System Message Bus"
+        },
+        {
+          unit:            "notloaded.service",
+          unit_file_state: "static",
+          load:            nil,
+          active:          "active",
+          sub:             "running",
+          description:     "Stub notloaded"
+        },
+        {
+          unit:            "lsb.service",
+          unit_file_state: nil,
+          load:            "loaded",
+          active:          "active",
+          sub:             "running",
+          description:     "LSB service"
+        },
+        {
+          unit:            "xbus.service",
+          unit_file_state: "enabled",
+          load:            "loaded",
+          active:          "activating",
+          sub:             "start",
+          description:     "start YaST2 Second Stage (1)"
+        },
+        {
+          unit:            "ybus.service",
+          unit_file_state: "enabled",
+          load:            "loaded",
+          active:          "deactivating",
+          sub:             "stop",
+          description:     "start YaST2 Second Stage (2)"
+        },
+        {
+          unit:            "zbus.service",
+          unit_file_state: "enabled",
+          load:            "loaded",
+          active:          "reloading",
+          sub:             "stop",
+          description:     "start YaST2 Second Stage (3)"
+        }
+      ]
     end
 
     it "provides a collection of supported services" do
@@ -197,7 +236,10 @@ module Yast
       end
     end
 
-    context "when service is in state 'reloading'" do
+    # FIXME
+    # Where is the code to mangage this case?
+    # It was returning true because the service is mocked as #active? #=> true
+    xcontext "when service is in state 'reloading'" do
       it "is considered to be active" do
         zbus_service = service.all['zbus']
         expect(zbus_service[:active]).to eq(true)
@@ -221,5 +263,46 @@ module Yast
       end
     end
 
+    describe "#state" do
+      it "returns the service state" do
+        expect(service.state("sshd")).to eq("active")
+      end
+
+      context "if the service is not found" do
+        let(:service_name) { "unkown" }
+
+        it "returns nil" do
+          expect(service.state(service_name)).to be_nil
+        end
+      end
+    end
+
+    describe "#substate" do
+      it "returns the service substate" do
+        expect(service.substate("sshd")).to eq("running")
+      end
+
+      context "if the service is not found" do
+        let(:service_name) { "unkown" }
+
+        it "returns nil" do
+          expect(service.substate(service_name)).to be_nil
+        end
+      end
+    end
+
+    describe "#description" do
+      it "returns the service description" do
+        expect(service.description("sshd")).to eq("running OpenSSH Daemon")
+      end
+
+      context "if the service is not found" do
+        let(:service_name) { "unkown" }
+
+        it "returns nil" do
+          expect(service.description(service_name)).to be_nil
+        end
+      end
+    end
   end
 end
