@@ -128,8 +128,6 @@ module Y2ServicesManager
           case input
             when :abort, :cancel
               break if Popup::ReallyAbort(Yast::ServicesManager.modified?)
-            when Id::TOGGLE_ENABLED # Default for double-click in the table
-              toggle_service
             when Id::SERVICES_TABLE
               handle_table
             when Id::TOGGLE_RUNNING
@@ -264,9 +262,7 @@ module Y2ServicesManager
       end
 
       def handle_table
-        if @prev_service == selected_service_name
-          toggle_service
-        else
+        if @prev_service != selected_service_name
           @prev_service = selected_service_name
           redraw_buttons(selected_service_name)
         end
@@ -363,23 +359,6 @@ module Y2ServicesManager
 
         redraw_selected_service if success
         success
-      end
-
-      # Toggles (enable/disable) whether the currently selected service should
-      # be enabled or disabled while writing the configuration
-      def toggle_service
-        service = selected_service_name
-
-        Builtins.y2milestone('Toggling service status: %1', service)
-
-        if ServicesManagerService.can_be_enabled(service)
-          ServicesManagerService.toggle(service)
-        else
-          Popup.Error(_("This service cannot be enabled/disabled because it has no \"install\" section in the description file"))
-        end
-
-        redraw_selected_service
-        true
       end
 
       # Names of all services without the extention (.service)
