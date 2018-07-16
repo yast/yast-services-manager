@@ -17,7 +17,7 @@ module Yast
     START_MODE = {
       on_boot:   N_('On Boot'),
       on_demand: N_('On Demand'),
-      manual:    N_('Manual')
+      manual:    N_('Manually')
     }.freeze
 
     # @return [Hash{String => Yast2::SystemService}]
@@ -32,6 +32,7 @@ module Yast
     def initialize
       textdomain 'services-manager'
       @modified = false
+      @services = nil
     end
 
     # Finds a service
@@ -96,8 +97,9 @@ module Yast
     # @param service [String] service name
     # @return [String]
     def state(service)
-      return nil unless exists?(service)
-      services[service].state
+      exists?(service) do
+        services[service].active_state
+      end
     end
 
     # Service substate
@@ -105,8 +107,9 @@ module Yast
     # @param service [String] service name
     # @return [String]
     def substate(service)
-      return nil unless exists?(service)
-      services[service].substate
+      exists?(service) do
+        services[service].sub_state
+      end
     end
 
     # Service description
@@ -124,14 +127,18 @@ module Yast
     # @return [Boolean] is it enabled or not
     def can_be_enabled(service)
       exists?(service) do
-        services[service].can_be_enabled?
+        !services[service].static?
       end
     end
 
+    # Returns services which have been modified (in memory)
+    #
+    # @return [Array<Yast2::SystemService>] List of modified services
     def modified_services
       services.values.select(&:changed?)
     end
 
+    # Reloads services list
     def reload
       self.services = Y2ServicesManager::ServiceLoader.new.read
     end
@@ -151,7 +158,6 @@ module Yast
       services.values.each(&:reload)
       true
     end
-
 
     # Returns only enabled services, the rest is expected to be disabled
     def export
@@ -210,15 +216,16 @@ module Yast
 
       Builtins.y2milestone "Modified services: #{modified_services.map(&:name)}"
 
-      services.values.each { |s| s.save(ignore_status: Stage.initial) }
-      services.values.each(&:reload)
-      true
+      modified_services.each { |s| s.save(ignore_status: Stage.initial) }
+      services.values.all? { |s| s.errors.empty? }
     end
 
-    # @return [Array<Hash<Symbol,Object>>] Errors for each service
+    # Returns a list of errors detected when trying to write the changes to the underlying system
+    #
+    # @return [Array<String>] Detected errors or an empty string when no errors were detected
     def errors
-      services.each_with_object({}) do |(name, err), all|
-        all[name] = err unless err.empty?
+      services.values.reject { |e| e.errors.empty? }.each_with_object([]) do |service, all|
+        all.concat(error_messages_for(service))
       end
     end
 
@@ -230,16 +237,15 @@ module Yast
       active(service) ? deactivate(service) : activate(service)
     end
 
-    def reset_service(service)
-      services[service].reload
-    end
-
-    # Enables the service in cache
+    # Resets service changes
     #
     # @param [String] service name
     # @return [Boolean]
-    def toggle(service)
-      enabled(service) ? disable(service) : enable(service)
+    def reset_service(service)
+      exists?(service) do
+        services[service].reload
+        true
+      end
     end
 
     # Sets start_mode for a service (in memory only, use save())
@@ -250,7 +256,7 @@ module Yast
     def set_start_mode(service, mode)
       exists?(service) do
         services[service].start_mode = mode
-        if active(service)
+        if enabled(service)
           services[service].start
         else
           services[service].stop
@@ -258,12 +264,18 @@ module Yast
       end
     end
 
+    # Returns the start_mode for the given service (from memory)
+    #
+    # @return [Symbol] Start mode
     def start_mode(service)
       exists?(service) do
         services[service].start_mode
       end
     end
 
+    # Returns the list of supported start modes for the given service
+    #
+    # @return [Array<Symbol>] Supported start modes
     def start_modes(service)
       exists?(service) do
         services[service].start_modes
@@ -272,14 +284,14 @@ module Yast
 
     # Returns full information about the service as returned from systemctl command
     #
-    # @param String service name
-    # @return String full unformatted information
+    # @param service [String] Service name
+    # @return [String] full unformatted information
     def status(service)
       out = Systemctl.execute("status #{service}#{SERVICE_SUFFIX} 2>&1")
       out['stdout']
     end
 
-    # Translate start mode for a given service
+    # Translates the start mode for a given service
     #
     # @param service [String] service name
     # @return [String] Translated start mode
@@ -287,22 +299,22 @@ module Yast
       start_mode_to_human(start_mode(service))
     end
 
-    # List of supported start modes
+    # List of YaST supported start modes
     #
     # @return [Array<String>] Supported start modes
     def all_start_modes
       START_MODE.keys
     end
 
-    # Localized start mode
+    # Returns the localized start mode
     #
-    # @param mode [String] Start mode
+    # @param mode [Symbol] Start mode
     # @return [String] Localized start mode
     def start_mode_to_human(mode)
       _(START_MODE[mode])
     end
 
-    # Determine whether some service has been modified
+    # Determines whether some service has been modified
     #
     # @return [Boolean] true if some service has been modified; false otherwise
     #
@@ -336,6 +348,41 @@ module Yast
       else
         exists
       end
+    end
+
+    # Returns a list of error messages for the given service
+    #
+    # @param service [String] Service name
+    # @return [Array<String>] List of error messages
+    def error_messages_for(service)
+      service.errors.keys.map do |key|
+        send("#{key}_error_message_for", service)
+      end
+    end
+
+    # Returns a error message related to the activation/deactivation of services
+    #
+    # @return [String] Error message
+    def active_error_message_for(service)
+      change = service.active? ? 'start' : 'stop'
+      status = service.running? ? 'running' : 'not running'
+      _("Could not %{change} %{service} which is currently %{status}." %
+        { change: change, service: service.name, status: status })
+    end
+
+    # Start mode translations in error messages
+    START_MODE_TEXT = {
+      on_boot:   N_('on boot'),
+      on_demand: N_('on demand'),
+      manual:    N_('manually')
+    }.freeze
+
+    # Returns a error message related to setting services start modes
+    #
+    # @return [String] Error message
+    def start_mode_error_message_for(service)
+      _("Could not set %{service} to be started %{change}." %
+        { service: service.name, change: START_MODE_TEXT[service.start_mode] })
     end
 
     publish({:function => :active,         :type => "boolean ()"              })
