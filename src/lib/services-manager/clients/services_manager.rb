@@ -351,9 +351,8 @@ module Y2ServicesManager
       # @return [Boolean] if successful
       def switch_service
         service = selected_service_name
-
-        Builtins.y2milestone("Setting the service '#{service}' to " +
-          "#{ServicesManagerService.services[service][:active] ? 'inactive' : 'active'}")
+        Builtins.y2milestone("Setting the service 'service) #{service}' to " +
+          "#{ServicesManagerService.active(service) ? 'inactive' : 'active'}")
 
         success = ServicesManagerService.switch(service)
 

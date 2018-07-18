@@ -19,6 +19,8 @@
 # To contact SUSE LLC about this file by physical or electronic mail, you may
 # find current contact information at www.suse.com.
 
+require "yast2/system_service"
+
 module Y2ServicesManager
   # FIXME: this is a mixture of
   # LoadState (the LOAD column of systemctl list-units) and
@@ -175,19 +177,9 @@ module Y2ServicesManager
       service_names = services.keys.sort
       ss = Yast2::SystemService.find_many(service_names)
       # Rest of settings
-      service_names.zip(ss).each do |name, s|
-        sh = services[name] # service hash
-        if s
-          sh[:service] = s
-          sh[:state] = s.state
-          sh[:substate] = s.substate
-          sh[:start_mode] = s.start_mode
-          sh[:start_modes] = s.start_modes
-          sh[:active] = s.active?
-        end
-        if !sh[:description] || sh[:description].empty?
-          sh[:description] = s ? s.description : ""
-        end
+      services.clear
+      ss.each do |s|
+        services[s.name] = s
       end
     end
   end

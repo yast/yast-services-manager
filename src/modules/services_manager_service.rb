@@ -17,33 +17,10 @@ module Yast
     START_MODE = {
       on_boot:   N_('On Boot'),
       on_demand: N_('On Demand'),
-      manual:    N_('Manual')
+      manual:    N_('Manually')
     }.freeze
 
-    # Used by ServicesManagerServiceClass to keep data about an individual service.
-    # (Not a real class; documents the structure of a Hash)
-    #
-    # Why does this hash exist if we have Yast::SystemdServiceClass::Service?
-    class Settings < Hash
-      # @!method [](k)
-      #   @option k :start_mode  [Symbol] service's start mode
-      #   @option k :start_modes [Symbol] supported start modes
-      #   @option k :can_be_enabled [Boolean] service can be enabled/disabled by the user
-      #   @option k :modified [Boolean] service has been changed (got enabled/disabled)
-      #   @option k :active   [Boolean] The high-level unit activation state, i.e. generalization of SUB
-      #   @option k :loaded   [Boolean] Reflects whether the unit definition was properly loaded
-      #   @option k :description [String] English description of the service
-    end
-
-    attr_reader   :modified
-
-    # @return [Array<String>]
-    attr_accessor :errors
-
-    alias_method :modified?, :modified
-
-    # @return [Hash{String => Settings}]
-    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
+    # @return [Hash{String => Yast2::SystemService}]
     def services
       @services ||= read
     end
@@ -54,8 +31,8 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
-      @errors   = []
       @modified = false
+      @services = nil
     end
 
     # Finds a service
@@ -63,7 +40,7 @@ module Yast
     # @param service [String] service name
     # @return [Yast2::SystemService, nil]
     def find(service)
-      services[service][:service]
+      services[service]
     end
 
     # Sets whether service should be running after writing the configuration
@@ -72,10 +49,9 @@ module Yast
     # @return [Boolean] whether the service exists
     def activate(service)
       exists?(service) do
-        services[service][:active]  = true
-        Builtins.y2milestone "Service #{service} has been marked for activation"
-        services[service][:modified] = true
-        self.modified = true
+        find(service).start
+        log.info "Service #{service} has been marked for activation"
+        true
       end
     end
 
@@ -85,19 +61,26 @@ module Yast
     # @return [Boolean] whether the service exists
     def deactivate(service)
       exists?(service) do
-        services[service][:active]   = false
-        services[service][:modified] = true
-        self.modified = true
+        find(service).stop
+        log.info "Service #{service} has been marked for de-activation"
+        true
       end
     end
 
     # @param [String] service name
     # @return [Boolean] the current setting whether service should be running
     def active(service)
-      exists?(service) { services[service][:active] }
+      exists?(service) { find(service).active? }
     end
 
     alias_method :active?, :active
+
+    # @param service [String] service name
+    # @param key [Symbol] value that has been changed (:active and :start_mode)
+    # @return [Boolean] true if the key has changed
+    def changed_value?(service, key)
+      exists?(service) { find(service).changed_value?(:active) }
+    end
 
     # Returns whether the given service has been enabled
     #
@@ -105,7 +88,7 @@ module Yast
     # @return Boolean enabled
     def enabled(service)
       exists?(service) do
-        services[service][:start_mode] != :manual
+        find(service).start_mode != :manual
       end
     end
 
@@ -114,8 +97,9 @@ module Yast
     # @param service [String] service name
     # @return [String]
     def state(service)
-      return nil unless exists?(service)
-      services[service][:state]
+      exists?(service) do
+        find(service).state
+      end
     end
 
     # Service substate
@@ -123,8 +107,9 @@ module Yast
     # @param service [String] service name
     # @return [String]
     def substate(service)
-      return nil unless exists?(service)
-      services[service][:substate]
+      exists?(service) do
+        find(service).substate
+      end
     end
 
     # Service description
@@ -132,8 +117,9 @@ module Yast
     # @param service [String] service name
     # @return [String]
     def description(service)
-      return nil unless exists?(service)
-      services[service][:description]
+      exists?(service) do
+        find(service).description
+      end
     end
 
     # Returns whether the given service can be enabled/disabled by the user
@@ -142,23 +128,18 @@ module Yast
     # @return [Boolean] is it enabled or not
     def can_be_enabled(service)
       exists?(service) do
-        services[service][:can_be_enabled]
+        !find(service).static?
       end
     end
 
-    # Change the global modified status
-    # Reverting modified to false also requires to set the flag for all services
-    def modified=(required_status)
-      reload if required_status == false
-      @modified = required_status
-    end
-
+    # Returns services which have been modified (in memory)
+    #
+    # @return [Array<Yast2::SystemService>] List of modified services
     def modified_services
-      services.select do |name, attributes|
-        attributes[:modified]
-      end
+      services.values.select(&:changed?)
     end
 
+    # Reloads services list
     def reload
       self.services = Y2ServicesManager::ServiceLoader.new.read
     end
@@ -175,11 +156,9 @@ module Yast
     #
     # @return [Boolean]
     def reset
-      self.errors = []
-      self.modified = false
+      services.values.each(&:reset)
       true
     end
-
 
     # Returns only enabled services, the rest is expected to be disabled
     def export
@@ -215,13 +194,13 @@ module Yast
         when 'disable'
           exists?(service.name) ? disable(service.name) : non_existent_services << service.name
         else
-          Builtins.y2error("Unknown status '#{service.status}' for service '#{service.name}'")
+          log.error("Unknown status '#{service.status}' for service '#{service.name}'")
         end
       end
 
       return true if non_existent_services.empty?
 
-      Builtins.y2error("Services #{non_existent_services.inspect} don't exist on this system")
+      log.error("Services #{non_existent_services.inspect} don't exist on this system")
       false
     end
 
@@ -229,41 +208,26 @@ module Yast
     #
     # @return [Boolean]
     def save
-      Builtins.y2milestone "Saving systemd services..."
+      log.info "Saving systemd services..."
 
-      if !modified
-        Builtins.y2milestone "No service has been changed, nothing to do..."
+      if modified_services.empty?
+        log.info "No service has been changed, nothing to do..."
         return true
       end
 
-      Builtins.y2milestone "Modified services: #{modified_services}"
+      log.info "Modified services: #{modified_services.map(&:name)}"
 
-      if !errors.empty?
-        Builtins.y2error "Not saving the changes due to errors: " + errors.join(', ')
-        return false
+      modified_services.each { |s| s.save(ignore_status: Stage.initial) }
+      services.values.all? { |s| s.errors.empty? }
+    end
+
+    # Returns a list of errors detected when trying to write the changes to the underlying system
+    #
+    # @return [Array<String>] Detected errors or an empty string when no errors were detected
+    def errors
+      services.values.reject { |e| e.errors.empty? }.each_with_object([]) do |service, all|
+        all.concat(error_messages_for(service))
       end
-
-      # Set the services enabled/disabled first
-      toggle_services
-      if !errors.empty?
-        Builtins.y2error "There were some errors during saving: " + errors.join(', ')
-        return false
-      end
-
-      unless Stage.initial
-        # Then try to adjust services run (active/inactive)
-        # Might start or stop some services that would cause system instability
-        # This makes only sense in an installed system (not inst-sys)
-        switch_services
-        if !errors.empty?
-          Builtins.y2error "There were some errors during saving: " + errors.join(', ')
-          return false
-        end
-      end
-
-      modified_services.keys.each { |service_name| reset_service(service_name) }
-      self.modified = false
-      true
     end
 
     # Activates the service in cache
@@ -274,28 +238,15 @@ module Yast
       active(service) ? deactivate(service) : activate(service)
     end
 
-    # Starts or stops the service
+    # Resets service changes
     #
     # @param [String] service name
     # @return [Boolean]
-    def switch!(service_name)
-      if active(service_name)
-        Yast::Service.Start(service_name)
-      else
-        Yast::Service.Stop(service_name)
-      end
-    end
-
     def reset_service(service)
-      services[service][:modified] = false
-    end
-
-    # Enables the service in cache
-    #
-    # @param [String] service name
-    # @return [Boolean]
-    def toggle(service)
-      enabled(service) ? disable(service) : enable(service)
+      exists?(service) do
+        find(service).reset
+        true
+      end
     end
 
     # Sets start_mode for a service (in memory only, use save())
@@ -305,48 +256,38 @@ module Yast
     # @see Yast::SystemdServiceClass::Service#start_modes
     def set_start_mode(service, mode)
       exists?(service) do
-        services[service][:start_mode] = mode
-        services[service][:modified] = true
-        self.modified = true
+        find(service).start_mode = mode
       end
     end
 
-    def set_start_mode!(name)
-      service = Yast2::SystemService.find(name)
-      return false unless service
-      service.start_mode = services[name][:start_mode]
-    end
-
+    # Returns the start_mode for the given service (from memory)
+    #
+    # @return [Symbol] Start mode
     def start_mode(service)
       exists?(service) do
-        services[service][:start_mode]
+        find(service).start_mode
       end
     end
 
+    # Returns the list of supported start modes for the given service
+    #
+    # @return [Array<Symbol>] Supported start modes
     def start_modes(service)
       exists?(service) do
-        services[service][:start_modes]
+        find(service).start_modes
       end
-    end
-
-    # Enable or disable the service
-    #
-    # @param [String] service name
-    # @return [Boolean]
-    def toggle!(service)
-      enabled(service) ? Yast::Service.Enable(service) : Yast::Service.Disable(service)
     end
 
     # Returns full information about the service as returned from systemctl command
     #
-    # @param String service name
-    # @return String full unformatted information
+    # @param service [String] Service name
+    # @return [String] full unformatted information
     def status(service)
       out = Systemctl.execute("status #{service}#{SERVICE_SUFFIX} 2>&1")
       out['stdout']
     end
 
-    # Translate start mode for a given service
+    # Translates the start mode for a given service
     #
     # @param service [String] service name
     # @return [String] Translated start mode
@@ -354,20 +295,31 @@ module Yast
       start_mode_to_human(start_mode(service))
     end
 
-    # List of supported start modes
+    # List of YaST supported start modes
     #
     # @return [Array<String>] Supported start modes
     def all_start_modes
       START_MODE.keys
     end
 
-    # Localized start mode
+    # Returns the localized start mode
     #
-    # @param mode [String] Start mode
+    # @param mode [Symbol] Start mode
     # @return [String] Localized start mode
     def start_mode_to_human(mode)
       _(START_MODE[mode])
     end
+
+    # Determines whether some service has been modified
+    #
+    # @return [Boolean] true if some service has been modified; false otherwise
+    #
+    # @see Yast2::SystemService#changed?
+    def modified
+      modified_services.any?
+    end
+
+    alias_method :modified?, :modified
 
     private
 
@@ -380,13 +332,13 @@ module Yast
     # @return [Boolean] false if the service does not exist,
     #   otherwise what the block returned
     def exists?(service)
-      if Stage.initial && !services[service]
+      if Stage.initial && !find(service)
         # We are in inst-sys. So we cannot check for installed services but generate entries
         # for these services if they still not exists.
         services[service] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
       end
 
-      exists = !!services[service]
+      exists = !!find(service)
       if exists && block_given?
         yield
       else
@@ -394,55 +346,39 @@ module Yast
       end
     end
 
-    def switch_services
-      log.info "Switching services"
-      services_switched = []
-
-      services.each do |service_name, service_attributes|
-        next unless service_attributes[:modified]
-
-        service = Yast2::SystemService.find(service_name)
-        unless service
-          log.error "Cannot find service #{service_name}"
-          next
-        end
-
-        # Do not start or stop services that are already in the desired state.
-        # They might be coming from AutoYast import and thus marked as :modified.
-        if service.active? == service_attributes[:active]
-          log.info "Skipping service #{service_name} - it's already in desired state"
-        elsif switch!(service_name)
-          services_switched << service_name
-        else
-          change  = active(service_name) ? 'stop' : 'start'
-          status  = enabled(service_name) ? 'enabled' : 'disabled'
-          message = _("Could not %{change} %{service} which is currently %{status}. ") %
-            { :change => change, :service => service_name, :status => status }
-          message << status(service_name)
-          errors << message
-          Builtins.y2error("Error: %1", message)
-        end
+    # Returns a list of error messages for the given service
+    #
+    # @param service [String] Service name
+    # @return [Array<String>] List of error messages
+    def error_messages_for(service)
+      service.errors.keys.map do |key|
+        send("#{key}_error_message_for", service)
       end
-
-      services_switched
     end
 
-    def toggle_services
-      services_toggled = []
-      services.each do |service_name, service_attributes|
-        next unless service_attributes[:modified]
-        if set_start_mode!(service_name)
-          services_toggled << service_name
-        else
-          change  = enabled(service_name) ? 'enable' : 'disable'
-          message = _("Could not %{change} %{service}. ") %
-            { :change => change, :service => service_name }
-          message << status(service_name)
-          errors << message
-          Builtins.y2error("Error: %1", message)
-        end
-      end
-      services_toggled
+    # Returns a error message related to the activation/deactivation of services
+    #
+    # @return [String] Error message
+    def active_error_message_for(service)
+      change = service.active? ? 'start' : 'stop'
+      status = service.running? ? 'running' : 'not running'
+      _("Could not %{change} %{service} which is currently %{status}." %
+        { change: change, service: service.name, status: status })
+    end
+
+    # Start mode translations in error messages
+    START_MODE_TEXT = {
+      on_boot:   N_('on boot'),
+      on_demand: N_('on demand'),
+      manual:    N_('manually')
+    }.freeze
+
+    # Returns a error message related to setting services start modes
+    #
+    # @return [String] Error message
+    def start_mode_error_message_for(service)
+      _("Could not set %{service} to be started %{change}." %
+        { service: service.name, change: START_MODE_TEXT[service.start_mode] })
     end
 
     publish({:function => :active,         :type => "boolean ()"              })
