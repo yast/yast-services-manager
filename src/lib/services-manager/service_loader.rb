@@ -177,7 +177,7 @@ module Y2ServicesManager
       service_names = services.keys.sort
       ss = Yast2::SystemService.find_many(service_names)
       # Rest of settings
-      services.clear # FIXME
+      services.clear
       ss.each do |s|
         services[s.name] = s
       end

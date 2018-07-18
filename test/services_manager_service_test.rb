@@ -30,7 +30,7 @@ describe Yast::ServicesManagerServiceClass do
   let(:cups) do
     instance_double(
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
-      active_state: "active", sub_state: "running", changed?: false, start_mode: :on_boot,
+      state: "active", substate: "running", changed?: false, start_mode: :on_boot,
       save: nil, errors: {}
     )
   end
@@ -195,7 +195,7 @@ describe Yast::ServicesManagerServiceClass do
 
   describe "#state" do
     it "returns service's active state" do
-      expect(subject.state("cups")).to eq(cups.active_state)
+      expect(subject.state("cups")).to eq(cups.state)
     end
 
     context "when the service does not exist" do
@@ -207,24 +207,12 @@ describe Yast::ServicesManagerServiceClass do
 
   describe "#substate" do
     it "returns service's sub-state" do
-      expect(subject.substate("cups")).to eq(cups.sub_state)
+      expect(subject.substate("cups")).to eq(cups.substate)
     end
 
     context "when the service does not exist" do
       it "returns false" do
         expect(subject.substate("unknown")).to eq(false)
-      end
-    end
-  end
-
-  describe "#description" do
-    it "returns service's description" do
-      expect(subject.description("cups")).to eq(cups.description)
-    end
-
-    context "when the service does not exist" do
-      it "returns nil" do
-        expect(subject.description("unknown")).to be_nil
       end
     end
   end
@@ -268,8 +256,8 @@ describe Yast::ServicesManagerServiceClass do
   describe "#read"
 
   describe "#reset" do
-    it "reloads all services" do
-      services.values.each { |s| expect(s).to receive(:reload) }
+    it "resets all services" do
+      services.values.each { |s| expect(s).to receive(:reset) }
       subject.reset
     end
   end
@@ -290,7 +278,7 @@ describe Yast::ServicesManagerServiceClass do
       allow(dbus).to receive(:changed?).and_return(true)
     end
 
-    it "saves and reloads changed services" do
+    it "saves and resets changed services" do
       expect(dbus).to receive(:save).with(ignore_status: false)
       expect(cups).to_not receive(:save)
       subject.save
@@ -376,12 +364,12 @@ describe Yast::ServicesManagerServiceClass do
 
   describe "#reset_service" do
     it "resets services changes" do
-      expect(cups).to receive(:reload)
+      expect(cups).to receive(:reset)
       subject.reset_service("cups")
     end
 
     it "returns true" do
-      allow(cups).to receive(:reload)
+      allow(cups).to receive(:reset)
       expect(subject.reset_service("cups")).to eq(true)
     end
 
@@ -411,33 +399,14 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#set_start_mode" do
-    let(:start_mode) { :on_boot }
-
-    before do
-      allow(cups).to receive(:start_mode).and_return(start_mode)
-      allow(cups).to receive(:start_mode=)
-    end
-
     it "sets service start mode" do
-      expect(cups).to receive(:start_mode=).with(start_mode)
-      subject.set_start_mode("cups", start_mode)
+      expect(cups).to receive(:start_mode=).with(:on_boot)
+      subject.set_start_mode("cups", :on_boot)
     end
 
-    context "when service is set to be enabled" do
-      let(:start_mode) { :on_boot }
-
-      it "sets the service to be started too" do
-        expect(cups).to receive(:start)
-        subject.set_start_mode("cups", start_mode)
-      end
-    end
-
-    context "when service is set to be disabled" do
-      let(:start_mode) { :manual }
-
-      it "sets the service to be stopped too" do
-        expect(cups).to receive(:stop)
-        subject.set_start_mode("cups", start_mode)
+    context "when the service does not exist" do
+      it "returns false" do
+        expect(subject.set_start_mode("unknown", :on_boot)).to eq(false)
       end
     end
   end
@@ -472,8 +441,8 @@ describe Yast::ServicesManagerServiceClass do
     end
 
     context "if the service is not found" do
-      it "returns nil" do
-        expect(subject.description("unknown")).to eq(nil)
+      it "returns false" do
+        expect(subject.description("unknown")).to eq(false)
       end
     end
   end

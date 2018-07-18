@@ -98,7 +98,7 @@ module Yast
     # @return [String]
     def state(service)
       exists?(service) do
-        find(service).active_state
+        find(service).state
       end
     end
 
@@ -108,7 +108,7 @@ module Yast
     # @return [String]
     def substate(service)
       exists?(service) do
-        find(service).sub_state
+        find(service).substate
       end
     end
 
@@ -117,8 +117,9 @@ module Yast
     # @param service [String] service name
     # @return [String]
     def description(service)
-      return nil unless exists?(service)
-      find(service).description
+      exists?(service) do
+        find(service).description
+      end
     end
 
     # Returns whether the given service can be enabled/disabled by the user
@@ -155,7 +156,7 @@ module Yast
     #
     # @return [Boolean]
     def reset
-      services.values.each(&:reload)
+      services.values.each(&:reset)
       true
     end
 
@@ -193,13 +194,13 @@ module Yast
         when 'disable'
           exists?(service.name) ? disable(service.name) : non_existent_services << service.name
         else
-          Builtins.y2error("Unknown status '#{service.status}' for service '#{service.name}'")
+          log.error("Unknown status '#{service.status}' for service '#{service.name}'")
         end
       end
 
       return true if non_existent_services.empty?
 
-      Builtins.y2error("Services #{non_existent_services.inspect} don't exist on this system")
+      log.error("Services #{non_existent_services.inspect} don't exist on this system")
       false
     end
 
@@ -207,14 +208,14 @@ module Yast
     #
     # @return [Boolean]
     def save
-      Builtins.y2milestone "Saving systemd services..."
+      log.info "Saving systemd services..."
 
       if modified_services.empty?
-        Builtins.y2milestone "No service has been changed, nothing to do..."
+        log.info "No service has been changed, nothing to do..."
         return true
       end
 
-      Builtins.y2milestone "Modified services: #{modified_services.map(&:name)}"
+      log.info "Modified services: #{modified_services.map(&:name)}"
 
       modified_services.each { |s| s.save(ignore_status: Stage.initial) }
       services.values.all? { |s| s.errors.empty? }
@@ -243,7 +244,7 @@ module Yast
     # @return [Boolean]
     def reset_service(service)
       exists?(service) do
-        find(service).reload
+        find(service).reset
         true
       end
     end
@@ -256,11 +257,6 @@ module Yast
     def set_start_mode(service, mode)
       exists?(service) do
         find(service).start_mode = mode
-        if enabled(service)
-          find(service).start
-        else
-          find(service).stop
-        end
       end
     end
 
