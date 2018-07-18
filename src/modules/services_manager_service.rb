@@ -49,7 +49,7 @@ module Yast
     # @return [Boolean] whether the service exists
     def activate(service)
       exists?(service) do
-        services[service].start
+        find(service).start
         log.info "Service #{service} has been marked for activation"
         true
       end
@@ -61,7 +61,7 @@ module Yast
     # @return [Boolean] whether the service exists
     def deactivate(service)
       exists?(service) do
-        services[service].stop
+        find(service).stop
         log.info "Service #{service} has been marked for de-activation"
         true
       end
@@ -70,7 +70,7 @@ module Yast
     # @param [String] service name
     # @return [Boolean] the current setting whether service should be running
     def active(service)
-      exists?(service) { services[service].active? }
+      exists?(service) { find(service).active? }
     end
 
     alias_method :active?, :active
@@ -79,7 +79,7 @@ module Yast
     # @param key [Symbol] value that has been changed (:active and :start_mode)
     # @return [Boolean] true if the key has changed
     def changed_value?(service, key)
-      exists?(service) { services[service].changed_value?(:active) }
+      exists?(service) { find(service).changed_value?(:active) }
     end
 
     # Returns whether the given service has been enabled
@@ -88,7 +88,7 @@ module Yast
     # @return Boolean enabled
     def enabled(service)
       exists?(service) do
-        services[service].start_mode != :manual
+        find(service).start_mode != :manual
       end
     end
 
@@ -98,7 +98,7 @@ module Yast
     # @return [String]
     def state(service)
       exists?(service) do
-        services[service].active_state
+        find(service).active_state
       end
     end
 
@@ -108,7 +108,7 @@ module Yast
     # @return [String]
     def substate(service)
       exists?(service) do
-        services[service].sub_state
+        find(service).sub_state
       end
     end
 
@@ -118,7 +118,7 @@ module Yast
     # @return [String]
     def description(service)
       return nil unless exists?(service)
-      services[service].description
+      find(service).description
     end
 
     # Returns whether the given service can be enabled/disabled by the user
@@ -127,7 +127,7 @@ module Yast
     # @return [Boolean] is it enabled or not
     def can_be_enabled(service)
       exists?(service) do
-        !services[service].static?
+        !find(service).static?
       end
     end
 
@@ -243,7 +243,7 @@ module Yast
     # @return [Boolean]
     def reset_service(service)
       exists?(service) do
-        services[service].reload
+        find(service).reload
         true
       end
     end
@@ -255,11 +255,11 @@ module Yast
     # @see Yast::SystemdServiceClass::Service#start_modes
     def set_start_mode(service, mode)
       exists?(service) do
-        services[service].start_mode = mode
+        find(service).start_mode = mode
         if enabled(service)
-          services[service].start
+          find(service).start
         else
-          services[service].stop
+          find(service).stop
         end
       end
     end
@@ -269,7 +269,7 @@ module Yast
     # @return [Symbol] Start mode
     def start_mode(service)
       exists?(service) do
-        services[service].start_mode
+        find(service).start_mode
       end
     end
 
@@ -278,7 +278,7 @@ module Yast
     # @return [Array<Symbol>] Supported start modes
     def start_modes(service)
       exists?(service) do
-        services[service].start_modes
+        find(service).start_modes
       end
     end
 
@@ -336,13 +336,13 @@ module Yast
     # @return [Boolean] false if the service does not exist,
     #   otherwise what the block returned
     def exists?(service)
-      if Stage.initial && !services[service]
+      if Stage.initial && !find(service)
         # We are in inst-sys. So we cannot check for installed services but generate entries
         # for these services if they still not exists.
         services[service] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
       end
 
-      exists = !!services[service]
+      exists = !!find(service)
       if exists && block_given?
         yield
       else
