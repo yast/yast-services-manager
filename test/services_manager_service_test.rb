@@ -362,24 +362,6 @@ describe Yast::ServicesManagerServiceClass do
     end
   end
 
-  describe "#reset_service" do
-    it "resets services changes" do
-      expect(cups).to receive(:reset)
-      subject.reset_service("cups")
-    end
-
-    it "returns true" do
-      allow(cups).to receive(:reset)
-      expect(subject.reset_service("cups")).to eq(true)
-    end
-
-    context "when the service does not exist" do
-      it "returns false" do
-        expect(subject.switch("unknown")).to eq(false)
-      end
-    end
-  end
-
   describe "#start_mode" do
     let(:start_mode) { :on_boot }
 
