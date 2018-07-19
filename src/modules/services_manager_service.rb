@@ -90,6 +90,20 @@ module Yast
       exists?(name) { |s| s.start_mode != :manual }
     end
 
+    # Enables a given service (in memory only, use save() later)
+    #
+    # @param name [String] service name
+    def enable(name)
+      set_start_mode(name, :on_boot)
+    end
+
+    # Disables a given service (in memory only, use save() later)
+    #
+    # @param name [String] service name
+    def disable(name)
+      set_start_mode(name, :manual)
+    end
+
     # Service state
     #
     # @param name [String] service name

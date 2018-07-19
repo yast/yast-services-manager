@@ -358,6 +358,22 @@ describe Yast::ServicesManagerServiceClass do
     end
   end
 
+  describe "#enable" do
+    it "sets the service as enabled" do
+      expect(dbus).to receive(:start_mode=).with(:on_boot)
+
+      subject.enable("dbus")
+    end
+  end
+
+  describe "#disable" do
+    it "sets the service as disable" do
+      expect(dbus).to receive(:start_mode=).with(:manual)
+
+      subject.disable("dbus")
+    end
+  end
+
   describe "#import" do
     it "imports services settings"
   end
