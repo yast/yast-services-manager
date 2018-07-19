@@ -263,7 +263,99 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#export" do
-    it "exports services settings"
+    before do
+      allow(cups).to receive(:static?)
+      allow(cups).to receive(:start_mode)
+      allow(dbus).to receive(:static?)
+      allow(dbus).to receive(:start_mode)
+    end
+
+    let(:exported_services) { subject.export }
+
+    context "when service is proposed to be enabled" do
+      before do
+        allow(Yast::ServicesProposal).to receive(:enabled_services).and_return(["sshd"])
+      end
+
+      it "exports the services as enabled" do
+        expect(exported_services["enable"]).to include("sshd")
+      end
+    end
+
+    context "when service is proposed to be disabled" do
+      before do
+        allow(Yast::ServicesProposal).to receive(:disabled_services).and_return(["httpd"])
+      end
+
+      it "exports the service as disabled" do
+        expect(exported_services["disable"]).to include("httpd")
+      end
+    end
+
+    context "when a static service is enable" do
+      before do
+        allow(dbus).to receive(:static?).and_return(true)
+        allow(dbus).to receive(:start_mode).and_return(:on_boot)
+      end
+
+      it "does not export the service as enabled" do
+        expect(exported_services["enable"]).to_not include("dbus")
+      end
+    end
+
+    context "when a not static service is enable" do
+      before do
+        allow(dbus).to receive(:static?).and_return(false)
+        allow(dbus).to receive(:start_mode).and_return(:on_boot)
+      end
+
+      it "exports the service as enabled" do
+        expect(exported_services["enable"]).to include("dbus")
+      end
+    end
+
+    context "when a not static service is disabled" do
+      before do
+        allow(dbus).to receive(:static?).and_return(false)
+        allow(dbus).to receive(:start_mode).and_return(:manual)
+      end
+
+      it "does not export the service as enable" do
+        expect(exported_services["enable"]).to_not include("dbus")
+      end
+    end
+
+    context "when service was disabled by user (has changes)" do
+      before do
+        allow(cups).to receive(:changed?).and_return(true)
+        allow(cups).to receive(:start_mode).and_return(:manual)
+      end
+
+      it "exports the service as disabled" do
+        expect(exported_services["disable"]).to include("cups")
+      end
+    end
+
+    context "when service was not disabled by user" do
+      before do
+        allow(cups).to receive(:changed?).and_return(false)
+        allow(dbus).to receive(:start_mode).and_return(:manual)
+      end
+
+      it "does not exports the service" do
+        expect(exported_services["disable"]).to_not include("cups")
+      end
+
+      context "but is proposed to be disabled" do
+        before do
+          allow(Yast::ServicesProposal).to receive(:disabled_services).and_return(["cups"])
+        end
+
+        it "does not exports the service" do
+          expect(exported_services["disable"]).to include("cups")
+        end
+      end
+    end
   end
 
   describe "#import" do

@@ -150,27 +150,16 @@ module Yast
       true
     end
 
-    # Returns only enabled services, the rest is expected to be disabled
+    # Returns services to be exported to AutoYast profile
+    #
+    # @return [Hash{String => Array<String>}]
     def export
-      enabled_services = services.select do |service_name, properties|
-        enabled(service_name) && properties[:loaded] && can_be_enabled(service_name)
-      end
+      enabled_services  = exportable_enabled_services.keys | ServicesProposal.enabled_services
+      disabled_services = exportable_disabled_services.keys | ServicesProposal.disabled_services
 
-      # Only services modifed by the user to be disabled are exported
-      # to AutoYast profile, untouched services are not exported
-      disabled_services = services.select do |service_name, properties|
-        !enabled(service_name) && properties[:modified]
-      end
+      log.info "Export: enabled services: #{enabled_services}, disabled services: #{disabled_services}"
 
-      export_enable = enabled_services.keys | ServicesProposal.enabled_services
-      export_disable = disabled_services.keys | ServicesProposal.disabled_services
-
-      log.info "Export: enabled services: #{export_enable}, disabled services: #{export_disable}"
-
-      {
-        'enable' => export_enable,
-        'disable' => export_disable,
-      }
+      { "enable" => enabled_services, "disable" => disabled_services }
     end
 
     def import(profile)
@@ -354,6 +343,23 @@ module Yast
     def start_mode_error_message_for(service)
       _("Could not set %{service} to be started %{change}." %
         { service: service.name, change: START_MODE_TEXT[service.start_mode] })
+    end
+
+    # Selects candidate services to be exported as enabled to AutoYast profile
+    #
+    # @return [Hash{String => SystemService}]
+    def exportable_enabled_services
+      services.select { |service_name, _| enabled(service_name) && can_be_enabled(service_name) }
+    end
+
+    # Selects candidate services to be exported as disabled to AutoYast profile
+    #
+    # Untouched services are discarded; only services modified by the user to be disabled must be
+    # exported to AutoYast profile.
+    #
+    # @return [Hash{String => SystemService}]
+    def exportable_disabled_services
+      services.select { |service_name, service| service.changed? && !enabled(service_name) }
     end
 
     publish({:function => :active,         :type => "boolean ()"              })
