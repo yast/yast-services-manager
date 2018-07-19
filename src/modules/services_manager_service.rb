@@ -45,91 +45,81 @@ module Yast
 
     # Sets whether service should be running after writing the configuration
     #
-    # @param [String] service name
+    # @param name [String] service name
     # @return [Boolean] whether the service exists
-    def activate(service)
-      exists?(service) do
-        find(service).start
-        log.info "Service #{service} has been marked for activation"
+    def activate(name)
+      exists?(name) do |service|
+        service.start
+        log.info "Service #{name} has been marked for activation"
         true
       end
     end
 
     # Sets whether service should be running after writing the configuration
     #
-    # @param [String] service name
+    # @param name [String] service name
     # @return [Boolean] whether the service exists
-    def deactivate(service)
-      exists?(service) do
-        find(service).stop
+    def deactivate(name)
+      exists?(name) do |service|
+        service.stop
         log.info "Service #{service} has been marked for de-activation"
         true
       end
     end
 
-    # @param [String] service name
+    # @param name [String] service name
     # @return [Boolean] the current setting whether service should be running
-    def active(service)
-      exists?(service) { find(service).active? }
+    def active(name)
+      exists?(name) { |s| s.active? }
     end
 
     alias_method :active?, :active
 
-    # @param service [String] service name
+    # @param name [String] service name
     # @param key [Symbol] value that has been changed (:active and :start_mode)
     # @return [Boolean] true if the key has changed
-    def changed_value?(service, key)
-      exists?(service) { find(service).changed_value?(:active) }
+    def changed_value?(name, key)
+      exists?(name) { |s| s.changed_value?(:active) }
     end
 
     # Returns whether the given service has been enabled
     #
-    # @param String service
+    # @param name [String] service name
     # @return Boolean enabled
-    def enabled(service)
-      exists?(service) do
-        find(service).start_mode != :manual
-      end
+    def enabled(name)
+      exists?(name) { |s| s.start_mode != :manual }
     end
 
     # Service state
     #
-    # @param service [String] service name
+    # @param name [String] service name
     # @return [String]
-    def state(service)
-      exists?(service) do
-        find(service).state
-      end
+    def state(name)
+      exists?(name) { |s| s.state }
     end
 
     # Service substate
     #
-    # @param service [String] service name
+    # @param name [String] service name
     # @return [String]
-    def substate(service)
-      exists?(service) do
-        find(service).substate
-      end
+    def substate(name)
+      exists?(name) { |s| s.substate }
     end
 
     # Service description
     #
-    # @param service [String] service name
+    # @param name [String] service name
     # @return [String]
-    def description(service)
-      exists?(service) do
-        find(service).description
-      end
+    def description(name)
+      exists?(name) { |s| s.description }
     end
 
     # Returns whether the given service can be enabled/disabled by the user
     #
-    # @param service [String] Service name
+    # @param name [String] Service name
     # @return [Boolean] is it enabled or not
-    def can_be_enabled(service)
-      exists?(service) do
-        !find(service).static?
-      end
+    def can_be_enabled(name)
+      exists?(name) { |s| !s.static? }
     end
 
     # Returns services which have been modified (in memory)
@@ -232,67 +222,63 @@ module Yast
 
     # Activates the service in cache
     #
-    # @param [String] service name
+    # @param name [String] service name
     # @return [Boolean]
-    def switch(service)
-      active(service) ? deactivate(service) : activate(service)
+    def switch(name)
+      active(name) ? deactivate(name) : activate(name)
     end
 
     # Resets service changes
     #
-    # @param [String] service name
+    # @param name [String] service name
     # @return [Boolean]
-    def reset_service(service)
-      exists?(service) do
-        find(service).reset
+    def reset_service(name)
+      exists?(name) do |service|
+        service.reset
         true
       end
     end
 
     # Sets start_mode for a service (in memory only, use save())
     #
-    # @param service [String] service name
+    # @param name [String] service name
     # @param mode    [Symbol] Start mode
     # @see Yast::SystemdServiceClass::Service#start_modes
-    def set_start_mode(service, mode)
-      exists?(service) do
-        find(service).start_mode = mode
-      end
+    def set_start_mode(name, mode)
+      exists?(name) { |s| s.start_mode = mode }
     end
 
     # Returns the start_mode for the given service (from memory)
     #
+    # @param name [String] service name
     # @return [Symbol] Start mode
-    def start_mode(service)
-      exists?(service) do
-        find(service).start_mode
-      end
+    def start_mode(name)
+      exists?(name) { |s| s.start_mode }
     end
 
     # Returns the list of supported start modes for the given service
     #
+    # @param name [String] service name
     # @return [Array<Symbol>] Supported start modes
-    def start_modes(service)
-      exists?(service) do
-        find(service).start_modes
-      end
+    def start_modes(name)
+      exists?(name) { |s| s.start_modes }
     end
 
     # Returns full information about the service as returned from systemctl command
     #
-    # @param service [String] Service name
+    # @param name [String] Service name
     # @return [String] full unformatted information
-    def status(service)
-      out = Systemctl.execute("status #{service}#{SERVICE_SUFFIX} 2>&1")
+    def status(name)
+      out = Systemctl.execute("status #{name}#{SERVICE_SUFFIX} 2>&1")
       out['stdout']
     end
 
     # Translates the start mode for a given service
     #
-    # @param service [String] service name
+    # @param name [String] service name
     # @return [String] Translated start mode
-    def start_mode_to_human_for(service)
-      start_mode_to_human(start_mode(service))
+    def start_mode_to_human_for(name)
+      start_mode_to_human(start_mode(name))
     end
 
     # List of YaST supported start modes
@@ -327,22 +313,22 @@ module Yast
     # When passed a block, this will be executed only if the service exists
     # Whitout block it returns the boolean value
     #
-    # @param [String] service name
+    # @param name [String] service name
     # @yieldreturn [Boolean]
     # @return [Boolean] false if the service does not exist,
     #   otherwise what the block returned
-    def exists?(service)
-      if Stage.initial && !find(service)
+    def exists?(name)
+      if Stage.initial && !find(name)
         # We are in inst-sys. So we cannot check for installed services but generate entries
         # for these services if they still not exists.
-        services[service] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
+        services[name] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
       end
 
-      exists = !!find(service)
-      if exists && block_given?
-        yield
+      service = find(name)
+      if service && block_given?
+        yield service
       else
-        exists
+        !!service
       end
     end
 
