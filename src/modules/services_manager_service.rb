@@ -178,23 +178,18 @@ module Yast
 
     def import(profile)
       log.info "List of services from autoyast profile: #{profile.services.map(&:name)}"
-      non_existent_services = []
 
-      profile.services.each do |service|
-        case service.status
-        when 'enable'
-          exists?(service.name) ? enable(service.name) : non_existent_services << service.name
-        when 'disable'
-          exists?(service.name) ? disable(service.name) : non_existent_services << service.name
-        else
-          log.error("Unknown status '#{service.status}' for service '#{service.name}'")
-        end
+      known_services, unknown_services = profile.services.partition { |service| exists?(service.name) }
+
+      enable_or_disable(known_services)
+
+      if unknown_services.empty?
+        true
+      else
+        log.error("Services #{unknown_services.inspect} don't exist on this system")
+
+        false
       end
-
-      return true if non_existent_services.empty?
-
-      log.error("Services #{non_existent_services.inspect} don't exist on this system")
-      false
     end
 
     # Saves the current configuration in memory
@@ -374,6 +369,26 @@ module Yast
     # @return [Hash{String => SystemService}]
     def exportable_disabled_services
       services.select { |service_name, service| service.changed? && !enabled(service_name) }
+    end
+
+    # Enable or disable given services according to its status
+    #
+    # An error will be logged for unknown statuses
+    #
+    # @see #import
+    #
+    # @param services [Array<SystemService>] services to be enabled or disabled
+    def enable_or_disable(services)
+      services.each do |service|
+        case service.status
+        when "enable"
+          enable(service.name)
+        when "disable"
+          disable(service.name)
+        else
+          log.error("Unknown status '#{service.status}' for service '#{service.name}'")
+        end
+      end
     end
 
     publish({:function => :active,         :type => "boolean ()"              })

@@ -375,7 +375,102 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#import" do
-    it "imports services settings"
+    let(:autoyast_profile) do
+      {
+        "default"  => "3",
+        "services" => [
+          {
+            "service_name"   => "dbus",
+            "service_status" => "enable",
+            "service_start"  => "3"
+          },
+          {
+            "service_name"   => "cups",
+            "service_status" => "disable",
+            "service_start"  => "5"
+          }
+        ]
+      }
+    end
+    let(:profile) { Yast::ServicesManagerProfile.new(autoyast_profile) }
+
+    before do
+      allow(subject).to receive(:set_start_mode)
+    end
+
+    it "enables services with `enable` status" do
+      expect(subject).to receive(:enable).with("dbus")
+
+      subject.import(profile)
+    end
+
+    it "disables services with `disable` status" do
+      expect(subject).to receive(:disable).with("cups")
+
+      subject.import(profile)
+    end
+
+    context "there are unknown statuses" do
+      let(:autoyast_profile) do
+        {
+          "default"  => "3",
+          "services" => [
+            {
+              "service_name"   => "dbus",
+              "service_status" => "wrong_status",
+              "service_start"  => "3"
+            },
+            {
+              "service_name"   => "cups",
+              "service_status" => "disable",
+              "service_start"  => "5"
+            }
+          ]
+        }
+      end
+
+      it "logs an error for unkown statuses" do
+        expect(subject.log).to receive(:error).with("Unknown status 'wrong_status' for service 'dbus'")
+
+        subject.import(profile)
+      end
+    end
+
+    context "when all services are present in the system" do
+      it "returns true" do
+        expect(subject.import(profile)).to be_truthy
+      end
+    end
+
+    context "when any service is not present in the system" do
+      let(:autoyast_profile) do
+        {
+          "default"  => "3",
+          "services" => [
+            {
+              "service_name"   => "fake_service",
+              "service_status" => "enable",
+              "service_start"  => "3"
+            },
+            {
+              "service_name"   => "cups",
+              "service_status" => "disable",
+              "service_start"  => "5"
+            }
+          ]
+        }
+      end
+
+      it "logs an error" do
+        expect(subject.log).to receive(:error).with(/don't exist on this system/)
+
+        subject.import(profile)
+      end
+
+      it "returns false" do
+        expect(subject.import(profile)).to be_falsey
+      end
+    end
   end
 
   describe "#save" do
