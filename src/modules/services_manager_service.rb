@@ -1,6 +1,7 @@
 require "yast"
 require "yast2/system_service"
 require "services-manager/service_loader"
+require "services-manager/system_service_placeholder"
 
 module Yast
   import "Service"
@@ -310,7 +311,8 @@ module Yast
       if Stage.initial && !find(name)
         # We are in inst-sys. So we cannot check for installed services but generate entries
         # for these services if they still not exists.
-        services[name] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
+        placeholder = Y2ServicesManager::SystemServicePlaceholder.new(name)
+        services[name] = Yast2::SystemService.new(placeholder)
       end
 
       service = find(name)
