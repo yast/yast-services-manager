@@ -103,7 +103,7 @@ module Yast
     # @param name [String] service name
     # @return [String]
     def substate(name)
-      exists?(name) { |s| s.substate }
+      exists?(name, &:substate)
     end
 
     # Service description
@@ -111,7 +111,7 @@ module Yast
     # @param name [String] service name
     # @return [String]
     def description(name)
-      exists?(name) { |s| s.description }
+      exists?(name, &:description)
     end
 
     # Returns whether the given service can be enabled/disabled by the user
@@ -242,7 +242,7 @@ module Yast
     # @param name [String] service name
     # @return [Symbol] Start mode
     def start_mode(name)
-      exists?(name) { |s| s.start_mode }
+      exists?(name, &:start_mode)
     end
 
     # Returns the list of supported start modes for the given service
@@ -250,7 +250,7 @@ module Yast
     # @param name [String] service name
     # @return [Array<Symbol>] Supported start modes
     def start_modes(name)
-      exists?(name) { |s| s.start_modes }
+      exists?(name, &:start_modes)
     end
 
     # Returns full information about the service as returned from systemctl command
