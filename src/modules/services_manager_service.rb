@@ -62,7 +62,7 @@ module Yast
     def deactivate(name)
       exists?(name) do |service|
         service.stop
-        log.info "Service #{service} has been marked for de-activation"
+        log.info "Service #{name} has been marked for de-activation"
         true
       end
     end
@@ -70,7 +70,7 @@ module Yast
     # @param name [String] service name
     # @return [Boolean] the current setting whether service should be running
     def active(name)
-      exists?(name) { |s| s.active? }
+      exists?(name, &:active?)
     end
 
     alias_method :active?, :active
@@ -95,7 +95,7 @@ module Yast
     # @param name [String] service name
     # @return [String]
     def state(name)
-      exists?(name) { |s| s.state }
+      exists?(name, &:state)
     end
 
     # Service substate
@@ -226,17 +226,6 @@ module Yast
     # @return [Boolean]
     def switch(name)
       active(name) ? deactivate(name) : activate(name)
-    end
-
-    # Resets service changes
-    #
-    # @param name [String] service name
-    # @return [Boolean]
-    def reset_service(name)
-      exists?(name) do |service|
-        service.reset
-        true
-      end
     end
 
     # Sets start_mode for a service (in memory only, use save())
