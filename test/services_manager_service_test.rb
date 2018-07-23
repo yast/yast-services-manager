@@ -263,11 +263,250 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#export" do
-    it "exports services settings"
+    before do
+      allow(cups).to receive(:static?)
+      allow(cups).to receive(:start_mode)
+      allow(dbus).to receive(:static?)
+      allow(dbus).to receive(:start_mode)
+    end
+
+    let(:exported_services) { subject.export }
+
+    context "when service is proposed to be enabled" do
+      before do
+        allow(Yast::ServicesProposal).to receive(:enabled_services).and_return(["sshd"])
+      end
+
+      it "exports the services as enabled" do
+        expect(exported_services["enable"]).to include("sshd")
+      end
+    end
+
+    context "when service is proposed to be disabled" do
+      before do
+        allow(Yast::ServicesProposal).to receive(:disabled_services).and_return(["httpd"])
+      end
+
+      it "exports the service as disabled" do
+        expect(exported_services["disable"]).to include("httpd")
+      end
+    end
+
+    context "when is a static service (user cannot enable or disable it)" do
+      before do
+        allow(dbus).to receive(:static?).and_return(true)
+      end
+
+      context "and is enabled" do
+        before do
+          allow(dbus).to receive(:start_mode).and_return(:on_boot)
+        end
+
+        it "does not export the service as enabled" do
+          expect(exported_services["enable"]).to_not include("dbus")
+        end
+
+        it "does not export the service as disabled" do
+          expect(exported_services["disable"]).to_not include("dbus")
+        end
+      end
+
+      context "and is disabled" do
+        before do
+          allow(dbus).to receive(:start_mode).and_return(:manual)
+        end
+
+        it "does not export the service as enabled" do
+          expect(exported_services["enable"]).to_not include("dbus")
+        end
+
+        it "exports the service as disabled" do
+          expect(exported_services["disable"]).to include("dbus")
+        end
+      end
+    end
+
+    context "when is not a static sevice (user can enable/disable it)" do
+      before do
+        allow(dbus).to receive(:static?).and_return(false)
+      end
+
+      context "and is enabled" do
+        before do
+          allow(dbus).to receive(:start_mode).and_return(:on_boot)
+        end
+
+        it "exports the service as enabled" do
+          expect(exported_services["enable"]).to include("dbus")
+        end
+      end
+
+      context "and is disabled" do
+        before do
+          allow(dbus).to receive(:start_mode).and_return(:manual)
+        end
+
+        it "does not export the service as enabled" do
+          expect(exported_services["enable"]).to_not include("dbus")
+        end
+      end
+    end
+
+    context "when service has changes (modified by user)" do
+      before do
+        allow(cups).to receive(:changed?).and_return(true)
+      end
+
+      context "and was disabled" do
+        before do
+          allow(cups).to receive(:start_mode).and_return(:manual)
+        end
+
+        it "exports the service as disabled" do
+          expect(exported_services["enable"]).to_not include("cups")
+          expect(exported_services["disable"]).to include("cups")
+        end
+      end
+
+      context "and was enabled" do
+        before do
+          allow(cups).to receive(:start_mode).and_return(:on_boot)
+        end
+
+        it "exports the service as enable" do
+          expect(exported_services["enable"]).to include("cups")
+          expect(exported_services["disable"]).to_not include("cups")
+        end
+      end
+
+      # FIXME this scenario should be fixed, see {Yast::ServicesManagerServiceClass#export} method
+      context "and was disabled by user but also proposed to be enabled" do
+        before do
+          allow(cups).to receive(:start_mode).and_return(:manual)
+          allow(Yast::ServicesProposal).to receive(:enabled_services).and_return(["cups"])
+        end
+
+        it "exports the service as both, enabled and disabled" do
+          expect(exported_services["enable"]).to include("cups")
+          expect(exported_services["disable"]).to include("cups")
+        end
+      end
+    end
+  end
+
+  describe "#enable" do
+    it "sets the service as enabled" do
+      expect(dbus).to receive(:start_mode=).with(:on_boot)
+
+      subject.enable("dbus")
+    end
+  end
+
+  describe "#disable" do
+    it "sets the service as disable" do
+      expect(dbus).to receive(:start_mode=).with(:manual)
+
+      subject.disable("dbus")
+    end
   end
 
   describe "#import" do
-    it "imports services settings"
+    let(:autoyast_profile) do
+      {
+        "default"  => "3",
+        "services" => [
+          {
+            "service_name"   => "dbus",
+            "service_status" => "enable",
+            "service_start"  => "3"
+          },
+          {
+            "service_name"   => "cups",
+            "service_status" => "disable",
+            "service_start"  => "5"
+          }
+        ]
+      }
+    end
+    let(:profile) { Yast::ServicesManagerProfile.new(autoyast_profile) }
+
+    before do
+      allow(subject).to receive(:set_start_mode)
+    end
+
+    it "enables services with `enable` status" do
+      expect(subject).to receive(:enable).with("dbus")
+
+      subject.import(profile)
+    end
+
+    it "disables services with `disable` status" do
+      expect(subject).to receive(:disable).with("cups")
+
+      subject.import(profile)
+    end
+
+    context "there are unknown statuses" do
+      let(:autoyast_profile) do
+        {
+          "default"  => "3",
+          "services" => [
+            {
+              "service_name"   => "dbus",
+              "service_status" => "wrong_status",
+              "service_start"  => "3"
+            },
+            {
+              "service_name"   => "cups",
+              "service_status" => "disable",
+              "service_start"  => "5"
+            }
+          ]
+        }
+      end
+
+      it "logs an error for unkown statuses" do
+        expect(subject.log).to receive(:error).with("Unknown status 'wrong_status' for service 'dbus'")
+
+        subject.import(profile)
+      end
+    end
+
+    context "when all services are present in the system" do
+      it "returns true" do
+        expect(subject.import(profile)).to be_truthy
+      end
+    end
+
+    context "when any service is not present in the system" do
+      let(:autoyast_profile) do
+        {
+          "default"  => "3",
+          "services" => [
+            {
+              "service_name"   => "fake_service",
+              "service_status" => "enable",
+              "service_start"  => "3"
+            },
+            {
+              "service_name"   => "cups",
+              "service_status" => "disable",
+              "service_start"  => "5"
+            }
+          ]
+        }
+      end
+
+      it "logs an error" do
+        expect(subject.log).to receive(:error).with(/don't exist on this system/)
+
+        subject.import(profile)
+      end
+
+      it "returns false" do
+        expect(subject.import(profile)).to be_falsey
+      end
+    end
   end
 
   describe "#save" do
