@@ -90,14 +90,14 @@ module Yast
       exists?(name) { |s| s.start_mode != :manual }
     end
 
-    # Enables a given service (in memory only, use save() later)
+    # Enables a given service (in memory only, use {#save} later)
     #
     # @param name [String] service name
     def enable(name)
       set_start_mode(name, :on_boot)
     end
 
-    # Disables a given service (in memory only, use save() later)
+    # Disables a given service (in memory only, use {#save} later)
     #
     # @param name [String] service name
     def disable(name)
@@ -166,6 +166,8 @@ module Yast
 
     # Returns services to be exported to AutoYast profile
     #
+    # FIXME: should be checked (and decided what to do if so) if service is marked to be exported as
+    # both, enabled or disabled
     # @return [Hash{String => Array<String>}]
     def export
       enabled_services  = exportable_enabled_services.keys | ServicesProposal.enabled_services
@@ -176,6 +178,16 @@ module Yast
       { "enable" => enabled_services, "disable" => disabled_services }
     end
 
+    # Import services from AutoYast profile
+    #
+    # Enabling or disabling them according to its declared status.
+    # Unknown services only will be logged as error.
+    #
+    # @see #enable_or_disable
+    #
+    # @param profile [Yast::ServiceManagerProfile] a service manager profile
+    #
+    # @return [Boolean] true when all services were known; false if any services was unknown
     def import(profile)
       log.info "List of services from autoyast profile: #{profile.services.map(&:name)}"
 
