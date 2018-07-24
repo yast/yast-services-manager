@@ -217,7 +217,7 @@ module Yast
 
       log.info "Modified services: #{modified_services.map(&:name)}"
 
-      modified_services.each { |s| s.save(ignore_status: Stage.initial) }
+      modified_services.each { |s| s.save(keep_state: Stage.initial) }
       services.values.all? { |s| s.errors.empty? }
     end
 
