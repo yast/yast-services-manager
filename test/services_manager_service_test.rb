@@ -518,7 +518,7 @@ describe Yast::ServicesManagerServiceClass do
     end
 
     it "saves and resets changed services" do
-      expect(dbus).to receive(:save).with(ignore_status: false)
+      expect(dbus).to receive(:save).with(keep_state: false)
       expect(cups).to_not receive(:save)
       subject.save
     end
@@ -537,7 +537,7 @@ describe Yast::ServicesManagerServiceClass do
       let(:initial) { true }
 
       it "saves all services not modifying the current status" do
-        expect(dbus).to receive(:save).with(ignore_status: true)
+        expect(dbus).to receive(:save).with(keep_state: true)
         subject.save
       end
     end

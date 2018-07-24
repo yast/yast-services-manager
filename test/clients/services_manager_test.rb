@@ -120,6 +120,11 @@ describe Y2ServicesManager::Clients::ServicesManager do
       stub_services(services_specs)
     end
 
+    after(:each) do
+      # To generate new doubles in each test
+      Yast::ServicesManagerService.services = nil
+    end
+
     let(:services_specs) { [sshd_specs, postfix_specs] }
 
     let(:sshd_specs) do
@@ -202,8 +207,8 @@ describe Y2ServicesManager::Clients::ServicesManager do
 
       it "does not allow to select 'On demand' start mode" do
         expect_buttons_to do |buttons|
-          contain_menu_button?(buttons, "Manual", options: [:on_boot, :manual]) &&
-            !contain_menu_button?(buttons, "Manual", options: [:on_demand])
+          contain_menu_button?(buttons, "Manually", options: [:on_boot, :manual]) &&
+            !contain_menu_button?(buttons, "Manually", options: [:on_demand])
         end
 
         subject.run
@@ -243,14 +248,14 @@ describe Y2ServicesManager::Clients::ServicesManager do
 
       let(:services_specs) { [sshd_specs2, postfix_specs] }
 
-      let(:sshd_specs2) { sshd_specs.merge(search_terms: search_terms) }
+      let(:sshd_specs2) { sshd_specs.merge(keywords: keywords) }
 
-      let(:search_terms) { ["sshd.service", "sshd.socket"] }
+      let(:keywords) { ["sshd.service", "sshd.socket"] }
 
       it "shows the systemd journal entries for the selected service" do
         expect(Y2Journal::EntriesDialog).to receive(:new) do |params|
           filters = params[:query].filters["unit"]
-          expect(filters).to contain_exactly(*search_terms)
+          expect(filters).to contain_exactly(*keywords)
         end.and_return(entries_dialog)
 
         subject.run

@@ -224,6 +224,7 @@ module Y2ServicesManager
       def service_buttons(service_name)
         start_stop_label = ServicesManagerService.active(service_name) ? _('&Stop') : _('&Start')
         start_mode_label = ServicesManagerService.start_mode_to_human_for(service_name)
+
         buttons = [
           PushButton(Id(Id::TOGGLE_RUNNING), start_stop_label),
           HSpacing(1),
@@ -328,9 +329,9 @@ module Y2ServicesManager
 
       # Opens a dialog with the logs (from current boot) for the currently selected service
       #
-      # @see Yast2::SystemService#search_terms
+      # @see Yast2::SystemService#keywords
       def show_logs
-        query = Y2Journal::Query.new(interval: "0", filters: { "unit" => selected_service.search_terms })
+        query = Y2Journal::Query.new(interval: "0", filters: { "unit" => selected_service.keywords })
         Y2Journal::EntriesDialog.new(query: query).run
 
         services_table.focus
