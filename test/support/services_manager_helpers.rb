@@ -41,7 +41,8 @@ module Yast
       #       active:          "active",
       #       sub:             "running",
       #       description:     "running OpenSSH Daemon",
-      #       search_terms:    ["sshd.service", "sshd.socket"]
+      #       keywords:        ["sshd.service", "sshd.socket"],
+      #       changed:         false
       #     }
       #   ]
       #
@@ -91,7 +92,8 @@ module Yast
           state:        service_specs[:active],
           substate:     service_specs[:sub],
           description:  service_specs[:description],
-          search_terms: service_specs[:search_terms]
+          keywords:     service_specs[:keywords],
+          changed?:     service_specs[:changed] || false
         )
 
         allow(service).to receive(:start_mode=)

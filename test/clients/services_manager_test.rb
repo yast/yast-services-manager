@@ -68,7 +68,8 @@ describe Y2ServicesManager::Clients::ServicesManager do
   end
 
   # Checks whether the widgets tree contains a menu button with a specific label and
-  # options (optional)
+  # options (optional). The presence of given options is checked, but the menu button
+  # could contain more options.
   #
   # @param tree [Yast::Term]
   # @param label [String]
@@ -88,7 +89,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
   # Helper for buttons expectations
   #
   # @param block [Proc]
-  def expect_buttons_to(&block)
+  def expect_refresh_buttons(&block)
     expect(Yast::UI).to receive(:ReplaceWidget) do |_, content|
       expect(block.call(content)).to eq(true)
     end
@@ -117,7 +118,14 @@ describe Y2ServicesManager::Clients::ServicesManager do
       allow(Yast::UI).to receive(:QueryWidget).with(Id(:services_table), :CurrentItem)
         .and_return(selected_service_name)
 
+      allow(Yast2::Feedback).to receive(:show).and_yield
+
       stub_services(services_specs)
+    end
+
+    after(:each) do
+      # To generate new doubles in each test
+      Yast::ServicesManagerService.services = nil
     end
 
     let(:services_specs) { [sshd_specs, postfix_specs] }
@@ -169,7 +177,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
 
     context "when the selected service is running" do
       it "shows a 'stop' button" do
-        expect_buttons_to { |buttons| contain_button?(buttons, "&Stop") }
+        expect_refresh_buttons { |buttons| contain_button?(buttons, "&Stop") }
 
         subject.run
       end
@@ -179,7 +187,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
       let(:selected_service_name) { "postfix" }
 
       it "shows a 'start' button" do
-        expect_buttons_to { |buttons| contain_button?(buttons, "&Start") }
+        expect_refresh_buttons { |buttons| contain_button?(buttons, "&Start") }
 
         subject.run
       end
@@ -189,8 +197,8 @@ describe Y2ServicesManager::Clients::ServicesManager do
       let(:selected_service_name) { "postfix" }
 
       it "allows to select 'On demand' start mode" do
-        expect_buttons_to do |buttons|
-          contain_menu_button?(buttons, "On Boot", options: [:on_boot, :on_demand, :manual])
+        expect_refresh_buttons do |buttons|
+          contain_menu_button?(buttons, "Start Mode", options: [:on_boot, :on_demand, :manual])
         end
 
         subject.run
@@ -201,9 +209,9 @@ describe Y2ServicesManager::Clients::ServicesManager do
       let(:selected_service_name) { "sshd" }
 
       it "does not allow to select 'On demand' start mode" do
-        expect_buttons_to do |buttons|
-          contain_menu_button?(buttons, "Manual", options: [:on_boot, :manual]) &&
-            !contain_menu_button?(buttons, "Manual", options: [:on_demand])
+        expect_refresh_buttons do |buttons|
+          contain_menu_button?(buttons, "Start Mode", options: [:on_boot, :manual]) &&
+            !contain_menu_button?(buttons, "Start Mode", options: [:on_demand])
         end
 
         subject.run
@@ -216,7 +224,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
       end
 
       it "offers a button to show the logs" do
-        expect_buttons_to { |buttons| contain_button?(buttons, "Show &Log") }
+        expect_refresh_buttons { |buttons| contain_button?(buttons, "Show &Log") }
 
         subject.run
       end
@@ -228,7 +236,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
       end
 
       it "does not offer a button to show the logs" do
-        expect_buttons_to { |buttons| !contain_button?(buttons, "Show &Log") }
+        expect_refresh_buttons { |buttons| !contain_button?(buttons, "Show &Log") }
 
         subject.run
       end
@@ -243,14 +251,14 @@ describe Y2ServicesManager::Clients::ServicesManager do
 
       let(:services_specs) { [sshd_specs2, postfix_specs] }
 
-      let(:sshd_specs2) { sshd_specs.merge(search_terms: search_terms) }
+      let(:sshd_specs2) { sshd_specs.merge(keywords: keywords) }
 
-      let(:search_terms) { ["sshd.service", "sshd.socket"] }
+      let(:keywords) { ["sshd.service", "sshd.socket"] }
 
       it "shows the systemd journal entries for the selected service" do
         expect(Y2Journal::EntriesDialog).to receive(:new) do |params|
           filters = params[:query].filters["unit"]
-          expect(filters).to contain_exactly(*search_terms)
+          expect(filters).to contain_exactly(*keywords)
         end.and_return(entries_dialog)
 
         subject.run
