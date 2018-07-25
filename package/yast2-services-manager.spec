@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.0.3
+Version:        4.0.4
 Release:        0
 BuildArch:      noarch
 
@@ -32,8 +32,8 @@ BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby
-# Firewalld interfaces helpers
-Requires:       yast2 >= 4.0.51
+# Yast2::SystemService class
+Requires:       yast2 >= 4.0.80
 Requires:       yast2-ruby-bindings >= 1.2.0
 # To show service logs
 Suggests:	yast2-journal >= 4.1.1
@@ -48,8 +48,8 @@ BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # To show service logs
 BuildRequires:	yast2-journal >= 4.1.1
-# Firewalld interfaces helpers
-BuildRequires:  yast2 >= 4.0.51
+# Yast2::SystemService class
+BuildRequires:  yast2 >= 4.0.80
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(yast-rake) >= 0.1.7
 BuildRequires:  rubygem(rspec)

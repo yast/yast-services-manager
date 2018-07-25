@@ -137,11 +137,11 @@ describe Yast::ServicesManagerServiceClass do
     end
   end
 
-  describe "#changed_value" do
+  describe "#changed_value?" do
     let(:changed_value?) { true }
 
     before do
-      allow(cups).to receive(:changed_value?).and_return(changed_value?)
+      allow(cups).to receive(:changed?).and_return(changed_value?)
     end
 
     context "when the given value has been changed" do
