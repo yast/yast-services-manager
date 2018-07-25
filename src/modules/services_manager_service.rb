@@ -107,7 +107,7 @@ module Yast
     # Service state
     #
     # @param name [String] service name
-    # @return [String]
+    # @return [String, false] false if the service does not exist
     def state(name)
       exists?(name, &:state)
     end
@@ -115,7 +115,7 @@ module Yast
     # Service substate
     #
     # @param name [String] service name
-    # @return [String]
+    # @return [String, false] false if the service does not exist
     def substate(name)
       exists?(name, &:substate)
     end
@@ -123,7 +123,7 @@ module Yast
     # Service description
     #
     # @param name [String] service name
-    # @return [String]
+    # @return [String, false] false if the service does not exist
     def description(name)
       exists?(name, &:description)
     end
@@ -131,7 +131,7 @@ module Yast
     # Returns whether the given service can be enabled/disabled by the user
     #
     # @param name [String] Service name
-    # @return [Boolean] is it enabled or not
+    # @return [Boolean] if it is enabled or not
     def can_be_enabled(name)
       exists?(name) { |s| !s.static? }
     end

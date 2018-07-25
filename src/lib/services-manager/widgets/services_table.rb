@@ -75,7 +75,7 @@ module Y2ServicesManager
       # @param id [Symbol] widget id
       # @param services_names [Array<String>] name of services to show
       def initialize(id: DEFAULT_ID, services_names: [])
-        textdomain 'services-manager'
+        textdomain "services-manager"
 
         @id = id
         @services_names = services_names
@@ -177,28 +177,28 @@ module Y2ServicesManager
       #
       # @return [String]
       def name_title
-        _('Service')
+        _("Service")
       end
 
       # Title for start_mode column
       #
       # @return [String]
       def start_mode_title
-        _('Start')
+        _("Start")
       end
 
       # Title for state column
       #
       # @return [String]
       def state_title
-        _('State')
+        _("State")
       end
 
       # Title for description column
       #
       # @return [String]
       def description_title
-        _('Description')
+        _("Description")
       end
 
       # Id for a table row of a service
@@ -238,6 +238,9 @@ module Y2ServicesManager
 
         return _(state) unless substate
 
+        # TRANSLATORS: state of a service, as showed by systemctl (e.g., "Active (Running)").
+        # %{state} is replaced by the service state (e.g. "Active", "Inactive", etc) and
+        # %{substate} is replaced by the service substate (e.g., "Start", "Stop", "Exited", etc).
         format(_("%{state} (%{substate})"), state: _(state), substate: _(substate))
       end
 

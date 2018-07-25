@@ -20,6 +20,7 @@
 # find current contact information at www.suse.com.
 
 require "yast"
+require "yast2/feedback"
 require "services-manager/widgets/services_table"
 
 Yast.import "ServicesManager"
@@ -223,14 +224,13 @@ module Y2ServicesManager
       # @return [Yast::Term]
       def service_buttons(service_name)
         start_stop_label = ServicesManagerService.active(service_name) ? _('&Stop') : _('&Start')
-        start_mode_label = ServicesManagerService.start_mode_to_human_for(service_name)
 
         buttons = [
           PushButton(Id(Id::TOGGLE_RUNNING), start_stop_label),
           HSpacing(1),
-          MenuButton(Id(Id::TOGGLE_ENABLED), start_mode_label, start_options_for(service_name)),
+          MenuButton(Id(Id::TOGGLE_ENABLED), _("Start Mode"), start_items_for(service_name)),
           HStretch(),
-          PushButton(Id(Id::SHOW_DETAILS), _('Show &Details'))
+          PushButton(Id(Id::SHOW_DETAILS), _("Show &Details"))
         ]
 
         if journal_loaded?
@@ -243,11 +243,11 @@ module Y2ServicesManager
         HBox(*buttons)
       end
 
-      # Possible start mode options to select for a sevice
+      # Possible start mode options to select for a service
       #
-      # @param service_name [String]
+      # @param service_name [String] name without suffix (e.g., "cups")
       # @return [Array<Yast::Term>]
-      def start_options_for(service_name)
+      def start_items_for(service_name)
         start_modes = ServicesManagerService.start_modes(service_name)
 
         ServicesManagerService.all_start_modes.each_with_object([]) do |mode, all|
@@ -265,7 +265,7 @@ module Y2ServicesManager
       def handle_table
         if @prev_service != selected_service_name
           @prev_service = selected_service_name
-          redraw_buttons(selected_service_name)
+          redraw_buttons
         end
       end
 
@@ -289,25 +289,21 @@ module Y2ServicesManager
       #
       # It shows a temporary popup meanwhile the services are obtained.
       def redraw_services
-        UI.OpenDialog(Label(_('Reading services status...')))
-        services = services_names
-        UI.CloseDialog
+        services = Yast2::Feedback.show(_('Reading services status...')) { services_names }
 
         services_table.refresh(services_names: services)
-        redraw_buttons(selected_service_name)
+        redraw_buttons
       end
 
       # Redraws data of the selected service (table row and buttons)
       def redraw_selected_service
-        redraw_buttons(selected_service_name)
+        redraw_buttons
         services_table.refresh_row(selected_service_name)
       end
 
-      # Redraw all buttons according to the given service
-      #
-      # @param service_name [String]
-      def redraw_buttons(service_name)
-        UI.ReplaceWidget(Id(Id::SERVICE_BUTTONS), service_buttons(service_name))
+      # Redraw all buttons according to the selected service
+      def redraw_buttons
+        UI.ReplaceWidget(Id(Id::SERVICE_BUTTONS), service_buttons(selected_service_name))
       end
 
       # Opens up a popup with details about the currently selected service

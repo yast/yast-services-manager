@@ -129,7 +129,7 @@ module Y2ServicesManager
       list_unit_files.each do |line|
         service, status = line.split(/[\s]+/)
         service.chomp! SERVICE_SUFFIX
-        # Unit template, errors out when inquired with `systemctl show`
+        # FIXME: Unit template, errors out when inquired with `systemctl show`
         # See systemd.unit(5)
         next if service.end_with?("@")
         unit_files[service] = status
