@@ -181,6 +181,8 @@ module Y2ServicesManager
       ss.each do |s|
         services[s.name] = s
       end
+    rescue Yast2::SystemService::NotFoundError
+      services.clear
     end
   end
 end

@@ -79,7 +79,7 @@ module Yast
     # @param key [Symbol] value that has been changed (:active and :start_mode)
     # @return [Boolean] true if the key has changed
     def changed_value?(name, key)
-      exists?(name) { |s| s.changed_value?(:active) }
+      exists?(name) { |s| s.changed?(:active) }
     end
 
     # Returns whether the given service has been enabled
