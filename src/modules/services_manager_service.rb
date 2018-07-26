@@ -217,7 +217,13 @@ module Yast
 
       log.info "Modified services: #{modified_services.map(&:name)}"
 
-      modified_services.each { |s| s.save(keep_state: Stage.initial) }
+      modified_services.each do |service|
+        service.save(keep_state: Stage.initial)
+      rescue Yast::SystemctlError
+        # This exception is raised when the service cannot be refreshed
+        next
+      end
+
       services.values.all? { |s| s.errors.empty? }
     end
 
