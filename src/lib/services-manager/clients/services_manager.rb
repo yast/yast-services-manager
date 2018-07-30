@@ -55,18 +55,10 @@ module Y2ServicesManager
         TOGGLE_ENABLED  = :enable_disable
         DEFAULT_TARGET  = :default_target
         SHOW_DETAILS    = :show_details
-        SHOW_LOGS       = :show_logs
       end
 
-      # Constructor
-      #
-      # Journal package (yast2-journal) is not an strong dependency (only suggested).
-      # Here the journal is tried to be loaded, avoiding to fail when the package is
-      # not installed (see {#load_journal}).
       def initialize
         textdomain 'services-manager'
-
-        load_journal
       end
 
       def run
@@ -100,22 +92,6 @@ module Y2ServicesManager
 
     private
 
-      # Tries to load the journal package
-      #
-      # @return [Boolean] true if the package is correctly loaded; false otherwise.
-      def load_journal
-        require "y2journal"
-      rescue LoadError
-        false
-      end
-
-      # Checks whether the journal is loaded
-      #
-      # @return [Boolean]
-      def journal_loaded?
-        !defined?(::Y2Journal).nil?
-      end
-
       # Main dialog function
       #
       # @return :next or :abort
@@ -135,8 +111,6 @@ module Y2ServicesManager
               switch_service
             when Id::DEFAULT_TARGET
               handle_dialog
-            when Id::SHOW_LOGS
-              show_logs
             when Id::SHOW_DETAILS
               show_details
             when *ServicesManagerService.all_start_modes
@@ -218,8 +192,6 @@ module Y2ServicesManager
 
       # Buttons for actions over a selected service
       #
-      # The log button only is included if YaST Journal is installed.
-      #
       # @param service_name [String]
       # @return [Yast::Term]
       def service_buttons(service_name)
@@ -232,13 +204,6 @@ module Y2ServicesManager
           HStretch(),
           PushButton(Id(Id::SHOW_DETAILS), _("Show &Details"))
         ]
-
-        if journal_loaded?
-          buttons += [
-            HSpacing(1),
-            PushButton(Id(Id::SHOW_LOGS), _("Show &Log"))
-          ]
-        end
 
         HBox(*buttons)
       end
@@ -323,16 +288,6 @@ module Y2ServicesManager
         services_table.focus
       end
 
-      # Opens a dialog with the logs (from current boot) for the currently selected service
-      #
-      # @see Yast2::SystemService#keywords
-      def show_logs
-        query = Y2Journal::Query.new(interval: "0", filters: { "unit" => selected_service.keywords })
-        Y2Journal::EntriesDialog.new(query: query).run
-
-        services_table.focus
-      end
-
       # Sets the start mode to the selected service
       #
       # The table row of the selected service is refreshed.
@@ -348,7 +303,7 @@ module Y2ServicesManager
       # @return [Boolean] if successful
       def switch_service
         service = selected_service_name
-        Builtins.y2milestone("Setting the service 'service) #{service}' to " +
+        log.info "Setting the service 'service: #{service}' to " +
           "#{ServicesManagerService.active(service) ? 'inactive' : 'active'}")
 
         success = ServicesManagerService.switch(service)
