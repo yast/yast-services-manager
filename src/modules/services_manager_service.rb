@@ -37,10 +37,14 @@ module Yast
 
     # Finds a service
     #
-    # @param service [String] service name
+    # @param name [String] service name
     # @return [Yast2::SystemService, nil]
-    def find(service)
-      services[service]
+    def find(name)
+      return services[name] unless Stage.initial
+
+      # We are in inst-sys. So we cannot check for installed services but generate entries
+      # for these services if they still not exists.
+      services[name] = Yast2::SystemService.build(name)
     end
 
     # Sets whether service should be running after writing the configuration
@@ -323,12 +327,6 @@ module Yast
     # @return [Boolean] false if the service does not exist,
     #   otherwise what the block returned
     def exists?(name)
-      if Stage.initial && !find(name)
-        # We are in inst-sys. So we cannot check for installed services but generate entries
-        # for these services if they still not exists.
-        services[name] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
-      end
-
       service = find(name)
       if service && block_given?
         yield service
