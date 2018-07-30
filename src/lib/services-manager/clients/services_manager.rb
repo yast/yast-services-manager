@@ -304,7 +304,7 @@ module Y2ServicesManager
       def switch_service
         service = selected_service_name
         log.info "Setting the service 'service: #{service}' to " +
-          "#{ServicesManagerService.active(service) ? 'inactive' : 'active'}")
+          "#{ServicesManagerService.active(service) ? 'inactive' : 'active'}"
 
         success = ServicesManagerService.switch(service)
 
