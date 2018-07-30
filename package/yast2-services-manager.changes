@@ -8,11 +8,6 @@ Wed Jul 25 12:17:42 UTC 2018 - jlopez@suse.com
 - 4.0.5
 
 -------------------------------------------------------------------
-Thu Jun 28 16:45:33 UTC 2018 - jlopez@suse.com
-
-- Added button to show journal logs (related to fate#319427).
-
--------------------------------------------------------------------
 Wed Jun 27 10:46:48 CEST 2018 - schubi@suse.de
 
 - Added additional searchkeys to desktop file (fate#321043).

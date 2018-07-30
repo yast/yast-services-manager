@@ -22,8 +22,6 @@
 
 require_relative '../test_helper'
 
-require "y2journal"
-
 require "yast"
 require "services-manager/clients/services_manager"
 
@@ -213,53 +211,6 @@ describe Y2ServicesManager::Clients::ServicesManager do
           contain_menu_button?(buttons, "Start Mode", options: [:on_boot, :manual]) &&
             !contain_menu_button?(buttons, "Start Mode", options: [:on_demand])
         end
-
-        subject.run
-      end
-    end
-
-    context "when yast2-journal is installed" do
-      before do
-        allow(subject).to receive(:journal_loaded?).and_return(true)
-      end
-
-      it "offers a button to show the logs" do
-        expect_refresh_buttons { |buttons| contain_button?(buttons, "Show &Log") }
-
-        subject.run
-      end
-    end
-
-    context "when yast2-journal is not installed" do
-      before do
-        allow(subject).to receive(:journal_loaded?).and_return(false)
-      end
-
-      it "does not offer a button to show the logs" do
-        expect_refresh_buttons { |buttons| !contain_button?(buttons, "Show &Log") }
-
-        subject.run
-      end
-    end
-
-    context "when log button is used" do
-      let(:user_input) { [:show_logs, :abort] }
-
-      let(:entries_dialog) { instance_double(Y2Journal::EntriesDialog, run: nil) }
-
-      let(:selected_service_name) { "sshd" }
-
-      let(:services_specs) { [sshd_specs2, postfix_specs] }
-
-      let(:sshd_specs2) { sshd_specs.merge(keywords: keywords) }
-
-      let(:keywords) { ["sshd.service", "sshd.socket"] }
-
-      it "shows the systemd journal entries for the selected service" do
-        expect(Y2Journal::EntriesDialog).to receive(:new) do |params|
-          filters = params[:query].filters["unit"]
-          expect(filters).to contain_exactly(*keywords)
-        end.and_return(entries_dialog)
 
         subject.run
       end
