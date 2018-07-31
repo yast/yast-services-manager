@@ -87,6 +87,8 @@ rake install DESTDIR="%{buildroot}"
 %{yast_dir}/lib/services-manager/clients/*.rb
 %dir %{yast_dir}/data/services-manager/
 %{yast_dir}/data/services-manager/*.erb
+%dir %{yast_dir}/lib/services-manager/widgets
+%{yast_dir}/lib/services-manager/widgets/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
 
 %_docdir/%name/
