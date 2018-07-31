@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Jul 25 12:17:42 UTC 2018 - jlopez@suse.com
+
+- Show systemd state and substate for each service,
+  e.g. "Active (Running)" (bsc#1080738).
+- Added new menu button to select the service start mode (on boot,
+  on demand or manually) (fate#319427).
+- 4.0.5
+
+-------------------------------------------------------------------
 Wed Jun 27 10:46:48 CEST 2018 - schubi@suse.de
 
 - Added additional searchkeys to desktop file (fate#321043).
