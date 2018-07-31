@@ -3,6 +3,7 @@
 require_relative "test_helper"
 
 Yast.import "Mode"
+Yast.import "ServicesManagerTarget"
 
 module Yast
   module TestTarget
