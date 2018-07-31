@@ -52,4 +52,6 @@ if ENV["COVERAGE"]
       Coveralls::SimpleCov::Formatter
     ]
   end
+
+  Yast.import "ServicesManager"
 end
