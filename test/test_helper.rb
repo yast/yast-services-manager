@@ -26,7 +26,6 @@ ENV["Y2DIR"] = y2dirs.unshift(srcdir).join(":")
 require "rspec"
 require "yast"
 
-Yast.import 'ServicesManager'
 include Yast::Logger
 
 require_relative "support/services_manager_helpers"
