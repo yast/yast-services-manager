@@ -41,31 +41,23 @@ module Yast
       end
     end
 
-    xcontext "Autoyast API" do
-      it "exports systemd target and services" do
-        services = {
-          'a' => { :enabled => true,  :loaded => true, :can_be_enabled => true },
-          'b' => { :enabled => false, :modified => true, :can_be_enabled => true },
-          'c' => { :enabled => true,  :loaded => true, :can_be_enabled => true },
-          # Service will not be exported: it's not modified
-          'd' => { :enabled => false, :modified => false, :can_be_enabled => true },
-          # Service will not be exported: it's not loaded
-          'e' => { :enabled => true,  :loaded => false, :can_be_enabled => true },
-        }
+    describe "#export" do
+      let(:services) { { enabled: ["cups"], disabled: ["nfsserver"] } }
 
-        # Services set during installation
-        ServicesProposal.enable_service('aaa')
-        ServicesProposal.disable_service('bbb')
-
-        allow(ServicesManagerService).to receive(:services).and_return(services)
-        expect(ServicesManagerTarget).to receive(:default_target).and_return('some_target')
-
-        data = Yast::ServicesManager.export
-        expect(data['default_target']).to eq('some_target')
-        expect(data['services']['enable'].sort).to eq(['a', 'c', 'aaa'].sort)
-        expect(data['services']['disable'].sort).to eq(['b', 'bbb'].sort)
+      before do
+        allow(Yast::ServicesManagerService).to receive(:export).and_return(services)
+        allow(Yast::ServicesManagerTarget).to receive(:export).and_return("graphical")
       end
 
+      it "exports systemd target and services" do
+        expect(Yast::ServicesManager.export).to eq({
+          "default_target" => "graphical",
+          "services" => services
+        })
+      end
+    end
+
+    describe "#import" do
       context "when using AutoYast profile written in SLE 11 format" do
         it "imports data for systemd target and services" do
           data = {
@@ -228,20 +220,20 @@ module Yast
         end
       end
     end
+  end
 
-    context "Global public API" do
-      it "has available methods for both target and services" do
-        public_methods = [ :save, :read, :reset, :modified ]
-        public_methods.each do |method|
-          expect(ServicesManagerService).to receive(method)
-          expect(ServicesManagerTarget).to receive(method)
-          ServicesManager.__send__(method)
-        end
-
-        expect(ServicesManagerService).to receive(:modified=).with(true)
-        expect(ServicesManagerTarget).to receive(:modified=).with(true)
-        ServicesManager.__send__(:modify)
+  context "Global public API" do
+    it "has available methods for both target and services" do
+      public_methods = [ :save, :read, :reset, :modified ]
+      public_methods.each do |method|
+        expect(ServicesManagerService).to receive(method)
+        expect(ServicesManagerTarget).to receive(method)
+        ServicesManager.__send__(method)
       end
+
+      expect(ServicesManagerService).to receive(:modified=).with(true)
+      expect(ServicesManagerTarget).to receive(:modified=).with(true)
+      ServicesManager.__send__(:modify)
     end
   end
 end
