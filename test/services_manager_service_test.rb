@@ -31,14 +31,14 @@ describe Yast::ServicesManagerServiceClass do
     instance_double(
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
-      save: nil, errors: {}
+      save: nil, refresh: nil, errors: {}
     )
   end
 
   let(:dbus) do
     instance_double(
       Yast2::SystemService, name: "dbus", changed?: true, active?: true,
-      running?: true, save: nil, errors: {}
+      running?: true, refresh: nil, save: nil, errors: {}
     )
   end
 
@@ -559,6 +559,13 @@ describe Yast::ServicesManagerServiceClass do
       subject.save
     end
 
+    it "does not refresh services" do
+      expect(dbus).to_not receive(:refresh)
+      expect(cups).to_not receive(:refresh)
+      subject.save
+    end
+
+
     context "when a service registers an error" do
       before do
         allow(cups).to receive(:errors).and_return({activate: true})
@@ -571,6 +578,12 @@ describe Yast::ServicesManagerServiceClass do
 
     context "on 1st stage" do
       let(:initial) { true }
+
+      it "refresh services before saving them" do
+        expect(dbus).to receive(:refresh).ordered
+        expect(dbus).to receive(:save).ordered
+        subject.save
+      end
 
       it "saves all services not modifying the current status" do
         expect(dbus).to receive(:save).with(keep_state: true)

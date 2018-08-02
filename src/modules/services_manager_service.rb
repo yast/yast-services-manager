@@ -220,6 +220,8 @@ module Yast
     def save
       log.info "Saving systemd services..."
 
+      refresh_services if Stage.initial
+
       if modified_services.empty?
         log.info "No service has been changed, nothing to do..."
         return true
@@ -411,6 +413,13 @@ module Yast
           log.error("Unknown status '#{service.status}' for service '#{service.name}'")
         end
       end
+    end
+
+    # Refresh the services information
+    #
+    # This is vitally important during 1st stage, where services were read really early.
+    def refresh_services
+      services.values.each(&:refresh)
     end
 
     publish({:function => :active,         :type => "boolean ()"              })
