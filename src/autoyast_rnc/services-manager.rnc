@@ -45,10 +45,17 @@ sm_disable =
     service*
   }
 
+sm_on_demand =
+  element on_demand {
+    LIST,
+    service*
+  }
+
 new_services_list =
   element services {
     sm_disable? &
-    sm_enable?
+    sm_enable? &
+    sm_on_demand?
   }
 
 old_services_list =
