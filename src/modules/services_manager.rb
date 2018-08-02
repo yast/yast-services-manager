@@ -54,11 +54,13 @@ module Yast
     def reset
       ServicesManagerTarget.reset
       ServicesManagerService.reset
+      nil
     end
 
     def read
       ServicesManagerTarget.read
       ServicesManagerService.read
+      nil
     end
 
     # Errors are delegated to ServiceManagerService

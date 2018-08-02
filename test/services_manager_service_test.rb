@@ -22,7 +22,7 @@
 
 require_relative "test_helper"
 
-Yast.import "ServicesManagerService"
+Yast.import "ServicesManager"
 
 describe Yast::ServicesManagerServiceClass do
   subject { Yast::ServicesManagerServiceClass.new }
@@ -31,14 +31,14 @@ describe Yast::ServicesManagerServiceClass do
     instance_double(
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
-      save: nil, errors: {}
+      save: nil, refresh: nil, errors: {}
     )
   end
 
   let(:dbus) do
     instance_double(
       Yast2::SystemService, name: "dbus", changed?: true, active?: true,
-      running?: true, save: nil, errors: {}
+      running?: true, refresh: nil, save: nil, errors: {}
     )
   end
 
@@ -56,7 +56,11 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#services" do
-    it "returns the list of services from ServiceLoader" do
+    before do
+      allow(subject).to receive(:read).and_call_original
+    end
+
+    it "returns the list of services" do
       expect(subject.services).to eq(services)
     end
   end
@@ -251,9 +255,41 @@ describe Yast::ServicesManagerServiceClass do
     end
   end
 
-  describe "#reload"
+  describe "#read" do
+    it "loads the list of services from ServiceLoader" do
+      expect(loader).to receive(:read)
+      subject.read
+    end
 
-  describe "#read"
+    context "when services are already read" do
+      before do
+        subject.read
+      end
+
+      it "does not try to read them again" do
+        expect(loader).to_not receive(:read)
+        subject.read
+      end
+    end
+  end
+
+  describe "#reload" do
+    it "loads the list of services from ServiceLoader" do
+      expect(loader).to receive(:read)
+      subject.reload
+    end
+
+    context "when services are already read" do
+      before do
+        subject.reload
+      end
+
+      it "reads them again" do
+        expect(loader).to receive(:read)
+        subject.reload
+      end
+    end
+  end
 
   describe "#reset" do
     it "resets all services" do
@@ -523,6 +559,13 @@ describe Yast::ServicesManagerServiceClass do
       subject.save
     end
 
+    it "does not refresh services" do
+      expect(dbus).to_not receive(:refresh)
+      expect(cups).to_not receive(:refresh)
+      subject.save
+    end
+
+
     context "when a service registers an error" do
       before do
         allow(cups).to receive(:errors).and_return({activate: true})
@@ -535,6 +578,12 @@ describe Yast::ServicesManagerServiceClass do
 
     context "on 1st stage" do
       let(:initial) { true }
+
+      it "refresh services before saving them" do
+        expect(dbus).to receive(:refresh).ordered
+        expect(dbus).to receive(:save).ordered
+        subject.save
+      end
 
       it "saves all services not modifying the current status" do
         expect(dbus).to receive(:save).with(keep_state: true)
@@ -664,6 +713,34 @@ describe Yast::ServicesManagerServiceClass do
     context "if the service is not found" do
       it "returns false" do
         expect(subject.description("unknown")).to eq(false)
+      end
+    end
+  end
+
+  describe "#modified" do
+    let(:services) { { "cups" => cups } }
+
+    context "when it has been marked as modified" do
+      before do
+        subject.modified = true
+      end
+
+      it "returns true" do
+        expect(subject.modified).to eq(true)
+      end
+    end
+
+    context "when a service has been changed" do
+      let(:services) { { "dbus" => dbus } }
+
+      it "returns true" do
+        expect(subject.modified).to eq(true)
+      end
+    end
+
+    context "when it has not been marked as modified or no service has been changed" do
+      it "returns false" do
+        expect(subject.modified).to eq(false)
       end
     end
   end

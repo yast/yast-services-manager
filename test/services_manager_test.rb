@@ -220,6 +220,34 @@ module Yast
         end
       end
     end
+
+    describe "#read" do
+      it "reads services and targets" do
+        expect(Yast::ServicesManagerService).to receive(:read)
+        expect(Yast::ServicesManagerTarget).to receive(:read)
+        subject.read
+      end
+
+      it "returns nil" do
+        allow(Yast::ServicesManagerService).to receive(:read)
+        allow(Yast::ServicesManagerTarget).to receive(:read)
+        expect(subject.read).to eq(nil)
+      end
+    end
+
+    describe "#reset" do
+      it "reads services and targets" do
+        expect(Yast::ServicesManagerService).to receive(:reset)
+        expect(Yast::ServicesManagerTarget).to receive(:reset)
+        subject.reset
+      end
+
+      it "returns nil" do
+        allow(Yast::ServicesManagerService).to receive(:reset)
+        allow(Yast::ServicesManagerTarget).to receive(:reset)
+        expect(subject.reset).to eq(nil)
+      end
+    end
   end
 
   context "Global public API" do

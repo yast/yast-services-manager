@@ -20,9 +20,14 @@ module Yast
       manual:    N_('Manually')
     }.freeze
 
+    # @!attribute [w] modified
+    #   @return [Boolean] Whether the module has been modified
+    attr_writer :modified
+
     # @return [Hash{String => Yast2::SystemService}]
     def services
-      @services ||= read
+      read if @services.nil?
+      @services
     end
 
     attr_writer :services
@@ -32,15 +37,18 @@ module Yast
     def initialize
       textdomain 'services-manager'
       @modified = false
-      @services = nil
     end
 
     # Finds a service
     #
-    # @param service [String] service name
+    # @param name [String] service name
     # @return [Yast2::SystemService, nil]
-    def find(service)
-      services[service]
+    def find(name)
+      return services[name] unless Stage.initial
+
+      # We are in inst-sys. So we cannot check for installed services but generate entries
+      # for these services if they do not exist yet.
+      services[name] = Yast2::SystemService.build(name)
     end
 
     # Sets whether service should be running after writing the configuration
@@ -143,17 +151,20 @@ module Yast
       services.values.select(&:changed?)
     end
 
-    # Reloads services list
+    # Reloads the service list
+    #
+    # @return [Hash{String => Yast2::SystemService}]
+    # @see #read
     def reload
-      self.services = Y2ServicesManager::ServiceLoader.new.read
+      @services = nil
+      read
     end
 
     # Reads all services' data
     #
-    # @return [Hash{String => Settings}]
-    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
+    # @return [Hash{String => Yast2::SystemService}]
     def read
-      Y2ServicesManager::ServiceLoader.new.read
+      @services ||= Y2ServicesManager::ServiceLoader.new.read
     end
 
     # Resets the global status of the object
@@ -209,6 +220,8 @@ module Yast
     # @return [Boolean]
     def save
       log.info "Saving systemd services..."
+
+      refresh_services if Stage.initial
 
       if modified_services.empty?
         log.info "No service has been changed, nothing to do..."
@@ -307,7 +320,7 @@ module Yast
     #
     # @see Yast2::SystemService#changed?
     def modified
-      modified_services.any?
+      @modified || modified_services.any?
     end
 
     alias_method :modified?, :modified
@@ -323,12 +336,6 @@ module Yast
     # @return [Boolean] false if the service does not exist,
     #   otherwise what the block returned
     def exists?(name)
-      if Stage.initial && !find(name)
-        # We are in inst-sys. So we cannot check for installed services but generate entries
-        # for these services if they still not exists.
-        services[name] = Y2ServicesManager::ServiceLoader::DEFAULT_SERVICE_SETTINGS.clone
-      end
-
       service = find(name)
       if service && block_given?
         yield service
@@ -407,6 +414,14 @@ module Yast
           log.error("Unknown status '#{service.status}' for service '#{service.name}'")
         end
       end
+    end
+
+    # Refresh the services information
+    #
+    # This is vitally important during 1st stage, where services information was read
+    # too early (from the instsys and not from the installed system).
+    def refresh_services
+      services.values.each(&:refresh)
     end
 
     publish({:function => :active,         :type => "boolean ()"              })
