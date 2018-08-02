@@ -20,7 +20,8 @@ module Yast
       manual:    N_('Manually')
     }.freeze
 
-    # [Boolean] Set whether the module has been modified
+    # @!attribute [w] modified
+    #   @return [Boolean] Whether the module has been modified
     attr_writer :modified
 
     # @return [Hash{String => Yast2::SystemService}]
@@ -46,7 +47,7 @@ module Yast
       return services[name] unless Stage.initial
 
       # We are in inst-sys. So we cannot check for installed services but generate entries
-      # for these services if they still not exists.
+      # for these services if they do not exist yet.
       services[name] = Yast2::SystemService.build(name)
     end
 
@@ -417,7 +418,8 @@ module Yast
 
     # Refresh the services information
     #
-    # This is vitally important during 1st stage, where services were read really early.
+    # This is vitally important during 1st stage, where services information was read
+    # too early (from the instsys and not from the installed system).
     def refresh_services
       services.values.each(&:refresh)
     end
