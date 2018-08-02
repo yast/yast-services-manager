@@ -25,7 +25,8 @@ module Yast
 
     # @return [Hash{String => Yast2::SystemService}]
     def services
-      @services ||= read
+      read if @services.nil?
+      @services
     end
 
     attr_writer :services
@@ -149,17 +150,20 @@ module Yast
       services.values.select(&:changed?)
     end
 
-    # Reloads services list
+    # Reloads the service list
+    #
+    # @return [Hash{String => Yast2::SystemService}]
+    # @see #read
     def reload
-      self.services = Y2ServicesManager::ServiceLoader.new.read
+      @services = nil
+      read
     end
 
     # Reads all services' data
     #
-    # @return [Hash{String => Settings}]
-    #   like "foo" => { enabled: false, loaded: true, ..., description: "Features OO" }
+    # @return [Hash{String => Yast2::SystemService}]
     def read
-      Y2ServicesManager::ServiceLoader.new.read
+      @services ||= Y2ServicesManager::ServiceLoader.new.read
     end
 
     # Resets the global status of the object

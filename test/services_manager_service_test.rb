@@ -56,7 +56,11 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#services" do
-    it "returns the list of services from ServiceLoader" do
+    before do
+      allow(subject).to receive(:read).and_call_original
+    end
+
+    it "returns the list of services" do
       expect(subject.services).to eq(services)
     end
   end
@@ -251,9 +255,41 @@ describe Yast::ServicesManagerServiceClass do
     end
   end
 
-  describe "#reload"
+  describe "#read" do
+    it "loads the list of services from ServiceLoader" do
+      expect(loader).to receive(:read)
+      subject.read
+    end
 
-  describe "#read"
+    context "when services are already read" do
+      before do
+        subject.read
+      end
+
+      it "does not try to read them again" do
+        expect(loader).to_not receive(:read)
+        subject.read
+      end
+    end
+  end
+
+  describe "#reload" do
+    it "loads the list of services from ServiceLoader" do
+      expect(loader).to receive(:read)
+      subject.reload
+    end
+
+    context "when services are already read" do
+      before do
+        subject.reload
+      end
+
+      it "reads them again" do
+        expect(loader).to receive(:read)
+        subject.reload
+      end
+    end
+  end
 
   describe "#reset" do
     it "resets all services" do
