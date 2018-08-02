@@ -22,7 +22,7 @@
 
 require_relative "test_helper"
 
-Yast.import "ServicesManagerService"
+Yast.import "ServicesManager"
 
 describe Yast::ServicesManagerServiceClass do
   subject { Yast::ServicesManagerServiceClass.new }
@@ -664,6 +664,34 @@ describe Yast::ServicesManagerServiceClass do
     context "if the service is not found" do
       it "returns false" do
         expect(subject.description("unknown")).to eq(false)
+      end
+    end
+  end
+
+  describe "#modified" do
+    let(:services) { { "cups" => cups } }
+
+    context "when it has been marked as modified" do
+      before do
+        subject.modified = true
+      end
+
+      it "returns true" do
+        expect(subject.modified).to eq(true)
+      end
+    end
+
+    context "when a service has been changed" do
+      let(:services) { { "dbus" => dbus } }
+
+      it "returns true" do
+        expect(subject.modified).to eq(true)
+      end
+    end
+
+    context "when it has not been marked as modified or no service has been changed" do
+      it "returns false" do
+        expect(subject.modified).to eq(false)
       end
     end
   end

@@ -20,6 +20,9 @@ module Yast
       manual:    N_('Manually')
     }.freeze
 
+    # [Boolean] Set whether the module has been modified
+    attr_writer :modified
+
     # @return [Hash{String => Yast2::SystemService}]
     def services
       @services ||= read
@@ -32,7 +35,6 @@ module Yast
     def initialize
       textdomain 'services-manager'
       @modified = false
-      @services = nil
     end
 
     # Finds a service
@@ -311,7 +313,7 @@ module Yast
     #
     # @see Yast2::SystemService#changed?
     def modified
-      modified_services.any?
+      @modified || modified_services.any?
     end
 
     alias_method :modified?, :modified
