@@ -533,12 +533,13 @@ describe Yast::ServicesManagerServiceClass do
       end
 
       it "logs an error" do
+        allow(subject.log).to receive(:error)
         expect(subject.log).to receive(:error).with(/Invalid/)
         subject.import(profile)
       end
 
-      it "returns true" do
-        expect(subject.import(profile)).to eq(true)
+      it "returns false" do
+        expect(subject.import(profile)).to eq(false)
       end
     end
   end

@@ -205,9 +205,9 @@ module Yast
 
       known_services, unknown_services = profile.services.partition { |service| exists?(service.name) }
 
-      enable_or_disable(known_services)
+      result = enable_or_disable(known_services)
 
-      if unknown_services.empty?
+      if unknown_services.empty? && result
         true
       else
         log.error("Services #{unknown_services.inspect} don't exist on this system")
@@ -426,11 +426,14 @@ module Yast
     #
     # @param services [Array<Service>] services to be enabled or disabled
     def enable_or_disable(services)
+      result = true
       services.each do |service|
         set_start_mode(service.name, service.start_mode)
       rescue ArgumentError => e
+        result = false
         log.error("Invalid start mode '#{service.start_mode}' for service '#{service.name}'")
       end
+      result
     end
 
     # Refresh the services information
