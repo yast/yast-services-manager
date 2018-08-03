@@ -67,7 +67,7 @@ module Yast
 
     # Service object with two attributes:
     # @attr [String] name of the service unit. Suffix '.service' is optional.
-    # @attr [String] required status on the target system. Can be 'enable' or 'disable'.
+    # @attr [String] start_mode on the target system. See Yast2::SystemService#start_mode.
     Service = Struct.new(:name, :start_mode)
 
     # Profile data passed from autoyast, a Hash expected
@@ -143,9 +143,11 @@ module Yast
       )
     end
 
+    # @return [Hash<String, Symbol>] Map enable/disable to its corresponding start mode.
+    #   The on demand mode is included for convenience.
     STATUS_TO_START_MODE = {
-      'enable' => :on_boot,
-      'disable' => :manual
+      ENABLE => :on_boot,
+      DISABLE => :manual,
     }.freeze
 
     def load_from_runlevel_list services
@@ -156,24 +158,20 @@ module Yast
       )
     end
 
+    # @return [Hash<String, Symbol>] Map the lists of services that are found in the profile
+    #   with their corresponding start modes.
+    LIST_TO_START_MODE = {
+      ENABLE => :on_boot,
+      DISABLE => :manual,
+      ON_DEMAND => :on_demand
+    }.freeze
+
     def load_from_extended_list services
-      self.services.concat(
-        services.fetch(ENABLE, []).map do |service_name|
-          Service.new(service_name, :on_boot)
+      LIST_TO_START_MODE.each do |list, mode|
+        services[list].each do |name|
+          self.services << Service.new(name, mode)
         end
-      )
-
-      self.services.concat(
-        services.fetch(ON_DEMAND, []).map do |service_name|
-          Service.new(service_name, :on_demand)
-        end
-      )
-
-      self.services.concat(
-        services.fetch(DISABLE, []).map do |service_name|
-          Service.new(service_name, :manual)
-        end
-      )
+      end
     end
   end
 end
