@@ -181,12 +181,13 @@ module Yast
     # both, enabled or disabled
     # @return [Hash{String => Array<String>}]
     def export
-      enabled_services  = exportable_enabled_services.keys | ServicesProposal.enabled_services
-      disabled_services = exportable_disabled_services.keys | ServicesProposal.disabled_services
+      on_boot_srvs = exportable_on_boot_services.keys | ServicesProposal.enabled_services
+      on_demand_srvs = exportable_on_demand_services.keys
+      disabled_srvs = exportable_disabled_services.keys | ServicesProposal.disabled_services
 
-      log.info "Export: enabled services: #{enabled_services}, disabled services: #{disabled_services}"
+      log.info "Export: enabled services: #{on_boot_srvs}, disabled services: #{disabled_srvs}"
 
-      { "enable" => enabled_services, "disable" => disabled_services }
+      { "enable" => on_boot_srvs, "on_demand" => on_demand_srvs, "disable" => disabled_srvs }
     end
 
     # Import services from AutoYast profile
@@ -399,8 +400,12 @@ module Yast
     # Selects candidate services to be exported as enabled to AutoYast profile
     #
     # @return [Hash{String => SystemService}]
-    def exportable_enabled_services
-      services.select { |service_name, _| enabled(service_name) && can_be_enabled(service_name) }
+    def exportable_on_boot_services
+      services.select { |name, _| start_mode(name) == :on_boot && can_be_enabled(name) }
+    end
+
+    def exportable_on_demand_services
+      services.select { |name, _| start_mode(name) == :on_demand && can_be_enabled(name) }
     end
 
     # Selects candidate services to be exported as disabled to AutoYast profile
@@ -410,7 +415,7 @@ module Yast
     #
     # @return [Hash{String => SystemService}]
     def exportable_disabled_services
-      services.select { |service_name, service| service.changed? && !enabled(service_name) }
+      services.select { |name, service| service.changed? && !enabled(name) }
     end
 
     # Enable or disable given services according to its status

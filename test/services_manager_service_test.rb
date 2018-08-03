@@ -367,13 +367,26 @@ describe Yast::ServicesManagerServiceClass do
         allow(dbus).to receive(:static?).and_return(false)
       end
 
-      context "and is enabled" do
+      context "and is set to be started on boot" do
         before do
           allow(dbus).to receive(:start_mode).and_return(:on_boot)
         end
 
         it "exports the service as enabled" do
           expect(exported_services["enable"]).to include("dbus")
+        end
+      end
+
+      context "and is set to be started on demand" do
+        before do
+          allow(dbus).to receive(:start_mode).and_return(:on_demand)
+        end
+
+        it "exports the services to be started on demand" do
+          exported = subject.export
+          expect(exported["on_demand"]).to include("dbus")
+          expect(exported["enable"]).to_not include("dbus")
+          expect(exported["disable"]).to_not include("dbus")
         end
       end
 
@@ -404,13 +417,25 @@ describe Yast::ServicesManagerServiceClass do
         end
       end
 
-      context "and was enabled" do
+      context "and was set to be started on boot" do
         before do
           allow(cups).to receive(:start_mode).and_return(:on_boot)
         end
 
         it "exports the service as enable" do
           expect(exported_services["enable"]).to include("cups")
+          expect(exported_services["disable"]).to_not include("cups")
+        end
+      end
+
+      context "and was set to be started on demand" do
+        before do
+          allow(cups).to receive(:start_mode).and_return(:on_demand)
+        end
+
+        it "exports the service to be started on demand" do
+          expect(exported_services["on_demand"]).to include("cups")
+          expect(exported_services["enable"]).to_not include("cups")
           expect(exported_services["disable"]).to_not include("cups")
         end
       end
@@ -564,7 +589,6 @@ describe Yast::ServicesManagerServiceClass do
       expect(cups).to_not receive(:refresh)
       subject.save
     end
-
 
     context "when a service registers an error" do
       before do
