@@ -28,6 +28,10 @@ describe Y2ServicesManager::Widgets::TargetSelector do
 
   before do
     stub_targets(targets)
+
+    # Force read to use currently "stubbed" targets (other tests could have
+    # stub targets previously)
+    Yast::ServicesManagerTarget.read
   end
 
   let(:targets) { [multi_user_specs, graphical_specs] }
