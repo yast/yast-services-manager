@@ -23,6 +23,7 @@
 require_relative "test_helper"
 
 Yast.import "ServicesManager"
+require "services-manager/services_manager_profile"
 
 describe Yast::ServicesManagerServiceClass do
   subject { Yast::ServicesManagerServiceClass.new }
@@ -472,100 +473,72 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#import" do
-    let(:autoyast_profile) do
-      {
-        "default"  => "3",
-        "services" => [
-          {
-            "service_name"   => "dbus",
-            "service_status" => "enable",
-            "service_start"  => "3"
-          },
-          {
-            "service_name"   => "cups",
-            "service_status" => "disable",
-            "service_start"  => "5"
-          }
-        ]
-      }
+    let(:profile_services) do
+      [
+        Yast::ServicesManagerProfile::Service.new("dbus", :on_boot),
+        Yast::ServicesManagerProfile::Service.new("cups", :on_demand),
+        Yast::ServicesManagerProfile::Service.new("libvirtd", :manual),
+      ]
     end
-    let(:profile) { Yast::ServicesManagerProfile.new(autoyast_profile) }
+
+    let(:libvirtd) do
+      instance_double(Yast2::SystemService, name: "libvirtd")
+    end
+
+    let(:services) do
+      { "cups" => cups, "dbus" => dbus, "libvirtd" => libvirtd }
+    end
+
+    let(:profile) do
+      instance_double(Yast::ServicesManagerProfile, services: profile_services)
+    end
 
     before do
       allow(subject).to receive(:set_start_mode)
     end
 
-    it "enables services with `enable` status" do
-      expect(subject).to receive(:enable).with("dbus")
-
+    it "sets the start mode for the given services" do
+      expect(subject).to receive(:set_start_mode).with("dbus", :on_boot)
+      expect(subject).to receive(:set_start_mode).with("cups", :on_demand)
+      expect(subject).to receive(:set_start_mode).with("libvirtd", :manual)
       subject.import(profile)
     end
 
-    it "disables services with `disable` status" do
-      expect(subject).to receive(:disable).with("cups")
-
-      subject.import(profile)
+    it "returns true" do
+      expect(subject.import(profile)).to eq(true)
     end
 
-    context "there are unknown statuses" do
-      let(:autoyast_profile) do
-        {
-          "default"  => "3",
-          "services" => [
-            {
-              "service_name"   => "dbus",
-              "service_status" => "wrong_status",
-              "service_start"  => "3"
-            },
-            {
-              "service_name"   => "cups",
-              "service_status" => "disable",
-              "service_start"  => "5"
-            }
-          ]
-        }
-      end
-
-      it "logs an error for unkown statuses" do
-        expect(subject.log).to receive(:error).with("Unknown status 'wrong_status' for service 'dbus'")
-
-        subject.import(profile)
-      end
-    end
-
-    context "when all services are present in the system" do
-      it "returns true" do
-        expect(subject.import(profile)).to be_truthy
-      end
-    end
-
-    context "when any service is not present in the system" do
-      let(:autoyast_profile) do
-        {
-          "default"  => "3",
-          "services" => [
-            {
-              "service_name"   => "fake_service",
-              "service_status" => "enable",
-              "service_start"  => "3"
-            },
-            {
-              "service_name"   => "cups",
-              "service_status" => "disable",
-              "service_start"  => "5"
-            }
-          ]
-        }
+    context "when an unknown service is specified" do
+      let(:profile_services) do
+        [Yast::ServicesManagerProfile::Service.new("unknown", :on_boot)]
       end
 
       it "logs an error" do
         expect(subject.log).to receive(:error).with(/don't exist on this system/)
-
         subject.import(profile)
       end
 
       it "returns false" do
-        expect(subject.import(profile)).to be_falsey
+        expect(subject.import(profile)).to eq(false)
+      end
+    end
+
+    context "when an invalid start mode is specified" do
+      let(:profile_services) do
+        [Yast::ServicesManagerProfile::Service.new("cups", :fail)]
+      end
+
+      before do
+        allow(subject).to receive(:set_start_mode).with("cups", :fail).and_raise(ArgumentError)
+      end
+
+      it "logs an error" do
+        expect(subject.log).to receive(:error).with(/Invalid/)
+        subject.import(profile)
+      end
+
+      it "returns true" do
+        expect(subject.import(profile)).to eq(true)
       end
     end
   end

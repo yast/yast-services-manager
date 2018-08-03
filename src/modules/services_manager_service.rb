@@ -424,17 +424,12 @@ module Yast
     #
     # @see #import
     #
-    # @param services [Array<SystemService>] services to be enabled or disabled
+    # @param services [Array<Service>] services to be enabled or disabled
     def enable_or_disable(services)
       services.each do |service|
-        case service.status
-        when "enable"
-          enable(service.name)
-        when "disable"
-          disable(service.name)
-        else
-          log.error("Unknown status '#{service.status}' for service '#{service.name}'")
-        end
+        set_start_mode(service.name, service.start_mode)
+      rescue ArgumentError => e
+        log.error("Invalid start mode '#{service.start_mode}' for service '#{service.name}'")
       end
     end
 

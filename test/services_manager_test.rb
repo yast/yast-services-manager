@@ -176,27 +176,6 @@ module Yast
         end
       end
 
-      context "when using AutoYast profile in the current format" do
-        it "imports data for systemd target and services" do
-          data = {
-            'default_target' => 'multi-user',
-            'services' => {
-              'enable'  => ['x', 'y', 'z', "YaST2-Firstboot", "YaST2-Second-Stage"],
-              'disable' => ['d', 'e', 'f'],
-            },
-          }
-          expect(ServicesManagerService).to receive(:exists?).with(/^[xyzdef]$/).at_least(:once).and_return(true)
-          expect(ServicesManagerService).to receive(:enable).with(/^[xyz]$/).exactly(3).times.and_return(true)
-          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Second-Stage")
-          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Firstboot")
-          expect(ServicesManagerService).to receive(:disable).with(/^[def]$/).exactly(3).times.and_return(true)
-
-          expect(ServicesManagerService).to receive(:import).and_call_original
-          expect(ServicesManagerTarget).to receive(:import).and_call_original
-          expect(ServicesManager.import(data)).to eq(true)
-        end
-      end
-
       context "when configuration hasn't been cloned/modified" do
         it "returns information that it hasn't been configured yet" do
           expect(ServicesManager).to receive(:modified?).and_return(false)
