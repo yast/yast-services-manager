@@ -92,10 +92,10 @@ module Yast
           }
 
           expect(ServicesManagerService).to receive(:exists?).with(/^s[abc]$/).at_least(:once).and_return(true)
-          expect(ServicesManagerService).to receive(:enable).with(/^s[ab]$/).twice.and_return(true)
-          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Second-Stage")
-          expect(ServicesManagerService).not_to receive(:enable).with("YaST2-Firstboot")
-          expect(ServicesManagerService).to receive(:disable).with(/^sc$/).once.and_return(true)
+          expect(ServicesManagerService).to receive(:set_start_mode)
+            .with(/^s[ab]$/, :on_boot).twice.and_return(true)
+          expect(ServicesManagerService).to receive(:set_start_mode)
+            .with("sc", :manual).and_return(true)
 
           expect(ServicesManagerService).to receive(:import).and_call_original
           expect(ServicesManagerTarget).to receive(:import).and_call_original
