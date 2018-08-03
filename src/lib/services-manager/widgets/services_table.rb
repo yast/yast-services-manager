@@ -20,17 +20,13 @@
 # find current contact information at www.suse.com.
 
 require "yast"
+require "services-manager/widgets/base"
 
-Yast.import "UI"
 Yast.import "ServicesManager"
 
 module Y2ServicesManager
   module Widgets
-    class ServicesTable
-      include Yast
-      include Yast::I18n
-      include Yast::UIShortcuts
-
+    class ServicesTable < Base
       extend Yast::I18n
 
       # Systemd states and substates might change. Use the following script to check
@@ -74,10 +70,10 @@ module Y2ServicesManager
       #
       # @param id [Symbol] widget id
       # @param services_names [Array<String>] name of services to show
-      def initialize(id: DEFAULT_ID, services_names: [])
+      def initialize(id: nil, services_names: [])
         textdomain "services-manager"
 
-        @id = id
+        super(id: id)
         @services_names = services_names
       end
 
@@ -129,17 +125,16 @@ module Y2ServicesManager
 
     private
 
-      DEFAULT_ID = :services_table
-      private_constant :DEFAULT_ID
-
       # @return [Array<String>] services shown in the table
       attr_reader :services_names
 
-      # Table widget id
+      # Default widget id
+      #
+      # @see Base#default_id
       #
       # @return [Yast::Term]
-      def id
-        Id(@id)
+      def default_id
+        Id(:services_table)
       end
 
       # Table header
