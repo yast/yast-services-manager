@@ -20,45 +20,20 @@
 # find current contact information at www.suse.com.
 
 require "yast"
-require "yast2/feedback"
-require "services-manager/widgets/services_table"
+require "services-manager/dialogs/services_manager"
 
-Yast.import "ServicesManager"
-Yast.import "UI"
-Yast.import "Wizard"
-Yast.import "Service"
-Yast.import "Label"
-Yast.import "Popup"
-Yast.import "Report"
-Yast.import "Message"
-Yast.import "Mode"
 Yast.import "CommandLine"
-Yast.import "SystemdService"
-Yast.import "PackageSystem"
 
 module Y2ServicesManager
   module Clients
     # Services Manager client
     #
-    # TODO: The whole ServicesManager client should be rewritten to use CWM dialogs, widgets, etc,
-    # and the logic should be splitted into the proper classes instead of having only one client
-    # class with everything.
+    # It basically runs the dialog to manage services, see {Dialogs::ServicesManager}.
     class ServicesManager < Yast::Client
-      include Yast::Logger
-
-      extend Yast::I18n
-
-      module Id
-        SERVICE_BUTTONS = :services_buttons
-        SERVICES_TABLE  = :services_table
-        TOGGLE_RUNNING  = :start_stop
-        TOGGLE_ENABLED  = :enable_disable
-        DEFAULT_TARGET  = :default_target
-        SHOW_DETAILS    = :show_details
-      end
+      include Yast::I18n
 
       def initialize
-        textdomain 'services-manager'
+        textdomain "services-manager"
       end
 
       def run
@@ -69,272 +44,14 @@ module Y2ServicesManager
                             "Systemd target and services configuration module.\n" +
                             "Use systemctl for commandline services configuration."
                             ),
-          "guihandler" => fun_ref(method(:gui_handler), "boolean ()")
+          "guihandler" => fun_ref(method(:run_dialog), "boolean ()")
         }
 
         CommandLine.Run(cmdline)
       end
 
-      def gui_handler
-        Wizard.CreateDialog
-        success = false
-        while true
-          if  main_dialog == :next
-            success = Mode.config || save
-            break if success
-          else
-            break
-          end
-        end
-        UI.CloseDialog
-        success
-      end
-
-    private
-
-      # Main dialog function
-      #
-      # @return :next or :abort
-      def main_dialog
-        adjust_dialog
-
-        while true
-          input = UI.UserInput
-          Builtins.y2milestone('User returned %1', input)
-
-          case input
-            when :abort, :cancel
-              break if Popup::ReallyAbort(Yast::ServicesManager.modified?)
-            when Id::SERVICES_TABLE
-              handle_table
-            when Id::TOGGLE_RUNNING
-              switch_service
-            when Id::DEFAULT_TARGET
-              handle_dialog
-            when Id::SHOW_DETAILS
-              show_details
-            when *ServicesManagerService.all_start_modes
-              set_start_mode(input)
-            when :next
-              break
-            else
-              Builtins.y2error('Unknown user input: %1', input)
-          end
-        end
-        input
-      end
-
-      # Fills the dialog contents
-      def adjust_dialog
-        system_targets = system_targets_items
-        # Translated target names are known in runtime only
-        max_target_length = system_targets.collect{|i| i[1].length}.max
-
-        # FIXME: Hotfix: For a yet unknown reason, max_target_length is sometimes nil
-        unless max_target_length
-          log.error "max_target_length is not defined, system targets: #{system_targets.inspect}"
-          max_target_length = 20
-        end
-
-        contents = VBox(
-          Left(
-            HSquash(
-              MinWidth(
-                # Additional space for UI features
-                display_width - 58,
-                target_selector(system_targets)
-              )
-            )
-          ),
-          VSpacing(1),
-          services_table.widget,
-          ReplacePoint(Id(Id::SERVICE_BUTTONS), Empty())
-        )
-
-        caption = _('Services Manager')
-
-        Wizard.SetContentsButtons(caption, contents, "", Label.CancelButton, Label.OKButton)
-        Wizard.HideBackButton
-        Wizard.SetAbortButton(:abort, Label.CancelButton)
-
-        redraw_services
-      end
-
-      # Widget to select the systemd target
-      #
-      # @param targets_items [Array<Yast::Term>]
-      # @return [Yast::Term]
-      def target_selector(targets_items)
-        ComboBox(
-          Id(Id::DEFAULT_TARGET),
-          Opt(:notify),
-          _('Default System &Target'),
-          targets_items
-        )
-      end
-
-      # All possible systemd targets
-      #
-      # @return [Array<Yast::Term>]
-      def system_targets_items
-        ServicesManagerTarget.all.collect do |target, target_def|
-          label = target_def[:description] || target
-          Item(Id(target), label, (target == ServicesManagerTarget.default_target))
-        end
-      end
-
-      # Table widget to show all services
-      #
-      # @return [Widgets::ServicesTable]
-      def services_table
-        @services_table ||= Widgets::ServicesTable.new(id: Id::SERVICES_TABLE)
-      end
-
-      # Buttons for actions over a selected service
-      #
-      # @param service_name [String]
-      # @return [Yast::Term]
-      def service_buttons(service_name)
-        start_stop_label = ServicesManagerService.active(service_name) ? _('&Stop') : _('&Start')
-
-        buttons = [
-          PushButton(Id(Id::TOGGLE_RUNNING), start_stop_label),
-          HSpacing(1),
-          MenuButton(Id(Id::TOGGLE_ENABLED), _("Start Mode"), start_items_for(service_name)),
-          HStretch(),
-          PushButton(Id(Id::SHOW_DETAILS), _("Show &Details"))
-        ]
-
-        HBox(*buttons)
-      end
-
-      # Possible start mode options to select for a service
-      #
-      # @param service_name [String] name without suffix (e.g., "cups")
-      # @return [Array<Yast::Term>]
-      def start_items_for(service_name)
-        start_modes = ServicesManagerService.start_modes(service_name)
-
-        ServicesManagerService.all_start_modes.each_with_object([]) do |mode, all|
-          next unless start_modes.include?(mode)
-          all << Item(Id(mode), ServicesManagerService.start_mode_to_human(mode))
-        end
-      end
-
-      def handle_dialog
-        new_default_target = UI.QueryWidget(Id(Id::DEFAULT_TARGET), :Value)
-        Builtins.y2milestone("Setting new default target '#{new_default_target}'")
-        ServicesManagerTarget.default_target = new_default_target
-      end
-
-      def handle_table
-        if @prev_service != selected_service_name
-          @prev_service = selected_service_name
-          redraw_buttons
-        end
-      end
-
-      def save
-        Builtins.y2milestone('Writing configuration...')
-        UI.OpenDialog(Label(_('Writing configuration...')))
-        success = Yast::ServicesManager.save
-        UI.CloseDialog
-        if !success
-          success = ! Popup::ContinueCancel(
-            _("Writing the configuration failed:\n" +
-            Yast::ServicesManager.errors.join("\n") +
-            "\nWould you like to continue editing?")
-          )
-          Yast::ServicesManager.reset
-        end
-        success
-      end
-
-      # Reads services and updates the table content
-      #
-      # It shows a temporary popup meanwhile the services are obtained.
-      def redraw_services
-        services = Yast2::Feedback.show(_('Reading services status...')) { services_names }
-
-        services_table.refresh(services_names: services)
-        redraw_buttons
-      end
-
-      # Redraws data of the selected service (table row and buttons)
-      def redraw_selected_service
-        redraw_buttons
-        services_table.refresh_row(selected_service_name)
-      end
-
-      # Redraw all buttons according to the selected service
-      def redraw_buttons
-        UI.ReplaceWidget(Id(Id::SERVICE_BUTTONS), service_buttons(selected_service_name))
-      end
-
-      # Opens up a popup with details about the currently selected service
-      def show_details
-        service = selected_service_name
-        full_info = ServicesManagerService.status(service)
-        x_size = full_info.lines.collect{|line| line.size}.sort.last
-        y_size = full_info.lines.count
-
-        Popup.LongText(
-          _('Service %{service} Full Info') % {:service => service},
-          RichText("<pre>#{full_info}</pre>"),
-          # counted size plus dialog spacing
-          x_size + 8, y_size + 6
-        )
-
-        services_table.focus
-      end
-
-      # Sets the start mode to the selected service
-      #
-      # The table row of the selected service is refreshed.
-      #
-      # @param mode [Symbol] :on_boot, :on_demand, :manually
-      def set_start_mode(mode)
-        ServicesManagerService.set_start_mode(selected_service_name, mode)
-        redraw_selected_service
-      end
-
-      # Switches (starts/stops) the currently selected service
-      #
-      # @return [Boolean] if successful
-      def switch_service
-        service = selected_service_name
-        log.info "Setting the service 'service: #{service}' to " +
-          "#{ServicesManagerService.active(service) ? 'inactive' : 'active'}"
-
-        success = ServicesManagerService.switch(service)
-
-        redraw_selected_service if success
-        success
-      end
-
-      # Names of all services without the extention (.service)
-      #
-      # @return [Array<String>]
-      def services_names
-        ServicesManagerService.all.keys
-      end
-
-      # Name of the currently selected service (taken from the table widget)
-      #
-      # @return [String]
-      def selected_service_name
-        services_table.selected_service_name
-      end
-
-      # Currently selected service
-      #
-      # @return [Yast2::SystemService]
-      def selected_service
-        services_table.selected_service
-      end
-
-      def display_width
-        UI.GetDisplayInfo["Width"] || 80
+      def run_dialog
+        Dialogs::ServicesManager.new.run
       end
     end
   end

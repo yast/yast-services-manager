@@ -358,10 +358,15 @@ module Yast
     #
     # @return [String] Error message
     def active_error_message_for(service)
-      change = service.active? ? 'start' : 'stop'
-      status = service.running? ? 'running' : 'not running'
-      _("Could not %{change} %{service} which is currently %{status}." %
-        { change: change, service: service.name, status: status })
+      change = service.active? ? N_("start") : N_("stop")
+      status = service.running? ? N_("running") : N_("not running")
+
+      format(
+        _("Could not %{change} %{service} which is currently %{status}."),
+        change: change,
+        service: service.name,
+        status: status
+      )
     end
 
     # Start mode translations in error messages
