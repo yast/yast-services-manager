@@ -144,7 +144,7 @@ module Yast
     end
 
     # @return [Hash<String, Symbol>] Map enable/disable to its corresponding start mode.
-    #   The on demand mode is included for convenience.
+    #   The on-demand mode is included for convenience.
     STATUS_TO_START_MODE = {
       ENABLE => :on_boot,
       DISABLE => :manual,
@@ -160,14 +160,14 @@ module Yast
 
     # @return [Hash<String, Symbol>] Map the lists of services that are found in the profile
     #   with their corresponding start modes.
-    LIST_TO_START_MODE = {
+    LIST_NAMES_TO_START_MODE = {
       ENABLE => :on_boot,
       DISABLE => :manual,
       ON_DEMAND => :on_demand
     }.freeze
 
     def load_from_extended_list services
-      LIST_TO_START_MODE.each do |list, mode|
+      LIST_NAMES_TO_START_MODE.each do |list, mode|
         services[list].each do |name|
           self.services << Service.new(name, mode)
         end

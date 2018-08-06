@@ -181,9 +181,9 @@ module Yast
     # both, enabled or disabled
     # @return [Hash{String => Array<String>}]
     def export
-      on_boot_srvs = exportable_on_boot_services.keys | ServicesProposal.enabled_services
-      on_demand_srvs = exportable_on_demand_services.keys
-      disabled_srvs = exportable_disabled_services.keys | ServicesProposal.disabled_services
+      on_boot_srvs = exportable_on_boot_services | ServicesProposal.enabled_services
+      on_demand_srvs = exportable_on_demand_services
+      disabled_srvs = exportable_disabled_services | ServicesProposal.disabled_services
 
       log.info "Export: enabled services: #{on_boot_srvs}, disabled services: #{disabled_srvs}"
 
@@ -399,13 +399,16 @@ module Yast
 
     # Selects candidate services to be exported as enabled to AutoYast profile
     #
-    # @return [Hash{String => SystemService}]
+    # @return [Array<String>]
     def exportable_on_boot_services
-      services.select { |name, _| start_mode(name) == :on_boot && can_be_enabled(name) }
+      services.select { |n, _| start_mode(n) == :on_boot && can_be_enabled(n) }.keys
     end
 
+    # Selects candidate services to be exported as enabled on-demand to AutoYast profile
+    #
+    # @return [Array<String>]
     def exportable_on_demand_services
-      services.select { |name, _| start_mode(name) == :on_demand && can_be_enabled(name) }
+      services.select { |n, _| start_mode(n) == :on_demand && can_be_enabled(n) }.keys
     end
 
     # Selects candidate services to be exported as disabled to AutoYast profile
@@ -413,9 +416,9 @@ module Yast
     # Untouched services are discarded; only services modified by the user to be disabled must be
     # exported to AutoYast profile.
     #
-    # @return [Hash{String => SystemService}]
+    # @return [Array<String>]
     def exportable_disabled_services
-      services.select { |name, service| service.changed? && !enabled(name) }
+      services.select { |n, s| s.changed? && !enabled(n) }.keys
     end
 
     # Enable or disable given services according to its status
@@ -429,7 +432,7 @@ module Yast
       result = true
       services.each do |service|
         set_start_mode(service.name, service.start_mode)
-      rescue ArgumentError => e
+      rescue ArgumentError
         result = false
         log.error("Invalid start mode '#{service.start_mode}' for service '#{service.name}'")
       end
