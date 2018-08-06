@@ -358,14 +358,20 @@ module Yast
     #
     # @return [String] Error message
     def active_error_message_for(service)
-      change = service.active? ? N_("start") : N_("stop")
-      status = service.running? ? N_("running") : N_("not running")
+      # TRANSLATORS: target action to perform over a service
+      change = service.active? ? _("start") : _("stop")
+      # TRANSLATORS: current service status
+      status = service.running? ? _("running") : _("not running")
 
       format(
+        # TRANSLATORS: Error message when a service cannot be activated/deactivated.
+        # %{change} is replaced by the target action (i.e., "start" or "stop"),
+        # %{service} is a service name (e.g., "cups"), and %{status} is the current
+        # service status (i.e., "running" or "not running").
         _("Could not %{change} %{service} which is currently %{status}."),
-        change: change,
+        change:  change,
         service: service.name,
-        status: status
+        status:  status
       )
     end
 
@@ -380,8 +386,14 @@ module Yast
     #
     # @return [String] Error message
     def start_mode_error_message_for(service)
-      _("Could not set %{service} to be started %{change}." %
-        { service: service.name, change: START_MODE_TEXT[service.start_mode] })
+      format(
+        # TRANSLATORS: Error message when it was not possible to change the start
+        # mode of a service. %{service} is replaced by a service name (e.g., "cups")
+        # and %{change} is the target start mode (e.g., "on boot").
+        _("Could not set %{service} to be started %{change}."),
+        service: service.name,
+        change:  _(START_MODE_TEXT[service.start_mode])
+      )
     end
 
     # Selects candidate services to be exported as enabled to AutoYast profile
