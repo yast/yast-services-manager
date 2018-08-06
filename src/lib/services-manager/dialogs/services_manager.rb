@@ -37,6 +37,13 @@ Yast.import "Popup"
 module Y2ServicesManager
   module Dialogs
     # Main dialog for Services Manager client
+    #
+    # The idea behind this dialog class is pretty similar to UI::Dialog.
+    #
+    # This dialog is exactly the same as the previously implemented by ServicesManager client,
+    # which was using Wizard dialogs. Using UI::Dialog would require to manually define here the
+    # used Wizard layout. For this reason, UI::Dialog was not used here. Anyway, this dialog (and
+    # its widgets) should be replaced by CWM in future.
     class ServicesManager
       include Yast
       include Yast::Logger
@@ -44,7 +51,7 @@ module Y2ServicesManager
       include Yast::UIShortcuts
 
       # @!method success
-      #   Indicates whether the dialog was successul, that is, the changes were correctly applied
+      #   Indicates whether the dialog was successful, that is, the changes were correctly applied
       #   @return [Boolean]
       attr_reader :success
       alias_method :success?, :success
@@ -84,6 +91,11 @@ module Y2ServicesManager
         TARGET_SELECTOR     = :target_selector
       end
 
+      # Additional space for UI features
+      FEATURES_WIDTH = 58
+
+      private_constant :FEATURES_WIDTH
+
       # Shows the dialog
       def show
         dialog = Yast::Wizard.GenericDialog(buttons)
@@ -121,8 +133,7 @@ module Y2ServicesManager
           Left(
             HSquash(
               MinWidth(
-                # Additional space for UI features
-                display_width - 58,
+                display_width - FEATURES_WIDTH,
                 target_selector.widget
               )
             )
@@ -171,7 +182,7 @@ module Y2ServicesManager
         )
       end
 
-      # Button for start/stop a service
+      # Button for starting/stopping a service
       #
       # @return [Widgets::StartStopButton]
       def start_stop_button

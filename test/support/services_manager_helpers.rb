@@ -75,7 +75,7 @@ module Yast
       #
       # @see #stub_services
       #
-      # @param serivce_specs [Hash]
+      # @param service_specs [Hash]
       def stub_service(service_specs)
         start_mode = service_specs[:start_mode]
 
