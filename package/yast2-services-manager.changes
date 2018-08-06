@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Aug  6 12:10:23 UTC 2018 - jlopez@suse.com
+
+- Added button to show journal logs (related to fate#319427).
+- 4.1.1
+
+-------------------------------------------------------------------
 Fri Aug  3 14:56:31 UTC 2018 - jlopez@suse.com
 
 - Added button to apply changes without closing the Services

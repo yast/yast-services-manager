@@ -32,8 +32,15 @@ module Y2ServicesManager
     class ServicesManager < Yast::Client
       include Yast::I18n
 
+      # Constructor
+      #
+      # Journal package (yast2-journal) is not an strong dependency (only suggested).
+      # Here the journal is tried to be loaded, avoiding to fail when the package is
+      # not installed (see {#load_journal}).
       def initialize
         textdomain "services-manager"
+
+        load_journal
       end
 
       def run
@@ -50,8 +57,27 @@ module Y2ServicesManager
         CommandLine.Run(cmdline)
       end
 
+      # The log button only is included if YaST Journal is installed
       def run_dialog
-        Dialogs::ServicesManager.new.run
+        Dialogs::ServicesManager.new(show_logs_button: journal_loaded?).run
+      end
+
+    private
+
+      # Tries to load the journal package
+      #
+      # @return [Boolean] true if the package is correctly loaded; false otherwise.
+      def load_journal
+        require "y2journal"
+      rescue LoadError
+        false
+      end
+
+      # Checks whether the journal is loaded
+      #
+      # @return [Boolean]
+      def journal_loaded?
+        !defined?(::Y2Journal).nil?
       end
     end
   end

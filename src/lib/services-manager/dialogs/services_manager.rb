@@ -26,6 +26,7 @@ require "services-manager/widgets/target_selector"
 require "services-manager/widgets/start_stop_button"
 require "services-manager/widgets/start_mode_button"
 require "services-manager/widgets/show_details_button"
+require "services-manager/widgets/logs_button"
 require "services-manager/widgets/services_table"
 
 Yast.import "ServicesManager"
@@ -56,8 +57,10 @@ module Y2ServicesManager
       attr_reader :success
       alias_method :success?, :success
 
-      def initialize
+      def initialize(show_logs_button: false)
         textdomain "services-manager"
+
+        @show_logs_button = show_logs_button
       end
 
       # Runs the dialog and returns if it was successful
@@ -73,6 +76,10 @@ module Y2ServicesManager
 
     private
 
+      # @return [Boolean] whether the logs button should be shown
+      attr_reader :show_logs_button
+      alias_method :show_logs_button?, :show_logs_button
+
       # @return [Boolean]
       attr_writer :success
 
@@ -87,6 +94,7 @@ module Y2ServicesManager
         START_STOP_BUTTON   = :start_stop_button
         START_MODE_BUTTON   = :start_mode_button
         SHOW_DETAILS_BUTTON = :show_details_button
+        LOGS_BUTTON         = :logs_button
         SERVICES_TABLE      = :services_table
         TARGET_SELECTOR     = :target_selector
       end
@@ -173,13 +181,22 @@ module Y2ServicesManager
       #
       # @return [Yast::Term]
       def service_buttons
-        HBox(
+        buttons = [
           start_stop_button.widget,
           HSpacing(1),
           start_mode_button.widget,
           HStretch(),
           show_details_button.widget
-        )
+        ]
+
+        if show_logs_button?
+          buttons += [
+            HSpacing(1),
+            logs_button.widget
+          ]
+        end
+
+        HBox(*buttons)
       end
 
       # Button for starting/stopping a service
@@ -203,11 +220,19 @@ module Y2ServicesManager
         @show_details_button ||= Widgets::ShowDetailsButton.new(id: WidgetsId::SHOW_DETAILS_BUTTON)
       end
 
+      # Button to show service logs
+      #
+      # @return [Widgets::LogsButton]
+      def logs_button
+        @logs_button ||= Widgets::LogsButton.new(id: WidgetsId::LOGS_BUTTON)
+      end
+
       # Redraw all buttons according to the selected service
       def refresh_service_buttons
         @start_mode_button = nil
         @start_stop_button = nil
         @show_details_button = nil
+        @logs_button = nil
 
         UI.ReplaceWidget(Id(WidgetsId::SERVICE_BUTTONS), service_buttons)
       end
@@ -356,6 +381,18 @@ module Y2ServicesManager
         services_table.focus
       end
 
+      # Handler when "Show Log" button is used
+      #
+      # @note Opens a dialog with the logs (since current boot) for the currently selected service
+      #
+      # @see Yast2::SystemService#keywords
+      def logs_button_handler
+        query = Y2Journal::Query.new(interval: "0", filters: { "unit" => selected_service.keywords })
+        Y2Journal::EntriesDialog.new(query: query).run
+
+        services_table.focus
+      end
+
       # Opens up a popup to ask the user whether to continue editing
       #
       # This popup is used when there is any problem applying the changes to the services,
@@ -414,6 +451,13 @@ module Y2ServicesManager
       # @return [String]
       def selected_service_name
         services_table.selected_service_name
+      end
+
+      # Currently selected service
+      #
+      # @return [Yast2::SystemService]
+      def selected_service
+        ServicesManagerService.find(selected_service_name)
       end
 
       # @return [Integer]

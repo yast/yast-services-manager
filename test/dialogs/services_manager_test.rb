@@ -23,6 +23,7 @@
 require_relative '../test_helper'
 
 require "yast"
+require "y2journal"
 require "services-manager/dialogs/services_manager"
 
 describe Y2ServicesManager::Dialogs::ServicesManager do
@@ -102,6 +103,40 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
     end
 
     let(:selected_service_name) { "sshd" }
+
+
+    # Helper for buttons expectations
+    #
+    # @param block [Proc]
+    def expect_refresh_buttons(&block)
+      expect(Yast::UI).to receive(:ReplaceWidget) do |_, content|
+        expect(block.call(content)).to eq(true)
+      end
+    end
+
+    context "when logs button should not be shown" do
+      subject { described_class.new(show_logs_button: false) }
+
+      let(:user_input) { [:cancel] }
+
+      it "does not offer a button to show logs" do
+        expect_refresh_buttons { |buttons| !contain_button?(buttons, "Show &Log") }
+
+        subject.run
+      end
+    end
+
+    context "when logs button should be shown" do
+      subject { described_class.new(show_logs_button: true) }
+
+      let(:user_input) { [:cancel] }
+
+      it "offers a button to show logs" do
+        expect_refresh_buttons { |buttons| contain_button?(buttons, "Show &Log") }
+
+        subject.run
+      end
+    end
 
     context "when user selects 'Cancel' button" do
       let(:user_input) { [:cancel] }
@@ -248,6 +283,27 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
             expect(subject.run).to eq(false)
           end
         end
+      end
+    end
+
+    context "when user selects 'Show Log' button" do
+      let(:user_input) { [:logs_button, :cancel] }
+
+      let(:entries_dialog) { instance_double(Y2Journal::EntriesDialog, run: nil) }
+
+      let(:services_specs) { [sshd_specs2, postfix_specs] }
+
+      let(:sshd_specs2) { sshd_specs.merge(keywords: keywords) }
+
+      let(:keywords) { ["sshd.service", "sshd.socket"] }
+
+      it "shows the systemd journal entries for the selected service" do
+        expect(Y2Journal::EntriesDialog).to receive(:new) do |params|
+          filters = params[:query].filters["unit"]
+          expect(filters).to contain_exactly(*keywords)
+        end.and_return(entries_dialog)
+
+        subject.run
       end
     end
   end
