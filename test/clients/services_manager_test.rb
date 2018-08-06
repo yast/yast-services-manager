@@ -23,6 +23,7 @@
 require_relative '../test_helper'
 
 require "yast"
+require "y2journal"
 require "services-manager/clients/services_manager"
 
 describe Y2ServicesManager::Clients::ServicesManager do
@@ -39,6 +40,32 @@ describe Y2ServicesManager::Clients::ServicesManager do
       expect(dialog).to receive(:run)
 
       subject.run
+    end
+
+    context "when yast2-journal is installed" do
+      before do
+        allow(subject).to receive(:journal_loaded?).and_return(true)
+      end
+
+      it "runs the dialog with a button to show the logs" do
+        expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
+          .with(show_logs_button: true).and_return(dialog)
+
+        subject.run
+      end
+    end
+
+    context "when yast2-journal is not installed" do
+      before do
+        allow(subject).to receive(:journal_loaded?).and_return(false)
+      end
+
+      it "runs the dialog without a button to show the logs" do
+        expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
+          .with(show_logs_button: false).and_return(dialog)
+
+        subject.run
+      end
     end
   end
 end
