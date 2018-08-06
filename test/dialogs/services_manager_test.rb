@@ -114,7 +114,7 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
       end
     end
 
-    context "when logs button should no be shown" do
+    context "when logs button should not be shown" do
       subject { described_class.new(show_logs_button: false) }
 
       let(:user_input) { [:cancel] }
