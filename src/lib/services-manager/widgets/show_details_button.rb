@@ -1,4 +1,3 @@
-#!/usr/bin/env rspec
 # encoding: utf-8
 
 # Copyright (c) [2018] SUSE LLC
@@ -20,25 +19,43 @@
 # To contact SUSE LLC about this file by physical or electronic mail, you may
 # find current contact information at www.suse.com.
 
-require_relative '../test_helper'
-
 require "yast"
-require "services-manager/clients/services_manager"
+require "services-manager/widgets/base"
 
-describe Y2ServicesManager::Clients::ServicesManager do
-  subject { described_class.new }
+Yast.import "ServicesManager"
 
-  describe "#run" do
-    before do
-      allow(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new).and_return(dialog)
-    end
+module Y2ServicesManager
+  module Widgets
+    # Button to show details about a service
+    class ShowDetailsButton < Base
+      extend Yast::I18n
 
-    let(:dialog) { instance_double(Y2ServicesManager::Dialogs::ServicesManager, run: true) }
+      textdomain "services-manager"
 
-    it "runs the Services Manager dialog" do
-      expect(dialog).to receive(:run)
+      # Returns the plain libyui widget
+      #
+      # @return [Yast::Term]
+      def widget
+        PushButton(id, label)
+      end
 
-      subject.run
+    private
+
+      # Default widget id
+      #
+      # @see Base#default_id
+      #
+      # @return [Yast::Term]
+      def default_id
+        Id(:show_details_button)
+      end
+
+      # Button label
+      #
+      # @return [String]
+      def label
+        _("Show &Details")
+      end
     end
   end
 end

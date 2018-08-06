@@ -1,4 +1,3 @@
-#!/usr/bin/env rspec
 # encoding: utf-8
 
 # Copyright (c) [2018] SUSE LLC
@@ -20,25 +19,44 @@
 # To contact SUSE LLC about this file by physical or electronic mail, you may
 # find current contact information at www.suse.com.
 
-require_relative '../test_helper'
-
 require "yast"
-require "services-manager/clients/services_manager"
 
-describe Y2ServicesManager::Clients::ServicesManager do
-  subject { described_class.new }
+Yast.import "UI"
 
-  describe "#run" do
-    before do
-      allow(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new).and_return(dialog)
-    end
+module Y2ServicesManager
+  module Widgets
+    # Base class for widgets
+    #
+    # TODO: Currently this is not using CWM but plain libyui widgets. This should be
+    # replaced by proper CWM widgets.
+    class Base
+      include Yast
+      include Yast::I18n
+      include Yast::UIShortcuts
 
-    let(:dialog) { instance_double(Y2ServicesManager::Dialogs::ServicesManager, run: true) }
+      # @!method id
+      #   Widget id
+      #
+      #   @return [Yast::Term]
+      attr_reader :id
 
-    it "runs the Services Manager dialog" do
-      expect(dialog).to receive(:run)
+      # Constructor
+      #
+      # @param id [Symbol] widget id
+      def initialize(id: nil)
+        @id = id ? Id(id) : default_id
+      end
 
-      subject.run
+    private
+
+      # Default widget id
+      #
+      # @note Each class should redefine this method
+      #
+      # @return [Yast::Term]
+      def default_id
+        Id(:new_widget)
+      end
     end
   end
 end

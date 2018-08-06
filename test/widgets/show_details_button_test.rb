@@ -21,24 +21,14 @@
 # find current contact information at www.suse.com.
 
 require_relative '../test_helper'
+require "services-manager/widgets/show_details_button"
 
-require "yast"
-require "services-manager/clients/services_manager"
-
-describe Y2ServicesManager::Clients::ServicesManager do
+describe Y2ServicesManager::Widgets::ShowDetailsButton do
   subject { described_class.new }
 
-  describe "#run" do
-    before do
-      allow(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new).and_return(dialog)
-    end
-
-    let(:dialog) { instance_double(Y2ServicesManager::Dialogs::ServicesManager, run: true) }
-
-    it "runs the Services Manager dialog" do
-      expect(dialog).to receive(:run)
-
-      subject.run
+  describe "#widget" do
+    it "returns a Yast::Term" do
+      expect(subject.widget).to be_a(Yast::Term)
     end
   end
 end

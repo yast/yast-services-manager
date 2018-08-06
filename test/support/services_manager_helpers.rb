@@ -42,7 +42,8 @@ module Yast
       #       sub:             "running",
       #       description:     "running OpenSSH Daemon",
       #       keywords:        ["sshd.service", "sshd.socket"],
-      #       changed:         false
+      #       changed:         false,
+      #       errors:          []
       #     }
       #   ]
       #
@@ -72,9 +73,9 @@ module Yast
 
       # Stubs a service
       #
-      # @see #stubs_services
+      # @see #stub_services
       #
-      # @param serivces_specs [Hash]
+      # @param service_specs [Hash]
       def stub_service(service_specs)
         start_mode = service_specs[:start_mode]
 
@@ -93,7 +94,8 @@ module Yast
           substate:     service_specs[:sub],
           description:  service_specs[:description],
           keywords:     service_specs[:keywords],
-          changed?:     service_specs[:changed] || false
+          changed?:     service_specs[:changed] || false,
+          errors:       service_specs[:errors] || []
         )
 
         allow(service).to receive(:start_mode=)
@@ -131,6 +133,103 @@ module Yast
 
         allow_any_instance_of(Y2ServicesManager::ServiceLoader).to receive(:list_units)
           .and_return(lines)
+      end
+
+      # Stubs targets defined from specs
+      #
+      # @example
+      #
+      #   targets_specs = [
+      #     {
+      #       name:           "multi-user",
+      #       allow_isolate?: true,
+      #       enabled?:       true,
+      #       loaded?:        true,
+      #       active?:        true
+      #     }
+      #   ]
+      #
+      #   stub_targets(targets_specs)
+      #
+      # @param targets_specs [Array<Hash>]
+      def stub_targets(targets_specs)
+        targets = targets_specs.map { |s| stub_target(s) }
+
+        allow(Yast::SystemdTarget).to receive(:default_target).and_return(targets.first)
+        allow(Yast::SystemdTarget).to receive(:all).and_return(targets)
+      end
+
+      # Stubs a target
+      #
+      # @see #stub_targets
+      #
+      # @param target_specs [Hash]
+      def stub_target(target_specs)
+        instance_double(Yast::SystemdTargetClass::Target, target_specs)
+      end
+
+      # Checks whether a widgets tree contains the given id
+      #
+      # @param tree [Yast::Term]
+      # @param id [Symbol]
+      #
+      # @return [Boolean]
+      def contain_widget?(tree, id)
+        !find_widget(tree, value: :id, param: id).nil?
+      end
+
+      # Finds a widget in the widgets tree
+      #
+      # @param tree [Yast::Term]
+      # @param value [Symbol]
+      # @param param [Object]
+      #
+      # @return [Yast::Term, nil]
+      def find_widget(tree, value: nil, param: nil)
+        return nil unless tree.is_a?(Yast::Term)
+
+        tree.nested_find do |widget|
+          widget.is_a?(Yast::Term) &&
+            widget.value == value &&
+            widget.params.any?(param)
+          end
+      end
+
+      # Checks whether the widgets tree contains a button with a specific label
+      #
+      # @param tree [Yast::Term]
+      # @param label [String]
+      #
+      # @return [Boolean]
+      def contain_button?(tree, label)
+        !find_widget(tree, value: :PushButton, param: label).nil?
+      end
+
+      # Checks whether the widgets tree contains a menu button with a specific label and
+      # options (optional). The presence of given options is checked, but the menu button
+      # could contain more options.
+      #
+      # @param tree [Yast::Term]
+      # @param label [String]
+      # @param options [Array<Symbol>]
+      #
+      # @return [Boolean]
+      def contain_menu_button?(tree, label, options: [])
+        widget = find_widget(tree, value: :MenuButton, param: label)
+
+        return false if widget.nil?
+
+        options.all? { |opt| contain_option?(widget, opt) }
+      end
+
+      # Checks whether a widget contains a specific option
+      #
+      # @param tree [Yast::Term]
+      # @param option [Symbol, String]
+      #
+      # @return [Boolean]
+      def contain_option?(widget, option)
+        widget.params.last.any? { |opts| contain_widget?(opts, option) }
       end
     end
   end
