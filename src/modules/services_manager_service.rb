@@ -185,7 +185,8 @@ module Yast
       on_demand_srvs = exportable_on_demand_services
       disabled_srvs = exportable_disabled_services | ServicesProposal.disabled_services
 
-      log.info "Export: enabled services: #{on_boot_srvs}, disabled services: #{disabled_srvs}"
+      log.info "Exported services: on boot: #{on_boot_srvs}; on-demand: #{on_demand_srvs}; " \
+        "disabled: #{disabled_srvs}"
 
       { "enable" => on_boot_srvs, "on_demand" => on_demand_srvs, "disable" => disabled_srvs }
     end

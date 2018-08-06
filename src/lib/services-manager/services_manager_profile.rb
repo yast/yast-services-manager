@@ -144,7 +144,6 @@ module Yast
     end
 
     # @return [Hash<String, Symbol>] Map enable/disable to its corresponding start mode.
-    #   The on-demand mode is included for convenience.
     STATUS_TO_START_MODE = {
       ENABLE => :on_boot,
       DISABLE => :manual,
