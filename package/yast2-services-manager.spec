@@ -35,6 +35,8 @@ Requires:       ruby
 # Yast2::SystemService#build
 Requires:       yast2 >= 4.0.82
 Requires:       yast2-ruby-bindings >= 1.2.0
+# To show service logs
+Suggests:	yast2-journal >= 4.1.1
 # need new enough installation for its inst clients
 Conflicts:      yast2-installation < 3.1.32
 
@@ -44,6 +46,8 @@ Conflicts:      yast2-runlevel
 BuildRequires:  ruby
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
+# To show service logs
+BuildRequires: 	yast2-journal >= 4.1.1
 # Yast2::SystemService#build
 BuildRequires:  yast2 >= 4.0.82
 # Support for 'data' directory in rake install task
