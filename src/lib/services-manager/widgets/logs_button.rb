@@ -24,7 +24,7 @@ require "services-manager/widgets/base"
 
 module Y2ServicesManager
   module Widgets
-    # Button to show details about a service
+    # Button to show logs of a service
     class LogsButton < Base
       extend Yast::I18n
 
