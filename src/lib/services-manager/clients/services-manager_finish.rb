@@ -12,8 +12,7 @@ module ServicesManager
       end
 
       def write
-        ServicesManagerTarget.save
-        ServicesManagerService.save
+        WFM.CallFunction("services-manager_auto", ["Write"])
       end
     end
   end

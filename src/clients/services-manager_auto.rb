@@ -24,7 +24,7 @@ module Yast
         when 'Import'      then ServicesManager.import(params)
         when 'Export'      then ServicesManager.export
         when 'Read'        then ServicesManager.read
-        when 'Write'       then ServicesManager.save
+        when 'Write'       then write
         when 'Reset'       then ServicesManager.reset
         when 'Packages'    then {}
         when 'GetModified' then ServicesManager.modified?
@@ -34,7 +34,17 @@ module Yast
       end
     end
 
+    # Write services configuration changes
+    #
+    # @return [Boolean] Returns true if the operation was successful; false otherwise.
+    def write
+      return true if ServicesManager.save
+      errors = ServicesManager.errors
+      Yast::Report.LongWarning(errors.join("\n")) unless errors.empty?
+      false
+    end
   end
+
   ServicesManagerAuto.new.call(WFM.Args)
 end
 
