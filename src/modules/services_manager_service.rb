@@ -351,7 +351,7 @@ module Yast
     # @param service [String] Service name
     # @return [Array<String>] List of error messages
     def error_messages_for(service)
-      service.errors.keys.map do |key|
+      service.errors.map do |key|
         send("#{key}_error_message_for", service)
       end
     end
@@ -395,6 +395,16 @@ module Yast
         _("Could not set %{service} to be started %{change}."),
         service: service.name,
         change:  _(START_MODE_TEXT[service.start_mode])
+      )
+    end
+
+    # Returns a error message when the underlying service is not found
+    #
+    # @return [String] Error message
+    def not_found_error_message_for(service)
+      format(
+        _("Service %{service} was not found."),
+        service: service.name
       )
     end
 

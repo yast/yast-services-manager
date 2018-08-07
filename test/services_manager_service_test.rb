@@ -598,14 +598,15 @@ describe Yast::ServicesManagerServiceClass do
 
   describe "#errors" do
     before do
-      allow(dbus).to receive(:errors).and_return({:active => true})
-      allow(cups).to receive(:errors).and_return({:start_mode => :manual})
+      allow(dbus).to receive(:errors).and_return([:active, :start_mode, :not_found])
+      allow(dbus).to receive(:start_mode).and_return(:on_boot)
     end
 
     it "returns the list of service errors" do
       expect(subject.errors).to eq([
-        "Could not set cups to be started on boot.",
-        "Could not start dbus which is currently running."
+        "Could not start dbus which is currently running.",
+        "Could not set dbus to be started on boot.",
+        "Service dbus was not found."
       ])
     end
   end
