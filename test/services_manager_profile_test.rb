@@ -6,11 +6,11 @@ require 'services-manager/services_manager_profile'
 
 module Yast
   describe ServicesManagerProfile do
-    attr_reader :profile, :autoyast_profile
+    let(:profile) { ServicesManagerProfile.new(autoyast_profile) }
 
     context "legacy runlevel autoyast profile" do
-      before do
-        @autoyast_profile = {
+      let(:autoyast_profile) do
+        {
           'default'  => '3',
           'services' => [
             {
@@ -35,7 +35,6 @@ module Yast
             },
           ]
         }
-        @profile = ServicesManagerProfile.new(autoyast_profile)
       end
 
       it "returns profile object with services collection" do
@@ -73,12 +72,11 @@ module Yast
     end
 
     context "simplified services profile" do
-      before do
-        @autoyast_profile = {
+      let(:autoyast_profile) do
+        {
           'default_target'=>'graphical',
           'services' => [ 'sshd', 'iscsi' ]
         }
-        @profile = ServicesManagerProfile.new(autoyast_profile)
       end
 
       it "returns profile object that provides services collection" do
@@ -113,7 +111,6 @@ module Yast
           }
         }
       end
-      let(:profile) { ServicesManagerProfile.new(autoyast_profile) }
 
       describe "#autoyast_profile" do
         it "returns the original data from autoyast" do
@@ -173,10 +170,7 @@ module Yast
     end
 
     context "missing services and target entries in profile" do
-      before do
-        @autoyast_profile = {}
-        @profile = ServicesManagerProfile.new(autoyast_profile)
-      end
+      let(:autoyast_profile) { {} }
 
       it "provides not target information" do
         expect(profile.target).to be_nil
@@ -188,13 +182,12 @@ module Yast
     end
 
     context "wrong services entries in profile" do
-      before do
-        @autoyast_profile = {
+      let(:autoyast_profile) do
+        {
           'services' => {
             'wrong_entry' => ['wrong_entry']
           }
         }
-        @profile = ServicesManagerProfile.new(autoyast_profile)
       end
 
       it "provides empty list of services" do
