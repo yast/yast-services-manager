@@ -103,48 +103,72 @@ module Yast
     end
 
     context "extended services autoyast profile" do
-      before do
-        @autoyast_profile = {
-          'default_target' => 'multi-user',
-          'services' => {
-            'enable'    => ['sshd',  'iscsi'  ],
-            'disable'   => ['nginx', 'libvirt'],
-            'on_demand' => ['cups']
+      let(:autoyast_profile) do
+        {
+          "default_target" => "multi-user",
+          "services" => {
+            "enable"    => ["sshd",  "iscsi"  ],
+            "disable"   => ["nginx", "libvirt"],
+            "on_demand" => ["cups"]
           }
         }
-        @profile = ServicesManagerProfile.new(autoyast_profile)
+      end
+      let(:profile) { ServicesManagerProfile.new(autoyast_profile) }
+
+      describe "#autoyast_profile" do
+        it "returns the original data from autoyast" do
+          expect(profile.autoyast_profile).to equal(autoyast_profile)
+        end
       end
 
-      it "returns profile object that provides services collection" do
-        expect(profile.services).not_to be_empty
-        expect(profile.services.size).to eq(5)
+      describe "#services" do
+        it "returns profile object that provides services collection" do
+          expect(profile.services).not_to be_empty
+          expect(profile.services.size).to eq(5)
+        end
+
+        context "when a list of services to disable is given" do
+          let(:autoyast_profile) do
+            { "services" => {"disable" => ["nginx"]} }
+          end
+
+          it "returns the list of services configured to be disabled" do
+            expect(profile.services.size).to eq(1)
+            nginx = profile.services.first
+            expect(nginx.start_mode).to eq(:manual)
+          end
+        end
+
+        context "when a list of services to be started on boot is given" do
+          let(:autoyast_profile) do
+            { "services" => {"enable" => ["sshd"]} }
+          end
+
+          it "returns the list of services configured to be started on boot" do
+            expect(profile.services.size).to eq(1)
+            sshd = profile.services.first
+            expect(sshd.start_mode).to eq(:on_boot)
+          end
+        end
+
+        context "when a list of services to be started on-demand is given" do
+          let(:autoyast_profile) do
+            { "services" => {"on_demand" => ["cups"]} }
+          end
+
+          it "returns the list of services configured to be started on-demand" do
+            expect(profile.services.size).to eq(1)
+            cups = profile.services.first
+            expect(cups.start_mode).to eq(:on_demand)
+          end
+        end
       end
 
-      it "provides the original data from autoyast" do
-        expect(profile.autoyast_profile).to equal(autoyast_profile)
-      end
-
-      it "provides collection of services to be disabled" do
-        service = profile.services.find {|s| s.name == 'nginx'}
-        expect(service).not_to be_nil
-        expect(service.start_mode).to eq(:manual)
-      end
-
-      it "provides collection of services to be started on boot" do
-        service = profile.services.find {|s| s.name == 'sshd'}
-        expect(service).not_to be_nil
-        expect(service.start_mode).to eq(:on_boot)
-      end
-
-      it "provides collection of services to be started on demand" do
-        service = profile.services.find {|s| s.name == 'cups'}
-        expect(service).not_to be_nil
-        expect(service.start_mode).to eq(:on_demand)
-      end
-
-      it "provides default target" do
-        expect(profile.target).not_to be_empty
-        expect(profile.target).to eq('multi-user')
+      describe "#target" do
+        it "returns the default target" do
+          expect(profile.target).not_to be_empty
+          expect(profile.target).to eq("multi-user")
+        end
       end
     end
 
@@ -177,6 +201,5 @@ module Yast
         expect(profile.services).to be_empty
       end
     end
-
   end
 end

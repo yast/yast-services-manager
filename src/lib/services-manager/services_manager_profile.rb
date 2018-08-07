@@ -92,15 +92,27 @@ module Yast
 
     private
 
+    def simple_list?(list)
+      list.all? { |s| s.is_a?(::String) }
+    end
+
+    def extended_list?(list)
+      list.is_a?(Hash) && !(list.keys & LIST_NAMES_TO_START_MODE.keys).empty?
+    end
+
+    def runlevel_list?(list)
+      list.all? { |s| s.is_a?(Hash) && (s.key?("service_name") || s.key?("service_status")) }
+    end
+
     def extract_services
       services = autoyast_profile['services']
       return if services.nil? || services.empty?
 
-      if services.all? {|item| item.is_a?(::String) }
+      if simple_list?(services)
         load_from_simple_list(services)
-      elsif services.is_a?(Hash) && ( services.key?(ENABLE) || services.key?(DISABLE))
+      elsif extended_list?(services)
         load_from_extended_list(services)
-      elsif services.all? {|i| i.is_a?(Hash) && (i.key?('service_name') || i.key?('service_status')) }
+      elsif runlevel_list?(services)
         load_from_runlevel_list(services)
       else
         Yast::Report.Error _("Unknown autoyast services profile schema for 'services-manager'")
@@ -167,6 +179,7 @@ module Yast
 
     def load_from_extended_list services
       LIST_NAMES_TO_START_MODE.each do |list, mode|
+        next unless services.key?(list)
         services[list].each do |name|
           self.services << Service.new(name, mode)
         end
