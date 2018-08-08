@@ -25,7 +25,7 @@ require "services-manager/clients/auto"
 describe Y2ServicesManager::Clients::Auto do
   subject(:client) { Y2ServicesManager::Clients::Auto.new }
 
-  describe "change" do
+  describe "#change" do
     before do
       allow(Yast::WFM).to receive(:CallFunction).with("services-manager")
         .and_return(true)

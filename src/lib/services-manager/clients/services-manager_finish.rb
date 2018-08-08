@@ -14,7 +14,7 @@ module ServicesManager
 
       # Writes services configuration changes
       #
-      # It displays an warning when some error occurs.
+      # It displays a warning when some error occurs.
       #
       # @return [Boolean] Returns true if the operation was successful; false otherwise.
       def write
