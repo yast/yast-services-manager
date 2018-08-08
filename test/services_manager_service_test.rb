@@ -607,9 +607,9 @@ describe Yast::ServicesManagerServiceClass do
     it "returns the list of service errors" do
       subject.save
       expect(subject.errors).to contain_exactly(
-        "Service cups was not found.",
-        "Could not start dbus which is currently running.",
-        "Could not set dbus to be started on boot."
+        "Service 'cups' was not found.",
+        "Could not start 'dbus' which is currently running.",
+        "Could not set 'dbus' to be started on boot."
       )
     end
 

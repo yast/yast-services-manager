@@ -386,7 +386,7 @@ module Yast
         # %{change} is replaced by the target action (i.e., "start" or "stop"),
         # %{service} is a service name (e.g., "cups"), and %{status} is the current
         # service status (i.e., "running" or "not running").
-        _("Could not %{change} %{service} which is currently %{status}."),
+        _("Could not %{change} '%{service}' which is currently %{status}."),
         change:  change,
         service: service.name,
         status:  status
@@ -408,7 +408,7 @@ module Yast
         # TRANSLATORS: Error message when it was not possible to change the start
         # mode of a service. %{service} is replaced by a service name (e.g., "cups")
         # and %{change} is the target start mode (e.g., "on boot").
-        _("Could not set %{service} to be started %{change}."),
+        _("Could not set '%{service}' to be started %{change}."),
         service: service.name,
         change:  _(START_MODE_TEXT[service.start_mode])
       )
@@ -419,7 +419,7 @@ module Yast
     # @return [String] Error message
     def not_found_error_message_for(service)
       format(
-        _("Service %{service} was not found."),
+        _("Service '%{service}' was not found."),
         service: service.name
       )
     end
