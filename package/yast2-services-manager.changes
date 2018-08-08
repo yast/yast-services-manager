@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Aug  8 10:13:46 UTC 2018 - igonzalezsosa@suse.com
+
+- Add support to AutoYaST to set services to be started on demand
+  (related to fate#319428).
+- Improve AutoYaST error handling when configuring services.
+- 4.1.2
+
+-------------------------------------------------------------------
 Mon Aug  6 12:10:23 UTC 2018 - jlopez@suse.com
 
 - Added button to show journal logs (related to fate#319427).
