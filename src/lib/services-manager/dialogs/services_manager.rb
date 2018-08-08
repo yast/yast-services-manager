@@ -161,7 +161,7 @@ module Y2ServicesManager
           HStretch(),
           PushButton(Id(:abort), Opt(:key_F9), Label.CancelButton),
           HSpacing(2),
-          PushButton(Id(:apply), _("&Apply")),
+          Yast::Mode.config ? Empty() : PushButton(Id(:apply), _("&Apply")),
           PushButton(Id(:next), Opt(:key_F10, :default), Label.OKButton)
         )
       end
