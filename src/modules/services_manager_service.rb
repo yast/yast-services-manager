@@ -3,6 +3,7 @@ require "yast2/system_service"
 require "services-manager/service_loader"
 
 module Yast
+  import "Mode"
   import "Service"
   import "ServicesProposal"
   import "SystemdService"
@@ -46,10 +47,11 @@ module Yast
     # @param name [String] service name
     # @return [Yast2::SystemService, nil]
     def find(name)
-      return services[name] unless Stage.initial
+      return services[name] unless Stage.initial || Mode.auto
 
-      # We are in inst-sys. So we cannot check for installed services but generate entries
-      # for these services if they do not exist yet.
+      # In inst-sys we cannot check for installed services but generate entries for these
+      # services if they do not exist yet. The same applies to AutoYaST when a service might be
+      # installed as part of the software selection.
       services[name] = Yast2::SystemService.build(name)
     end
 
@@ -171,9 +173,13 @@ module Yast
 
     # Reads all services' data
     #
+    # @note When running AutoYaST, system services will not be read as the relevant services
+    # will be imported later.
+    #
     # @return [Hash{String => Yast2::SystemService}]
     def read
-      @services ||= Y2ServicesManager::ServiceLoader.new.read
+      return @services if @services
+      @services = Mode.auto ? {} : Y2ServicesManager::ServiceLoader.new.read
     end
 
     # Resets the global status of the object
@@ -230,9 +236,9 @@ module Yast
     #
     # @return [Boolean]
     def save
-      errors.clear
       log.info "Saving systemd services..."
-      refresh_services if Stage.initial
+      errors.clear
+      refresh_services if Stage.initial || Mode.auto
       register_missing_services
       save_modified_services
       errors.empty?

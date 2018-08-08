@@ -57,12 +57,32 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#services" do
-    before do
-      allow(subject).to receive(:read).and_call_original
-    end
-
     it "returns the list of services" do
       expect(subject.services).to eq(services)
+    end
+
+    context "during autoinstallation or autoupgrade" do
+      before do
+        allow(Yast::Mode).to receive(:auto).and_return(true)
+      end
+
+      it "returns an empty hash" do
+        expect(subject.services).to eq({})
+      end
+
+      context "after importing a list of services" do
+        let(:profile) { Yast::ServicesManagerProfile.new("services" => {"enable" => ["cups"]}) }
+
+        before do
+          subject.import(profile)
+        end
+
+        it "returns the imported services" do
+          expect(subject.services.size).to eq(1)
+          service = subject.services.values.first
+          expect(service.name).to eq("cups")
+        end
+      end
     end
   end
 
@@ -586,6 +606,19 @@ describe Yast::ServicesManagerServiceClass do
 
       it "saves all services not modifying the current status" do
         expect(dbus).to receive(:save).with(keep_state: true)
+        subject.save
+      end
+    end
+
+    context "on autoinstallation or autoupgrade" do
+      before do
+        allow(Yast::Mode).to receive(:auto).and_return(true)
+        allow(subject).to receive(:services).and_return({"dbus" => dbus})
+      end
+
+      it "refresh services before saving them" do
+        expect(dbus).to receive(:refresh).ordered
+        expect(dbus).to receive(:save).ordered
         subject.save
       end
     end
