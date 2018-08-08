@@ -30,6 +30,7 @@ module Yast
       @services
     end
 
+    attr_reader :errors
     attr_writer :services
 
     alias_method :all, :services
@@ -37,6 +38,7 @@ module Yast
     def initialize
       textdomain 'services-manager'
       @modified = false
+      @errors = []
     end
 
     # Finds a service
@@ -148,7 +150,14 @@ module Yast
     #
     # @return [Array<Yast2::SystemService>] List of modified services
     def modified_services
-      services.values.select(&:changed?)
+      services.values.select { |s| s.found? && s.changed? }
+    end
+
+    # Returns services which are not available in the underlying system
+    #
+    # @return [Array<Yast2::SystemService>] List of not found services
+    def missing_services
+      services.values.reject(&:found?)
     end
 
     # Reloads the service list
@@ -221,34 +230,12 @@ module Yast
     #
     # @return [Boolean]
     def save
+      errors.clear
       log.info "Saving systemd services..."
-
       refresh_services if Stage.initial
-
-      if modified_services.empty?
-        log.info "No service has been changed, nothing to do..."
-        return true
-      end
-
-      log.info "Modified services: #{modified_services.map(&:name)}"
-
-      modified_services.each do |service|
-        service.save(keep_state: Stage.initial)
-      rescue Yast::SystemctlError
-        # This exception is raised when the service cannot be refreshed
-        next
-      end
-
-      services.values.all? { |s| s.errors.empty? }
-    end
-
-    # Returns a list of errors detected when trying to write the changes to the underlying system
-    #
-    # @return [Array<String>] Detected errors or an empty string when no errors were detected
-    def errors
-      services.values.reject { |e| e.errors.empty? }.each_with_object([]) do |service, all|
-        all.concat(error_messages_for(service))
-      end
+      register_missing_services
+      save_modified_services
+      errors.empty?
     end
 
     # Activates the service in cache
@@ -327,7 +314,36 @@ module Yast
 
     alias_method :modified?, :modified
 
-    private
+  private
+
+    # Registers errors for missing services
+    #
+    # @see #missing_services
+    def register_missing_services
+      missing_services.each do |service|
+        self.errors << not_found_error_message_for(service)
+      end
+    end
+
+    # Saves modified services
+    def save_modified_services
+      services = modified_services
+      if services.empty?
+        log.info "No service has been changed, nothing to do..."
+        return
+      end
+
+      log.info "Modified services: #{services.map(&:name)}"
+
+      services.each do |service|
+        if !service.save(keep_state: Stage.initial)
+          self.errors.concat(error_messages_for(service))
+        end
+      rescue Yast::SystemctlError
+        # This exception is raised when the service cannot be refreshed
+        next
+      end
+    end
 
     # Helper method to avoid if-else branching
     # When passed a block, this will be executed only if the service exists
@@ -351,7 +367,7 @@ module Yast
     # @param service [String] Service name
     # @return [Array<String>] List of error messages
     def error_messages_for(service)
-      service.errors.map do |key|
+      service.errors.keys.map do |key|
         send("#{key}_error_message_for", service)
       end
     end

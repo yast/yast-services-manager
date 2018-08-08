@@ -32,14 +32,14 @@ describe Yast::ServicesManagerServiceClass do
     instance_double(
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
-      save: nil, refresh: nil, errors: {}
+      save: nil, refresh: nil, errors: {}, found?: true
     )
   end
 
   let(:dbus) do
     instance_double(
       Yast2::SystemService, name: "dbus", changed?: true, active?: true,
-      running?: true, refresh: nil, save: nil, errors: {}
+      running?: true, refresh: nil, save: nil, errors: {}, found?: true
     )
   end
 
@@ -566,7 +566,8 @@ describe Yast::ServicesManagerServiceClass do
 
     context "when a service registers an error" do
       before do
-        allow(cups).to receive(:errors).and_return({activate: true})
+        allow(dbus).to receive(:errors).and_return({active: true})
+        allow(dbus).to receive(:save).and_return(false)
       end
 
       it "returns false" do
@@ -598,16 +599,24 @@ describe Yast::ServicesManagerServiceClass do
 
   describe "#errors" do
     before do
-      allow(dbus).to receive(:errors).and_return([:active, :start_mode, :not_found])
+      allow(dbus).to receive(:errors).and_return({active: true, start_mode: :on_boot})
       allow(dbus).to receive(:start_mode).and_return(:on_boot)
+      allow(cups).to receive(:found?).and_return(false)
     end
 
     it "returns the list of service errors" do
-      expect(subject.errors).to eq([
+      subject.save
+      expect(subject.errors).to contain_exactly(
+        "Service cups was not found.",
         "Could not start dbus which is currently running.",
-        "Could not set dbus to be started on boot.",
-        "Service dbus was not found."
-      ])
+        "Could not set dbus to be started on boot."
+      )
+    end
+
+    context "when save has not been called" do
+      it "returns an empty array" do
+        expect(subject.errors).to be_empty
+      end
     end
   end
 
