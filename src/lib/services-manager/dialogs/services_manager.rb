@@ -182,12 +182,17 @@ module Y2ServicesManager
       # @return [Yast::Term]
       def service_buttons
         buttons = [
-          start_stop_button.widget,
-          HSpacing(1),
           start_mode_button.widget,
           HStretch(),
           show_details_button.widget
         ]
+
+        unless Mode.config
+          buttons.unshift(
+            start_stop_button.widget,
+            HSpacing(1),
+          )
+        end
 
         if show_logs_button?
           buttons += [
