@@ -23,6 +23,7 @@
 require_relative "test_helper"
 
 Yast.import "ServicesManager"
+require "services-manager/services_manager_profile"
 
 describe Yast::ServicesManagerServiceClass do
   subject { Yast::ServicesManagerServiceClass.new }
@@ -31,14 +32,14 @@ describe Yast::ServicesManagerServiceClass do
     instance_double(
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
-      save: nil, refresh: nil, errors: {}
+      save: nil, refresh: nil, errors: {}, found?: true
     )
   end
 
   let(:dbus) do
     instance_double(
       Yast2::SystemService, name: "dbus", changed?: true, active?: true,
-      running?: true, refresh: nil, save: nil, errors: {}
+      running?: true, refresh: nil, save: nil, errors: {}, found?: true
     )
   end
 
@@ -56,12 +57,32 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#services" do
-    before do
-      allow(subject).to receive(:read).and_call_original
-    end
-
     it "returns the list of services" do
       expect(subject.services).to eq(services)
+    end
+
+    context "during autoinstallation or autoupgrade" do
+      before do
+        allow(Yast::Mode).to receive(:auto).and_return(true)
+      end
+
+      it "returns an empty hash" do
+        expect(subject.services).to eq({})
+      end
+
+      context "after importing a list of services" do
+        let(:profile) { Yast::ServicesManagerProfile.new("services" => {"enable" => ["cups"]}) }
+
+        before do
+          subject.import(profile)
+        end
+
+        it "returns the imported services" do
+          expect(subject.services.size).to eq(1)
+          service = subject.services.values.first
+          expect(service.name).to eq("cups")
+        end
+      end
     end
   end
 
@@ -367,13 +388,26 @@ describe Yast::ServicesManagerServiceClass do
         allow(dbus).to receive(:static?).and_return(false)
       end
 
-      context "and is enabled" do
+      context "and is set to be started on boot" do
         before do
           allow(dbus).to receive(:start_mode).and_return(:on_boot)
         end
 
         it "exports the service as enabled" do
           expect(exported_services["enable"]).to include("dbus")
+        end
+      end
+
+      context "and is set to be started on demand" do
+        before do
+          allow(dbus).to receive(:start_mode).and_return(:on_demand)
+        end
+
+        it "exports the services to be started on demand" do
+          exported = subject.export
+          expect(exported["on_demand"]).to include("dbus")
+          expect(exported["enable"]).to_not include("dbus")
+          expect(exported["disable"]).to_not include("dbus")
         end
       end
 
@@ -404,13 +438,25 @@ describe Yast::ServicesManagerServiceClass do
         end
       end
 
-      context "and was enabled" do
+      context "and was set to be started on boot" do
         before do
           allow(cups).to receive(:start_mode).and_return(:on_boot)
         end
 
         it "exports the service as enable" do
           expect(exported_services["enable"]).to include("cups")
+          expect(exported_services["disable"]).to_not include("cups")
+        end
+      end
+
+      context "and was set to be started on demand" do
+        before do
+          allow(cups).to receive(:start_mode).and_return(:on_demand)
+        end
+
+        it "exports the service to be started on demand" do
+          expect(exported_services["on_demand"]).to include("cups")
+          expect(exported_services["enable"]).to_not include("cups")
           expect(exported_services["disable"]).to_not include("cups")
         end
       end
@@ -447,100 +493,73 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#import" do
-    let(:autoyast_profile) do
-      {
-        "default"  => "3",
-        "services" => [
-          {
-            "service_name"   => "dbus",
-            "service_status" => "enable",
-            "service_start"  => "3"
-          },
-          {
-            "service_name"   => "cups",
-            "service_status" => "disable",
-            "service_start"  => "5"
-          }
-        ]
-      }
+    let(:profile_services) do
+      [
+        Yast::ServicesManagerProfile::Service.new("dbus", :on_boot),
+        Yast::ServicesManagerProfile::Service.new("cups", :on_demand),
+        Yast::ServicesManagerProfile::Service.new("libvirtd", :manual),
+      ]
     end
-    let(:profile) { Yast::ServicesManagerProfile.new(autoyast_profile) }
+
+    let(:libvirtd) do
+      instance_double(Yast2::SystemService, name: "libvirtd")
+    end
+
+    let(:services) do
+      { "cups" => cups, "dbus" => dbus, "libvirtd" => libvirtd }
+    end
+
+    let(:profile) do
+      instance_double(Yast::ServicesManagerProfile, services: profile_services)
+    end
 
     before do
       allow(subject).to receive(:set_start_mode)
     end
 
-    it "enables services with `enable` status" do
-      expect(subject).to receive(:enable).with("dbus")
-
+    it "sets the start mode for the given services" do
+      expect(subject).to receive(:set_start_mode).with("dbus", :on_boot)
+      expect(subject).to receive(:set_start_mode).with("cups", :on_demand)
+      expect(subject).to receive(:set_start_mode).with("libvirtd", :manual)
       subject.import(profile)
     end
 
-    it "disables services with `disable` status" do
-      expect(subject).to receive(:disable).with("cups")
-
-      subject.import(profile)
+    it "returns true" do
+      expect(subject.import(profile)).to eq(true)
     end
 
-    context "there are unknown statuses" do
-      let(:autoyast_profile) do
-        {
-          "default"  => "3",
-          "services" => [
-            {
-              "service_name"   => "dbus",
-              "service_status" => "wrong_status",
-              "service_start"  => "3"
-            },
-            {
-              "service_name"   => "cups",
-              "service_status" => "disable",
-              "service_start"  => "5"
-            }
-          ]
-        }
-      end
-
-      it "logs an error for unkown statuses" do
-        expect(subject.log).to receive(:error).with("Unknown status 'wrong_status' for service 'dbus'")
-
-        subject.import(profile)
-      end
-    end
-
-    context "when all services are present in the system" do
-      it "returns true" do
-        expect(subject.import(profile)).to be_truthy
-      end
-    end
-
-    context "when any service is not present in the system" do
-      let(:autoyast_profile) do
-        {
-          "default"  => "3",
-          "services" => [
-            {
-              "service_name"   => "fake_service",
-              "service_status" => "enable",
-              "service_start"  => "3"
-            },
-            {
-              "service_name"   => "cups",
-              "service_status" => "disable",
-              "service_start"  => "5"
-            }
-          ]
-        }
+    context "when an unknown service is specified" do
+      let(:profile_services) do
+        [Yast::ServicesManagerProfile::Service.new("unknown", :on_boot)]
       end
 
       it "logs an error" do
         expect(subject.log).to receive(:error).with(/don't exist on this system/)
-
         subject.import(profile)
       end
 
       it "returns false" do
-        expect(subject.import(profile)).to be_falsey
+        expect(subject.import(profile)).to eq(false)
+      end
+    end
+
+    context "when an invalid start mode is specified" do
+      let(:profile_services) do
+        [Yast::ServicesManagerProfile::Service.new("cups", :fail)]
+      end
+
+      before do
+        allow(subject).to receive(:set_start_mode).with("cups", :fail).and_raise(ArgumentError)
+      end
+
+      it "logs an error" do
+        allow(subject.log).to receive(:error)
+        expect(subject.log).to receive(:error).with(/Invalid/)
+        subject.import(profile)
+      end
+
+      it "returns false" do
+        expect(subject.import(profile)).to eq(false)
       end
     end
   end
@@ -565,10 +584,10 @@ describe Yast::ServicesManagerServiceClass do
       subject.save
     end
 
-
     context "when a service registers an error" do
       before do
-        allow(cups).to receive(:errors).and_return({activate: true})
+        allow(dbus).to receive(:errors).and_return({active: true})
+        allow(dbus).to receive(:save).and_return(false)
       end
 
       it "returns false" do
@@ -591,6 +610,19 @@ describe Yast::ServicesManagerServiceClass do
       end
     end
 
+    context "on autoinstallation or autoupgrade" do
+      before do
+        allow(Yast::Mode).to receive(:auto).and_return(true)
+        allow(subject).to receive(:services).and_return({"dbus" => dbus})
+      end
+
+      it "refresh services before saving them" do
+        expect(dbus).to receive(:refresh).ordered
+        expect(dbus).to receive(:save).ordered
+        subject.save
+      end
+    end
+
     context "when no service is changed" do
       it "returns true" do
         expect(subject.save).to eq(true)
@@ -600,15 +632,24 @@ describe Yast::ServicesManagerServiceClass do
 
   describe "#errors" do
     before do
-      allow(dbus).to receive(:errors).and_return({:active => true})
-      allow(cups).to receive(:errors).and_return({:start_mode => :manual})
+      allow(dbus).to receive(:errors).and_return({active: true, start_mode: :on_boot})
+      allow(dbus).to receive(:start_mode).and_return(:on_boot)
+      allow(cups).to receive(:found?).and_return(false)
     end
 
     it "returns the list of service errors" do
-      expect(subject.errors).to eq([
-        "Could not set cups to be started on boot.",
-        "Could not start dbus which is currently running."
-      ])
+      subject.save
+      expect(subject.errors).to contain_exactly(
+        "Service 'cups' was not found.",
+        "Could not start 'dbus' which is currently running.",
+        "Could not set 'dbus' to be started on boot."
+      )
+    end
+
+    context "when save has not been called" do
+      it "returns an empty array" do
+        expect(subject.errors).to be_empty
+      end
     end
   end
 

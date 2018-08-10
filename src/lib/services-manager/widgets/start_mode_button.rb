@@ -28,6 +28,7 @@ module Y2ServicesManager
   module Widgets
     # Menu button to set the start mode of a service
     class StartModeButton < Base
+
       # Constructor
       #
       # @param service_name [String] name of a service

@@ -138,6 +138,56 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
       end
     end
 
+    context "when start/stop button should be shown" do
+      subject { described_class.new(show_start_stop_button: true) }
+
+      let(:user_input) { [:cancel] }
+
+      it "offers a button to start/stop services" do
+        expect_refresh_buttons { |buttons| contain_button?(buttons, "&Stop") }
+        subject.run
+      end
+    end
+
+    context "when start/stop button should not be shown" do
+      subject { described_class.new(show_start_stop_button: false) }
+
+      let(:user_input) { [:cancel] }
+
+      it "does not offer a button to start/stop services" do
+        expect_refresh_buttons { |buttons| !contain_button?(buttons, "&Stop") }
+        subject.run
+      end
+    end
+
+    context "when apply button should be shown" do
+      subject { described_class.new(show_apply_button: true) }
+
+      let(:user_input) { [:cancel] }
+
+      it "offers a button to apply changes" do
+        expect(Yast::Wizard).to receive(:GenericDialog) do |content|
+          expect(contain_button?(content, "&Apply")).to eq(true)
+        end
+
+        subject.run
+      end
+    end
+
+    context "when apply button should not be shown" do
+      subject { described_class.new(show_apply_button: false) }
+
+      let(:user_input) { [:cancel] }
+
+      it "does not offer a button to apply changes" do
+        expect(Yast::Wizard).to receive(:GenericDialog) do |content|
+          expect(contain_button?(content, "&Apply")).to eq(false)
+        end
+
+        subject.run
+      end
+    end
+
     context "when user selects 'Cancel' button" do
       let(:user_input) { [:cancel] }
 

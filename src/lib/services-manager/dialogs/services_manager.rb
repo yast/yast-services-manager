@@ -34,6 +34,7 @@ Yast.import "UI"
 Yast.import "Wizard"
 Yast.import "Label"
 Yast.import "Popup"
+Yast.import "Mode"
 
 module Y2ServicesManager
   module Dialogs
@@ -57,10 +58,12 @@ module Y2ServicesManager
       attr_reader :success
       alias_method :success?, :success
 
-      def initialize(show_logs_button: false)
+      def initialize(show_logs_button: false, show_start_stop_button: true, show_apply_button: true)
         textdomain "services-manager"
 
         @show_logs_button = show_logs_button
+        @show_start_stop_button = show_start_stop_button
+        @show_apply_button = show_apply_button
       end
 
       # Runs the dialog and returns if it was successful
@@ -79,6 +82,14 @@ module Y2ServicesManager
       # @return [Boolean] whether the logs button should be shown
       attr_reader :show_logs_button
       alias_method :show_logs_button?, :show_logs_button
+
+      # @return [Boolean] whether the start/stop button should be shown
+      attr_reader :show_start_stop_button
+      alias_method :show_start_stop_button?, :show_start_stop_button
+
+      # @return [Boolean] whether the apply button should be shown
+      attr_reader :show_apply_button
+      alias_method :show_apply_button?, :show_apply_button
 
       # @return [Boolean]
       attr_writer :success
@@ -161,7 +172,7 @@ module Y2ServicesManager
           HStretch(),
           PushButton(Id(:abort), Opt(:key_F9), Label.CancelButton),
           HSpacing(2),
-          PushButton(Id(:apply), _("&Apply")),
+          show_apply_button? ? PushButton(Id(:apply), _("&Apply")) : Empty(),
           PushButton(Id(:next), Opt(:key_F10, :default), Label.OKButton)
         )
       end
@@ -182,12 +193,17 @@ module Y2ServicesManager
       # @return [Yast::Term]
       def service_buttons
         buttons = [
-          start_stop_button.widget,
-          HSpacing(1),
           start_mode_button.widget,
           HStretch(),
           show_details_button.widget
         ]
+
+        if show_start_stop_button?
+          buttons.unshift(
+            start_stop_button.widget,
+            HSpacing(1),
+          )
+        end
 
         if show_logs_button?
           buttons += [

@@ -23,6 +23,7 @@ require "yast"
 require "services-manager/dialogs/services_manager"
 
 Yast.import "CommandLine"
+Yast.import "Mode"
 
 module Y2ServicesManager
   module Clients
@@ -59,7 +60,11 @@ module Y2ServicesManager
 
       # The log button only is included if YaST Journal is installed
       def run_dialog
-        Dialogs::ServicesManager.new(show_logs_button: journal_loaded?).run
+        Dialogs::ServicesManager.new(
+          show_logs_button: journal_loaded?,
+          show_start_stop_button: !Yast::Mode.config,
+          show_apply_button: !Yast::Mode.config
+        ).run
       end
 
     private

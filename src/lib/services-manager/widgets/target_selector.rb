@@ -28,9 +28,14 @@ module Y2ServicesManager
   module Widgets
     # Widget to select a systemd target
     class TargetSelector < Base
-      extend Yast::I18n
 
-      textdomain "services-manager"
+      # Constructor
+      #
+      # @param id [Symbol] widget id
+      def initialize(id: nil)
+        textdomain "services-manager"
+        super
+      end
 
       # Returns the plain libyui widget
       #

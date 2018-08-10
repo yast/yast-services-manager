@@ -20,6 +20,15 @@
 <% end %>
 </ul>
 
+<% unless services.fetch("on_demand", []).empty? %>
+<p><b><%= _('On Demand') %></b></p>
+<ul>
+<% services.fetch("on_demand", []).each do |service| %>
+  <li><%= ERB::Util.html_escape(service) %></li>
+<% end %>
+</ul>
+<% end %>
+
 <p><b><%= _('Disabled') %></b></p>
 <ul>
 <% services.fetch("disable", []).each do |service| %>

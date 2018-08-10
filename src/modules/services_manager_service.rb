@@ -3,6 +3,7 @@ require "yast2/system_service"
 require "services-manager/service_loader"
 
 module Yast
+  import "Mode"
   import "Service"
   import "ServicesProposal"
   import "SystemdService"
@@ -30,6 +31,7 @@ module Yast
       @services
     end
 
+    attr_reader :errors
     attr_writer :services
 
     alias_method :all, :services
@@ -37,6 +39,7 @@ module Yast
     def initialize
       textdomain 'services-manager'
       @modified = false
+      @errors = []
     end
 
     # Finds a service
@@ -44,10 +47,11 @@ module Yast
     # @param name [String] service name
     # @return [Yast2::SystemService, nil]
     def find(name)
-      return services[name] unless Stage.initial
+      return services[name] unless Stage.initial || Mode.auto
 
-      # We are in inst-sys. So we cannot check for installed services but generate entries
-      # for these services if they do not exist yet.
+      # In inst-sys we cannot check for installed services but generate entries for these
+      # services if they do not exist yet. The same applies to AutoYaST when a service might be
+      # installed as part of the software selection.
       services[name] = Yast2::SystemService.build(name)
     end
 
@@ -148,7 +152,14 @@ module Yast
     #
     # @return [Array<Yast2::SystemService>] List of modified services
     def modified_services
-      services.values.select(&:changed?)
+      services.values.select { |s| s.found? && s.changed? }
+    end
+
+    # Returns services which are not available in the underlying system
+    #
+    # @return [Array<Yast2::SystemService>] List of not found services
+    def missing_services
+      services.values.reject(&:found?)
     end
 
     # Reloads the service list
@@ -162,9 +173,13 @@ module Yast
 
     # Reads all services' data
     #
+    # @note When running AutoYaST, system services will not be read as the relevant services
+    # will be imported later.
+    #
     # @return [Hash{String => Yast2::SystemService}]
     def read
-      @services ||= Y2ServicesManager::ServiceLoader.new.read
+      return @services if @services
+      @services = Mode.auto ? {} : Y2ServicesManager::ServiceLoader.new.read
     end
 
     # Resets the global status of the object
@@ -181,12 +196,14 @@ module Yast
     # both, enabled or disabled
     # @return [Hash{String => Array<String>}]
     def export
-      enabled_services  = exportable_enabled_services.keys | ServicesProposal.enabled_services
-      disabled_services = exportable_disabled_services.keys | ServicesProposal.disabled_services
+      on_boot_srvs = exportable_on_boot_services | ServicesProposal.enabled_services
+      on_demand_srvs = exportable_on_demand_services
+      disabled_srvs = exportable_disabled_services | ServicesProposal.disabled_services
 
-      log.info "Export: enabled services: #{enabled_services}, disabled services: #{disabled_services}"
+      log.info "Exported services: on boot: #{on_boot_srvs}; on-demand: #{on_demand_srvs}; " \
+        "disabled: #{disabled_srvs}"
 
-      { "enable" => enabled_services, "disable" => disabled_services }
+      { "enable" => on_boot_srvs, "on_demand" => on_demand_srvs, "disable" => disabled_srvs }
     end
 
     # Import services from AutoYast profile
@@ -204,9 +221,9 @@ module Yast
 
       known_services, unknown_services = profile.services.partition { |service| exists?(service.name) }
 
-      enable_or_disable(known_services)
+      result = enable_or_disable(known_services)
 
-      if unknown_services.empty?
+      if unknown_services.empty? && result
         true
       else
         log.error("Services #{unknown_services.inspect} don't exist on this system")
@@ -220,33 +237,11 @@ module Yast
     # @return [Boolean]
     def save
       log.info "Saving systemd services..."
-
-      refresh_services if Stage.initial
-
-      if modified_services.empty?
-        log.info "No service has been changed, nothing to do..."
-        return true
-      end
-
-      log.info "Modified services: #{modified_services.map(&:name)}"
-
-      modified_services.each do |service|
-        service.save(keep_state: Stage.initial)
-      rescue Yast::SystemctlError
-        # This exception is raised when the service cannot be refreshed
-        next
-      end
-
-      services.values.all? { |s| s.errors.empty? }
-    end
-
-    # Returns a list of errors detected when trying to write the changes to the underlying system
-    #
-    # @return [Array<String>] Detected errors or an empty string when no errors were detected
-    def errors
-      services.values.reject { |e| e.errors.empty? }.each_with_object([]) do |service, all|
-        all.concat(error_messages_for(service))
-      end
+      errors.clear
+      refresh_services if Stage.initial || Mode.auto
+      register_missing_services
+      save_modified_services
+      errors.empty?
     end
 
     # Activates the service in cache
@@ -325,7 +320,36 @@ module Yast
 
     alias_method :modified?, :modified
 
-    private
+  private
+
+    # Registers errors for missing services
+    #
+    # @see #missing_services
+    def register_missing_services
+      missing_services.each do |service|
+        self.errors << not_found_error_message_for(service)
+      end
+    end
+
+    # Saves modified services
+    def save_modified_services
+      services = modified_services
+      if services.empty?
+        log.info "No service has been changed, nothing to do..."
+        return
+      end
+
+      log.info "Modified services: #{services.map(&:name)}"
+
+      services.each do |service|
+        if !service.save(keep_state: Stage.initial)
+          self.errors.concat(error_messages_for(service))
+        end
+      rescue Yast::SystemctlError
+        # This exception is raised when the service cannot be refreshed
+        next
+      end
+    end
 
     # Helper method to avoid if-else branching
     # When passed a block, this will be executed only if the service exists
@@ -368,7 +392,7 @@ module Yast
         # %{change} is replaced by the target action (i.e., "start" or "stop"),
         # %{service} is a service name (e.g., "cups"), and %{status} is the current
         # service status (i.e., "running" or "not running").
-        _("Could not %{change} %{service} which is currently %{status}."),
+        _("Could not %{change} '%{service}' which is currently %{status}."),
         change:  change,
         service: service.name,
         status:  status
@@ -390,17 +414,34 @@ module Yast
         # TRANSLATORS: Error message when it was not possible to change the start
         # mode of a service. %{service} is replaced by a service name (e.g., "cups")
         # and %{change} is the target start mode (e.g., "on boot").
-        _("Could not set %{service} to be started %{change}."),
+        _("Could not set '%{service}' to be started %{change}."),
         service: service.name,
         change:  _(START_MODE_TEXT[service.start_mode])
       )
     end
 
+    # Returns a error message when the underlying service is not found
+    #
+    # @return [String] Error message
+    def not_found_error_message_for(service)
+      format(
+        _("Service '%{service}' was not found."),
+        service: service.name
+      )
+    end
+
     # Selects candidate services to be exported as enabled to AutoYast profile
     #
-    # @return [Hash{String => SystemService}]
-    def exportable_enabled_services
-      services.select { |service_name, _| enabled(service_name) && can_be_enabled(service_name) }
+    # @return [Array<String>]
+    def exportable_on_boot_services
+      services.select { |n, _| start_mode(n) == :on_boot && can_be_enabled(n) }.keys
+    end
+
+    # Selects candidate services to be exported as enabled on-demand to AutoYast profile
+    #
+    # @return [Array<String>]
+    def exportable_on_demand_services
+      services.select { |n, _| start_mode(n) == :on_demand && can_be_enabled(n) }.keys
     end
 
     # Selects candidate services to be exported as disabled to AutoYast profile
@@ -408,9 +449,9 @@ module Yast
     # Untouched services are discarded; only services modified by the user to be disabled must be
     # exported to AutoYast profile.
     #
-    # @return [Hash{String => SystemService}]
+    # @return [Array<String>]
     def exportable_disabled_services
-      services.select { |service_name, service| service.changed? && !enabled(service_name) }
+      services.select { |n, s| s.changed? && !enabled(n) }.keys
     end
 
     # Enable or disable given services according to its status
@@ -419,18 +460,16 @@ module Yast
     #
     # @see #import
     #
-    # @param services [Array<SystemService>] services to be enabled or disabled
+    # @param services [Array<Service>] services to be enabled or disabled
     def enable_or_disable(services)
+      result = true
       services.each do |service|
-        case service.status
-        when "enable"
-          enable(service.name)
-        when "disable"
-          disable(service.name)
-        else
-          log.error("Unknown status '#{service.status}' for service '#{service.name}'")
-        end
+        set_start_mode(service.name, service.start_mode)
+      rescue ArgumentError
+        result = false
+        log.error("Invalid start mode '#{service.start_mode}' for service '#{service.name}'")
       end
+      result
     end
 
     # Refresh the services information
