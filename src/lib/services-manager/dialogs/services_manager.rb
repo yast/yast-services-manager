@@ -34,6 +34,7 @@ Yast.import "UI"
 Yast.import "Wizard"
 Yast.import "Label"
 Yast.import "Popup"
+Yast.import "Mode"
 
 module Y2ServicesManager
   module Dialogs
