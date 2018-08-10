@@ -32,7 +32,7 @@ BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby
-# Yast2::SystemService#found? as an array
+# Yast2::SystemService#found?
 Requires:       yast2 >= 4.0.83
 Requires:       yast2-ruby-bindings >= 1.2.0
 # To show service logs
@@ -48,7 +48,7 @@ BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # To show service logs
 BuildRequires: 	yast2-journal >= 4.1.1
-# Yast2::SystemService#found? as an array
+# Yast2::SystemService#found?
 BuildRequires:  yast2 >= 4.0.83
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(yast-rake) >= 0.1.7
