@@ -49,7 +49,7 @@ describe Y2ServicesManager::Clients::ServicesManager do
 
       it "runs the dialog with a button to show the logs" do
         expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
-          .with(show_logs_button: true).and_return(dialog)
+          .with(hash_including(show_logs_button: true)).and_return(dialog)
 
         subject.run
       end
@@ -62,8 +62,26 @@ describe Y2ServicesManager::Clients::ServicesManager do
 
       it "runs the dialog without a button to show the logs" do
         expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
-          .with(show_logs_button: false).and_return(dialog)
+          .with(hash_including(show_logs_button: false)).and_return(dialog)
 
+        subject.run
+      end
+    end
+
+    context "when running in config mode" do
+      before do
+        allow(Yast::Mode).to receive(:config).and_return(true)
+      end
+
+      it "runs the dialog without a button to start/stop services" do
+        expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
+          .with(hash_including(show_start_stop_button: false)).and_return(dialog)
+        subject.run
+      end
+
+      it "runs the dialog without a button to apply changes" do
+        expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
+          .with(hash_including(show_apply_button: false)).and_return(dialog)
         subject.run
       end
     end
