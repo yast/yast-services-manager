@@ -95,6 +95,7 @@ module Yast
           description:  service_specs[:description],
           keywords:     service_specs[:keywords],
           changed?:     service_specs[:changed] || false,
+          found?:       service_specs[:found] || true,
           errors:       service_specs[:errors] || []
         )
 
