@@ -44,6 +44,7 @@ module Y2ServicesManager
       #
       # @param id [Symbol] widget id
       def initialize(id: nil)
+        textdomain "services-manager"
         @id = id ? Id(id) : default_id
       end
 
