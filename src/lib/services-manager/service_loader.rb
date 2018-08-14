@@ -54,7 +54,6 @@ module Y2ServicesManager
     DEFAULT_SERVICE_SETTINGS = {
       :start_mode     => :manual,
       :start_modes    => [:boot, :manual],
-      :can_be_enabled => true,
       :modified       => false,
       :active         => nil,
       :loaded         => false,
@@ -156,7 +155,6 @@ module Y2ServicesManager
           services[name][:loaded] = @supported_units[name][:status] == Status::LOADED
           services[name][:description] = @supported_units[name][:description]
         end
-        services[name][:can_be_enabled] = status == Status::STATIC ? false : true
       end
     end
 

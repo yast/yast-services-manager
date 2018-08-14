@@ -136,16 +136,6 @@ module Yast
       exists?(name, &:description)
     end
 
-    # Returns whether the given service can be enabled/disabled by the user
-    #
-    # @param name [String] Service name
-    # @return [Boolean] if it is enabled or not
-    def can_be_enabled(name)
-      # exists?(name) { |s| !s.static? }
-      # TODO is this method still needed?
-      true
-    end
-
     # Returns services which have been modified (in memory)
     #
     # @return [Array<Yast2::SystemService>] List of modified services
@@ -385,7 +375,7 @@ module Yast
     #
     # @return [Hash{String => SystemService}]
     def exportable_enabled_services
-      services.select { |service_name, _| enabled(service_name) && can_be_enabled(service_name) }
+      services.select { |name, service| enabled(name) && !service.static? }
     end
 
     # Selects candidate services to be exported as disabled to AutoYast profile
@@ -395,7 +385,7 @@ module Yast
     #
     # @return [Hash{String => SystemService}]
     def exportable_disabled_services
-      services.select { |service_name, service| service.changed? && !enabled(service_name) }
+      services.select { |name, service| service.changed? && !enabled(name) }
     end
 
     # Enable or disable given services according to its status
@@ -432,7 +422,6 @@ module Yast
     publish({:function => :disable,        :type => "string (boolean)"        })
     publish({:function => :enable,         :type => "string (boolean)"        })
     publish({:function => :enabled,        :type => "boolean ()"              })
-    publish({:function => :can_be_enabled, :type => "boolean ()"              })
     publish({:function => :errors,         :type => "list ()"                 })
     publish({:function => :export,         :type => "list <string> ()"        })
     publish({:function => :import,         :type => "boolean (list <string>)" })
