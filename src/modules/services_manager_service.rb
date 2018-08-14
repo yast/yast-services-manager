@@ -141,7 +141,9 @@ module Yast
     # @param name [String] Service name
     # @return [Boolean] if it is enabled or not
     def can_be_enabled(name)
-      exists?(name) { |s| !s.static? }
+      # exists?(name) { |s| !s.static? }
+      # TODO is this method still needed?
+      true
     end
 
     # Returns services which have been modified (in memory)
