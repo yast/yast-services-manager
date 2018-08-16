@@ -242,34 +242,6 @@ describe Yast::ServicesManagerServiceClass do
     end
   end
 
-  describe "#can_be_enabled" do
-    let(:static?) { false }
-
-    before do
-      allow(cups).to receive(:static?).and_return(static?)
-    end
-
-    context "when the service is not static" do
-      it "returns true" do
-        expect(subject.can_be_enabled("cups")).to eq(true)
-      end
-    end
-
-    context "when the service is static" do
-      let(:static?) { true }
-
-      it "returns false" do
-        expect(subject.can_be_enabled("cups")).to eq(false)
-      end
-    end
-
-    context "when the service does not exist" do
-      it "returns false" do
-        expect(subject.can_be_enabled("unknown")).to eq(false)
-      end
-    end
-  end
-
   describe "#modified_services" do
     it "returns modified services" do
       expect(subject.modified_services).to eq([dbus])
