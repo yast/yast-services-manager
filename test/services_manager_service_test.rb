@@ -242,34 +242,6 @@ describe Yast::ServicesManagerServiceClass do
     end
   end
 
-  describe "#can_be_enabled" do
-    let(:static?) { false }
-
-    before do
-      allow(cups).to receive(:static?).and_return(static?)
-    end
-
-    context "when the service is not static" do
-      it "returns true" do
-        expect(subject.can_be_enabled("cups")).to eq(true)
-      end
-    end
-
-    context "when the service is static" do
-      let(:static?) { true }
-
-      it "returns false" do
-        expect(subject.can_be_enabled("cups")).to eq(false)
-      end
-    end
-
-    context "when the service does not exist" do
-      it "returns false" do
-        expect(subject.can_be_enabled("unknown")).to eq(false)
-      end
-    end
-  end
-
   describe "#modified_services" do
     it "returns modified services" do
       expect(subject.modified_services).to eq([dbus])
@@ -321,21 +293,32 @@ describe Yast::ServicesManagerServiceClass do
 
   describe "#export" do
     before do
-      allow(cups).to receive(:static?)
       allow(cups).to receive(:start_mode)
-      allow(dbus).to receive(:static?)
       allow(dbus).to receive(:start_mode)
     end
 
     let(:exported_services) { subject.export }
 
-    context "when service is proposed to be enabled" do
+    context "when service is proposed to be started on boot" do
       before do
         allow(Yast::ServicesProposal).to receive(:enabled_services).and_return(["sshd"])
       end
 
       it "exports the services as enabled" do
         expect(exported_services["enable"]).to include("sshd")
+      end
+    end
+
+    context "when service is proposed to be started on demand" do
+      before do
+        allow(dbus).to receive(:start_mode).and_return(:on_demand)
+      end
+
+      it "exports the services to be started on demand" do
+        exported = subject.export
+        expect(exported["on_demand"]).to include("dbus")
+        expect(exported["enable"]).to_not include("dbus")
+        expect(exported["disable"]).to_not include("dbus")
       end
     end
 
@@ -346,79 +329,6 @@ describe Yast::ServicesManagerServiceClass do
 
       it "exports the service as disabled" do
         expect(exported_services["disable"]).to include("httpd")
-      end
-    end
-
-    context "when is a static service (user cannot enable or disable it)" do
-      before do
-        allow(dbus).to receive(:static?).and_return(true)
-      end
-
-      context "and is enabled" do
-        before do
-          allow(dbus).to receive(:start_mode).and_return(:on_boot)
-        end
-
-        it "does not export the service as enabled" do
-          expect(exported_services["enable"]).to_not include("dbus")
-        end
-
-        it "does not export the service as disabled" do
-          expect(exported_services["disable"]).to_not include("dbus")
-        end
-      end
-
-      context "and is disabled" do
-        before do
-          allow(dbus).to receive(:start_mode).and_return(:manual)
-        end
-
-        it "does not export the service as enabled" do
-          expect(exported_services["enable"]).to_not include("dbus")
-        end
-
-        it "exports the service as disabled" do
-          expect(exported_services["disable"]).to include("dbus")
-        end
-      end
-    end
-
-    context "when is not a static sevice (user can enable/disable it)" do
-      before do
-        allow(dbus).to receive(:static?).and_return(false)
-      end
-
-      context "and is set to be started on boot" do
-        before do
-          allow(dbus).to receive(:start_mode).and_return(:on_boot)
-        end
-
-        it "exports the service as enabled" do
-          expect(exported_services["enable"]).to include("dbus")
-        end
-      end
-
-      context "and is set to be started on demand" do
-        before do
-          allow(dbus).to receive(:start_mode).and_return(:on_demand)
-        end
-
-        it "exports the services to be started on demand" do
-          exported = subject.export
-          expect(exported["on_demand"]).to include("dbus")
-          expect(exported["enable"]).to_not include("dbus")
-          expect(exported["disable"]).to_not include("dbus")
-        end
-      end
-
-      context "and is disabled" do
-        before do
-          allow(dbus).to receive(:start_mode).and_return(:manual)
-        end
-
-        it "does not export the service as enabled" do
-          expect(exported_services["enable"]).to_not include("dbus")
-        end
       end
     end
 
