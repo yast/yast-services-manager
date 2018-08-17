@@ -156,8 +156,8 @@ module Yast
       def stub_targets(targets_specs)
         targets = targets_specs.map { |s| stub_target(s) }
 
-        allow(Yast::SystemdTarget).to receive(:default_target).and_return(targets.first)
-        allow(Yast::SystemdTarget).to receive(:all).and_return(targets)
+        allow(Yast2::Systemd::Target).to receive(:default_target).and_return(targets.first)
+        allow(Yast2::Systemd::Target).to receive(:all).and_return(targets)
       end
 
       # Stubs a target
@@ -166,7 +166,7 @@ module Yast
       #
       # @param target_specs [Hash]
       def stub_target(target_specs)
-        instance_double(Yast::SystemdTargetClass::Target, target_specs)
+        instance_double(Yast2::Systemd::Target, target_specs)
       end
 
       # Checks whether a widgets tree contains the given id
