@@ -6,7 +6,6 @@ module Yast
   import "Mode"
   import "Service"
   import "ServicesProposal"
-  import "SystemdService"
   import "Stage"
 
   class ServicesManagerServiceClass < Module
@@ -248,7 +247,7 @@ module Yast
     #
     # @param name [String] service name
     # @param mode    [Symbol] Start mode
-    # @see Yast::SystemdServiceClass::Service#start_modes
+    # @see Yast2::SystemService#start_modes
     def set_start_mode(name, mode)
       exists?(name) { |s| s.start_mode = mode }
     end
