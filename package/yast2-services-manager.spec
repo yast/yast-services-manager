@@ -56,7 +56,7 @@ BuildRequires:  rubygem(rspec)
 
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
-License:        GPL-2.0+
+License:        GPL-2.0-or-later
 Url:            https://github.com/yast/yast-services-manager
 
 %description
