@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu Aug 23 13:11:36 UTC 2018 - jlopez@suse.com
+
+- Add confirmation popup with summary of changes and highlight
+  changes over each service.
+- Disable Apply button when there are no changes.
+- Part of fate#319428.
+- 4.1.4
+
+-------------------------------------------------------------------
 Wed Aug 22 14:27:06 CEST 2018 - schubi@suse.de
 
 - Switched license in spec file from SPDX2 to SPDX3 format.
