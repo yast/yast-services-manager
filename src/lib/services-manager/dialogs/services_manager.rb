@@ -302,8 +302,8 @@ module Y2ServicesManager
 
       # Handler for next event (accept button is used)
       #
-      # @note A confirmation popup is shown and it finishes the dialog if all
-      #   changes were correctly applied.
+      # @note A confirmation popup is shown when there is any change and it finishes
+      #   the dialog if all changes were correctly applied.
       def next_handler
         return unless confirm_changes?
 

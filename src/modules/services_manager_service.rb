@@ -548,10 +548,10 @@ module Yast
       )
     end
 
-    # Returns the name of the given services
+    # Returns the name of the given services, joined by comma.
     #
     # @param services [Array<Yast2::SystemService>]
-    # @return [Array<String>]
+    # @return [String]
     def services_names(services)
       services.map(&:name).join(", ")
     end
