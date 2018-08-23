@@ -1,8 +1,8 @@
 require "yast"
+require "yast2/systemd/target"
 
 module Yast
   import 'Stage'
-  import 'SystemdTarget'
 
   class ServicesManagerTargetClass < Module
     include Yast::Logger
@@ -83,11 +83,11 @@ module Yast
       # Reads the data on a running system only
       return true if Stage.initial
 
-      default_target = SystemdTarget.get_default
+      default_target = Yast2::Systemd::Target.get_default
       @initial_default_target = default_target ? default_target.name : ""
       @default_target = @initial_default_target
 
-      SystemdTarget.all.each do |target|
+      Yast2::Systemd::Target.all.each do |target|
         next unless target.allow_isolate?
         next if BLACKLISTED_TARGETS.member?(target.name)
 
@@ -135,7 +135,7 @@ module Yast
     def save
       return true unless modified?
       log.info('Saving default target...')
-      SystemdTarget.set_default(default_target)
+      Yast2::Systemd::Target.set_default(default_target)
     end
 
     def reset

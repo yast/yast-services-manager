@@ -49,8 +49,8 @@ module Yast
     before do
       allow(Yast::Mode).to receive(:mode).and_return("normal")
 
-      allow(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
-      allow(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
+      allow(Yast2::Systemd::Target).to receive(:all).and_return(TestTarget::ALL)
+      allow(Yast2::Systemd::Target).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
     end
 
     describe "#default_target" do
@@ -104,7 +104,7 @@ module Yast
         let(:target) { "graphical" }
 
         it "does not perform changes in the underlying system" do
-          expect(SystemdTarget).to_not receive(:set_default)
+          expect(Yast2::Systemd::Target).to_not receive(:set_default)
 
           subject.save
         end
@@ -114,7 +114,7 @@ module Yast
         let(:target) { "multi-user" }
 
         it "saves the changes in the underlying system" do
-          expect(SystemdTarget).to receive(:set_default).with("multi-user")
+          expect(Yast2::Systemd::Target).to receive(:set_default).with("multi-user")
 
           subject.save
         end

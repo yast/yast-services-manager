@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Aug 23 14:23:27 UTC 2018 - dgonzalez@suse.com
+
+- Update calls to YaST2 systemd classes (related to fate#319428)
+- 4.1.5
+
+-------------------------------------------------------------------
 Thu Aug 23 13:11:36 UTC 2018 - jlopez@suse.com
 
 - Add confirmation popup with summary of changes and highlight
