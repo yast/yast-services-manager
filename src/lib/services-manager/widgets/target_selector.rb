@@ -51,6 +51,11 @@ module Y2ServicesManager
         UI.QueryWidget(id, :Value)
       end
 
+      # Refreshes the widget content
+      def refresh
+        UI.ChangeWidget(id, :Items, system_targets_items)
+      end
+
     private
 
       # Default widget id

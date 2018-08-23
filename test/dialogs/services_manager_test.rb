@@ -172,6 +172,19 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
 
         subject.run
       end
+
+      context "and there are no changes yet" do
+        before do
+          allow(Yast::ServicesManager).to receive(:modified?).and_return(false)
+          allow(Yast::UI).to receive(:ChangeWidget).and_call_original
+        end
+
+        it "disables the 'Apply' button" do
+          expect(Yast::UI).to receive(:ChangeWidget).with(Id(:apply), :Enabled, false)
+
+          subject.run
+        end
+      end
     end
 
     context "when apply button should not be shown" do
@@ -208,95 +221,25 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
       end
     end
 
-    context "when user selects 'OK' button" do
-      let(:user_input) { [:next] }
+    shared_examples "try to save" do
+      it "shows a confirmation popup with a summary of changes" do
+        allow(Yast::ServicesManager).to receive(:modified?).and_return(true)
 
-      before do
-        allow(Yast::ServicesManager).to receive(:save).and_return(success)
+        expect(Yast2::Popup).to receive(:show) do |message, options|
+          expect(options[:headline]).to match(/Summary/)
+        end.and_return(:yes)
+
+        subject.run
       end
-
-      let(:success) { true }
 
       it "tries to apply all changes" do
         expect(Yast::ServicesManager).to receive(:save)
 
         subject.run
-      end
-
-      context "and all changes are correctly applied" do
-        let(:success) { true }
-
-        it "closes the dialog" do
-          expect(Yast::UI).to receive(:CloseDialog)
-
-          subject.run
-        end
-
-        it "returns true" do
-          expect(subject.run).to eq(true)
-        end
-      end
-
-      context "and some changes cannot be applied" do
-        let(:success) { false }
-
-        it "asks whether to continue editing" do
-          expect(Yast::Popup).to receive(:ContinueCancel)
-
-          subject.run
-        end
-
-        context "and user wants to continue editing" do
-          before do
-            allow(Yast::Popup).to receive(:ContinueCancel).and_return(true)
-          end
-
-          let(:user_input) { [:next, :cancel] }
-
-          it "refreshes the services list" do
-            expect(subject).to receive(:refresh_services).twice
-
-            subject.run
-          end
-        end
-
-        context "and user does not want to continue editing" do
-          before do
-            allow(Yast::Popup).to receive(:ContinueCancel).and_return(false)
-          end
-
-          it "returns false" do
-            expect(subject.run).to eq(false)
-          end
-        end
       end
     end
 
-    context "when user selects 'Apply' button" do
-      let(:user_input) { [:apply, :cancel] }
-
-      before do
-        allow(Yast::ServicesManager).to receive(:save).and_return(success)
-      end
-
-      let(:success) { true }
-
-      it "tries to apply all changes" do
-        expect(Yast::ServicesManager).to receive(:save)
-
-        subject.run
-      end
-
-      context "and all changes are correctly applied" do
-        let(:success) { true }
-
-        it "refreshes the services list" do
-          expect(subject).to receive(:refresh_services).twice
-
-          subject.run
-        end
-      end
-
+    shared_examples "save with errors" do
       context "and some changes cannot be applied" do
         let(:success) { false }
 
@@ -336,6 +279,58 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
       end
     end
 
+    context "when user selects 'OK' button" do
+      let(:user_input) { [:next, :cancel] }
+
+      before do
+        allow(Yast::ServicesManager).to receive(:save).and_return(success)
+      end
+
+      let(:success) { true }
+
+      include_examples "try to save"
+
+      context "and all changes are correctly applied" do
+        let(:success) { true }
+
+        it "closes the dialog" do
+          expect(Yast::UI).to receive(:CloseDialog)
+
+          subject.run
+        end
+
+        it "returns true" do
+          expect(subject.run).to eq(true)
+        end
+      end
+
+      include_examples "save with errors"
+    end
+
+    context "when user selects 'Apply' button" do
+      let(:user_input) { [:apply, :cancel] }
+
+      before do
+        allow(Yast::ServicesManager).to receive(:save).and_return(success)
+      end
+
+      let(:success) { true }
+
+      include_examples "try to save"
+
+      context "and all changes are correctly applied" do
+        let(:success) { true }
+
+        it "refreshes the services list" do
+          expect(subject).to receive(:refresh_services).twice
+
+          subject.run
+        end
+      end
+
+      include_examples "save with errors"
+    end
+
     context "when user selects 'Show Log' button" do
       let(:user_input) { [:logs_button, :cancel] }
 
@@ -352,6 +347,18 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
           filters = params[:query].filters["unit"]
           expect(filters).to contain_exactly(*keywords)
         end.and_return(entries_dialog)
+
+        subject.run
+      end
+    end
+
+    context "when user selects 'Help' button" do
+      let(:user_input) { [:help, :cancel] }
+
+      it "shows a popup with the help" do
+        expect(Yast2::Popup).to receive(:show) do |message, options|
+          expect(options[:headline]).to match(/Help/)
+        end
 
         subject.run
       end

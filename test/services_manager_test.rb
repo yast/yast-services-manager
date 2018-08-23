@@ -1,4 +1,24 @@
 #!/usr/bin/env rspec
+# encoding: utf-8
+
+# Copyright (c) [2018] SUSE LLC
+#
+# All Rights Reserved.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 2 of the GNU General Public License as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, contact SUSE LLC.
+#
+# To contact SUSE LLC about this file by physical or electronic mail, you may
+# find current contact information at www.suse.com.
 
 require_relative 'test_helper'
 
@@ -225,6 +245,33 @@ module Yast
         allow(Yast::ServicesManagerService).to receive(:reset)
         allow(Yast::ServicesManagerTarget).to receive(:reset)
         expect(subject.reset).to eq(nil)
+      end
+    end
+
+    describe "#changes_summary" do
+      before do
+        allow(Yast::ServicesManagerTarget).to receive(:changes_summary).and_return(target_changes)
+        allow(Yast::ServicesManagerService).to receive(:changes_summary).and_return(services_changes)
+      end
+
+      let(:target_changes) { "target changes" }
+      let(:services_changes) { "services changes" }
+
+      it "contains the summary of changes for the default target" do
+        expect(subject.changes_summary).to include(target_changes)
+      end
+
+      it "contains the summary of changes for the services" do
+        expect(subject.changes_summary).to include(services_changes)
+      end
+
+      context "when there are no changes" do
+        let(:target_changes) { "" }
+        let(:services_changes) { "" }
+
+        it "returns an empty text" do
+          expect(subject.changes_summary).to be_empty
+        end
       end
     end
   end

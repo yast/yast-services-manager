@@ -120,7 +120,31 @@ module Y2ServicesManager
       #
       # @return [Yast2::SystemService, nil] nil if the service is not found
       def selected_service
-        ServicesManagerService.find(selected_service_name)
+        service(selected_service_name)
+      end
+
+      # Help text
+      #
+      # @return [String]
+      def help
+        # TRANSLATORS: help text to explain the columns of the services table
+        _(
+          "<b>Service</b> shows the name of the service." \
+          "<br />" \
+          "<b>Start</b> shows the start mode of the service:" \
+          "<ul>" \
+            "<li>On Boot: the service will be automatically started after booting the system.</li>" \
+            "<li>On Demand: the service will be automatically started when needed.</li>" \
+            "<li>Manually: the service will not be automatically started.</li>" \
+          "</ul>" \
+          "<b>State</b> shows the state and substate of the service." \
+          "<br />" \
+          "<b>Description</b> shows the description of the service." \
+          "<br />" \
+          "<br />" \
+          "Note: edited values are marked with '(*)'. These new values will be saved by " \
+          "using 'Apply' or 'OK' button."
+        )
       end
 
     private
@@ -217,26 +241,36 @@ module Y2ServicesManager
 
       # Value for the start_mode column of a service
       #
+      # @note The value contains a special mark when it has been edited by the user,
+      #   see {#highlight_value}.
+      #
       # @param service_name [String]
       # @return [String]
       def start_mode_value(service_name)
-        ServicesManagerService.start_mode_to_human_for(service_name)
+        value = ServicesManagerService.start_mode_to_human_for(service_name)
+
+        value = highlight_value(value) if service(service_name).changed?(:start_mode)
+
+        value
       end
 
       # Value for the state column of a service
       #
+      # By default it shows the current service status, but if the user starts or stops
+      # the service, then it shows the fixed text "Active" or "Inactive", see {#current_state_value}
+      # and {#future_state_value}.
+      #
+      # @note The value contains a special mark when it has been edited by the user,
+      #   see {#highlight_value}.
+      #
       # @param service_name [String]
       # @return [String]
       def state_value(service_name)
-        state = TRANSLATIONS[:service_state][service_state(service_name)]
-        substate = TRANSLATIONS[:service_substate][service_substate(service_name)]
+        service = service(service_name)
 
-        return _(state) unless substate
+        return current_state_value(service) unless service.changed?(:active)
 
-        # TRANSLATORS: state of a service, as showed by systemctl (e.g., "Active (Running)").
-        # %{state} is replaced by the service state (e.g. "Active", "Inactive", etc) and
-        # %{substate} is replaced by the service substate (e.g., "Start", "Stop", "Exited", etc).
-        format(_("%{state} (%{substate})"), state: _(state), substate: _(substate))
+        future_state_value(service)
       end
 
       # Value for the description column of a service
@@ -247,20 +281,47 @@ module Y2ServicesManager
         ServicesManagerService.description(service_name) || ""
       end
 
-      # State of a service
+      # Text for the current state of the service
       #
-      # @param service_name [String]
+      # @param service [Yast2::SystemService]
       # @return [String]
-      def service_state(service_name)
-        ServicesManagerService.state(service_name) || ""
+      def current_state_value(service)
+        state = TRANSLATIONS[:service_state][service.state]
+        substate = TRANSLATIONS[:service_substate][service.substate]
+
+        return _(state) unless substate
+
+        # TRANSLATORS: state of a service, as showed by systemctl (e.g., "Active (Running)").
+        # %{state} is replaced by the service state (e.g. "Active", "Inactive", etc) and
+        # %{substate} is replaced by the service substate (e.g., "Start", "Stop", "Exited", etc).
+        format(_("%{state} (%{substate})"), state: _(state), substate: _(substate))
       end
 
-      # Substate of a service
+      # Text for the future state of the service
+      #
+      # @note It contains a special mark, see {#highlight_value}.
+      #
+      # @param service [Yast2::SystemService]
+      # @return [String]
+      def future_state_value(service)
+        value = service.active? ? _("Active") : _("Inactive")
+        highlight_value(value)
+      end
+
+      # Adds a special mark to highlight the value (e.g., when the value has been edited)
+      #
+      # @param value [String]
+      # @return [String]
+      def highlight_value(value)
+        "(*) " + value
+      end
+
+      # Service object
       #
       # @param service_name [String]
-      # @return [String]
-      def service_substate(service_name)
-        ServicesManagerService.substate(service_name) || ""
+      # @return [Yast2::SystemService, nil] nil if the service is not found
+      def service(service_name)
+        ServicesManagerService.find(service_name)
       end
 
       # Updates the value for the start_mode column of a service
@@ -274,16 +335,7 @@ module Y2ServicesManager
       #
       # @param service_name [String]
       def refresh_state_value(service_name)
-        active_changed = ServicesManagerService.find(service_name).changed?(:active)
-        will_be_active = ServicesManagerService.active?(service_name)
-
-        state = if active_changed
-          will_be_active ? _('Active (will start)') : _('Inactive (will stop)')
-        else
-          state_value(service_name)
-        end
-
-        UI.ChangeWidget(id, Cell(service_name, 2), state)
+        UI.ChangeWidget(id, Cell(service_name, 2), state_value(service_name))
       end
 
       # Max width of a column

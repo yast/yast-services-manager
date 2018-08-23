@@ -20,6 +20,7 @@
 # find current contact information at www.suse.com.
 
 require "yast"
+require "yast2/popup"
 require "yast2/feedback"
 require "services-manager/widgets/base"
 require "services-manager/widgets/target_selector"
@@ -121,7 +122,7 @@ module Y2ServicesManager
         Yast::Wizard.OpenDialog(dialog)
 
         Yast::Wizard.SetContents(title, contents, help, true, true)
-        refresh_services
+        refresh
       end
 
       # Closes the dialog
@@ -136,12 +137,11 @@ module Y2ServicesManager
         _("Services Manager")
       end
 
-      # TODO
       # Dialog help
       #
       # @return [String]
       def help
-        ""
+        services_table.help
       end
 
       # Dialog content
@@ -243,16 +243,6 @@ module Y2ServicesManager
         @logs_button ||= Widgets::LogsButton.new(id: WidgetsId::LOGS_BUTTON)
       end
 
-      # Redraw all buttons according to the selected service
-      def refresh_service_buttons
-        @start_mode_button = nil
-        @start_stop_button = nil
-        @show_details_button = nil
-        @logs_button = nil
-
-        UI.ReplaceWidget(Id(WidgetsId::SERVICE_BUTTONS), service_buttons)
-      end
-
       # Handle all events in the dialog
       #
       # @note The loop finishes when some event handler sets {#finish} to true.
@@ -291,6 +281,15 @@ module Y2ServicesManager
         handler
       end
 
+      # Handler for help event (help button is used)
+      #
+      # A popup with help is shown
+      def help_handler
+        self.finish = false
+
+        show_help
+      end
+
       # Handler for abort event (abort button is used)
       #
       # A confirm popup is shown
@@ -303,13 +302,16 @@ module Y2ServicesManager
 
       # Handler for next event (accept button is used)
       #
-      # @note It finishes the dialog if all changes were correctly applied.
+      # @note A confirmation popup is shown when there is any change and it finishes
+      #   the dialog if all changes were correctly applied.
       def next_handler
+        return unless confirm_changes?
+
         self.success = save
 
         if !success && continue_editing?
           self.finish = false
-          refresh_services
+          refresh
         else
           self.finish = true
         end
@@ -317,13 +319,16 @@ module Y2ServicesManager
 
       # Handler for apply event (apply button is used)
       #
-      # @note It does not finish the dialog when all changes were correctly applied.
+      # @note A confirmation popup is shown and it does not finish the dialog when
+      #   all changes were correctly applied.
       def apply_handler
+        return unless confirm_changes?
+
         self.success = save
 
         if success || continue_editing?
           self.finish = false
-          refresh_services
+          refresh
         else
           self.finish = true
         end
@@ -347,6 +352,7 @@ module Y2ServicesManager
 
         log.info("Setting new default target '#{target_selector.value}'")
         ServicesManagerTarget.default_target = target_selector.value
+        refresh_buttons
       end
 
       # Handler when a service is started/stopped
@@ -360,9 +366,9 @@ module Y2ServicesManager
           "#{ServicesManagerService.active(service) ? 'inactive' : 'active'}"
         )
 
-        success = ServicesManagerService.switch(service)
-
-        refresh_selected_service if success
+        ServicesManagerService.switch(service)
+        refresh_selected_service
+        refresh_buttons
       end
 
       # Handler when a start mode is selected
@@ -373,6 +379,7 @@ module Y2ServicesManager
 
         ServicesManagerService.set_start_mode(selected_service_name, mode)
         refresh_selected_service
+        refresh_buttons
       end
 
       # Handler when "Show Details" button is used
@@ -409,6 +416,17 @@ module Y2ServicesManager
         services_table.focus
       end
 
+      # When there are changes, it opens up a confirmation popup with a summary of all changes
+      #
+      # @return [Boolean]
+      def confirm_changes?
+        return true unless Yast::ServicesManager.modified?
+
+        message = Yast::ServicesManager.changes_summary + _("Apply all changes?")
+
+        Yast2::Popup.show(message, richtext: true, headline: _("Summary of changes"), buttons: :yes_no) == :yes
+      end
+
       # Opens up a popup to ask the user whether to continue editing
       #
       # This popup is used when there is any problem applying the changes to the services,
@@ -424,6 +442,11 @@ module Y2ServicesManager
         Popup::ContinueCancel(message)
       end
 
+      # Opens up a popup with the help text
+      def show_help
+        Yast2::Popup.show(help, richtext: true, headline: _("Help"), buttons: :ok)
+      end
+
       # Applies all changes indicated for each service
       #
       # @return [Boolean] true if all changes were correctly applied; false otherwise.
@@ -433,6 +456,38 @@ module Y2ServicesManager
         log.info("Writing configuration...")
 
         Yast2::Feedback.show(_("Writing configuration...")) { Yast::ServicesManager.save }
+      end
+
+      # Refreshes the widgets and the buttons of the dialog
+      def refresh
+        refresh_targets
+        refresh_services
+        refresh_buttons
+      end
+
+      # Refreshes the buttons of the dialog
+      #
+      # @note The 'Apply' button is disabled when there are no changes to apply.
+      def refresh_buttons
+        return unless show_apply_button?
+
+        Yast::UI.ChangeWidget(Id(:apply), :Enabled, Yast::ServicesManager.modified?)
+      end
+
+      # Refreshes all service buttons according to the selected service
+      def refresh_service_buttons
+        @start_mode_button = nil
+        @start_stop_button = nil
+        @show_details_button = nil
+        @logs_button = nil
+
+        UI.ReplaceWidget(Id(WidgetsId::SERVICE_BUTTONS), service_buttons)
+      end
+
+      # Refreshes the target selector
+      def refresh_targets
+        ServicesManagerTarget.reset
+        target_selector.refresh
       end
 
       # Reads services and updates the table content

@@ -32,14 +32,14 @@ describe Yast::ServicesManagerServiceClass do
     instance_double(
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
-      save: nil, refresh: nil, errors: {}, found?: true
+      save: nil, refresh: nil, errors: {}, found?: true, action: nil
     )
   end
 
   let(:dbus) do
     instance_double(
-      Yast2::SystemService, name: "dbus", changed?: true, active?: true,
-      running?: true, refresh: nil, save: nil, errors: {}, found?: true
+      Yast2::SystemService, name: "dbus", changed?: true, start_mode: nil, active?: true,
+      running?: true, refresh: nil, save: nil, errors: {}, found?: true, action: nil
     )
   end
 
@@ -692,6 +692,149 @@ describe Yast::ServicesManagerServiceClass do
     context "when it has not been marked as modified or no service has been changed" do
       it "returns false" do
         expect(subject.modified).to eq(false)
+      end
+    end
+  end
+
+  describe "#changes_summary" do
+    context "when no services were changed" do
+      before do
+        allow(cups).to receive(:changed?).and_return(false)
+        allow(cups).to receive(:changed?).and_return(false)
+      end
+
+      it "returns an empty text" do
+        expect(subject.changes_summary).to be_empty
+      end
+    end
+
+    context "when some services were started" do
+      before do
+        allow(cups).to receive(:changed?).and_return(true)
+        allow(cups).to receive(:action).and_return(:start)
+      end
+
+      it "contains the summary for the started services" do
+        expect(subject.changes_summary).to include("will be started:<br />cups<br />")
+      end
+    end
+
+    context "when no services were started" do
+      before do
+        allow(cups).to receive(:action).and_return(:stop)
+        allow(dbus).to receive(:action).and_return(:stop)
+      end
+
+      it "does not contain the summary for the started services" do
+        expect(subject.changes_summary).to_not include("will be started:")
+      end
+    end
+
+    context "when some services were stopped" do
+      before do
+        allow(cups).to receive(:changed?).and_return(true)
+        allow(cups).to receive(:action).and_return(:stop)
+
+        allow(dbus).to receive(:changed?).and_return(true)
+        allow(dbus).to receive(:action).and_return(:stop)
+      end
+
+      it "contains the summary for the stopped services" do
+        expect(subject.changes_summary).to include("will be stopped:<br />cups, dbus<br />")
+      end
+    end
+
+    context "when no services were stopped" do
+      before do
+        allow(cups).to receive(:action).and_return(:start)
+        allow(dbus).to receive(:action).and_return(:start)
+      end
+
+      it "does not contain the summary for the stopped services" do
+        expect(subject.changes_summary).to_not include("will be stopped:")
+      end
+    end
+
+    context "when some services were configured to start on boot" do
+      before do
+        allow(cups).to receive(:changed?).and_return(true)
+        allow(cups).to receive(:changed?).with(:start_mode).and_return(true)
+        allow(cups).to receive(:start_mode).and_return(:on_boot)
+      end
+
+      it "contains the summary for the services configured to start on boot" do
+        expect(subject.changes_summary)
+          .to include("will be configured to start after booting:<br />cups<br />")
+      end
+    end
+
+    context "when no services were configured to start on boot" do
+      before do
+        allow(cups).to receive(:start_mode).and_return(:on_demand)
+        allow(cups).to receive(:start_mode).and_return(:on_demand)
+      end
+
+      it "does not contain the summary for the services configured to start on boot" do
+        expect(subject.changes_summary)
+          .to_not include("will be configured to start after booting:")
+      end
+    end
+
+    context "when some services were configured to start on demand" do
+      before do
+        allow(cups).to receive(:changed?).and_return(true)
+        allow(cups).to receive(:changed?).with(:start_mode).and_return(true)
+        allow(cups).to receive(:start_mode).and_return(:on_demand)
+
+        allow(dbus).to receive(:changed?).and_return(true)
+        allow(dbus).to receive(:changed?).with(:start_mode).and_return(true)
+        allow(dbus).to receive(:start_mode).and_return(:on_demand)
+      end
+
+      it "contains the summary for the services configured to start on boot" do
+        expect(subject.changes_summary)
+          .to include("will be configured to start on demand:<br />cups, dbus<br />")
+      end
+    end
+
+    context "when no services were configured to start on demand" do
+      before do
+        allow(cups).to receive(:start_mode).and_return(:on_boot)
+        allow(cups).to receive(:start_mode).and_return(:on_boot)
+      end
+
+      it "does not contain the summary for the services configured to start on demand" do
+        expect(subject.changes_summary)
+          .to_not include("will be configured to start on demand:")
+      end
+    end
+
+    context "when some services were configured to start manually" do
+      before do
+        allow(cups).to receive(:changed?).and_return(true)
+        allow(cups).to receive(:changed?).with(:start_mode).and_return(true)
+        allow(cups).to receive(:start_mode).and_return(:manual)
+
+        allow(dbus).to receive(:changed?).and_return(true)
+        allow(dbus).to receive(:changed?).with(:start_mode).and_return(true)
+        allow(dbus).to receive(:start_mode).and_return(:manual)
+      end
+
+      it "contains the summary for the services configured to manually" do
+        expect(subject.changes_summary)
+          .to include("will be configured to start manually:<br />cups, dbus<br />")
+      end
+    end
+
+    context "when no services were configured to start manually" do
+      before do
+        allow(cups).to receive(:start_mode).and_return(:on_boot)
+        allow(cups).to receive(:start_mode).and_return(:on_boot)
+      end
+
+      it "does not contain the summary for the services configured to start manually" do
+        expect(subject.changes_summary)
+          .to_not include("will be configured to start manually:")
       end
     end
   end
