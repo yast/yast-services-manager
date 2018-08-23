@@ -351,5 +351,17 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
         subject.run
       end
     end
+
+    context "when user selects 'Help' button" do
+      let(:user_input) { [:help, :cancel] }
+
+      it "shows a popup with the help" do
+        expect(Yast2::Popup).to receive(:show) do |message, options|
+          expect(options[:headline]).to match(/Help/)
+        end
+
+        subject.run
+      end
+    end
   end
 end

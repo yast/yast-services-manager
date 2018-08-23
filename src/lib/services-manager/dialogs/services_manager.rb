@@ -137,12 +137,11 @@ module Y2ServicesManager
         _("Services Manager")
       end
 
-      # TODO
       # Dialog help
       #
       # @return [String]
       def help
-        ""
+        services_table.help
       end
 
       # Dialog content
@@ -280,6 +279,15 @@ module Y2ServicesManager
         end
 
         handler
+      end
+
+      # Handler for help event (help button is used)
+      #
+      # A popup with help is shown
+      def help_handler
+        self.finish = false
+
+        show_help
       end
 
       # Handler for abort event (abort button is used)
@@ -432,6 +440,11 @@ module Y2ServicesManager
         )
 
         Popup::ContinueCancel(message)
+      end
+
+      # Opens up a popup with the help text
+      def show_help
+        Yast2::Popup.show(help, richtext: true, headline: _("Help"), buttons: :ok)
       end
 
       # Applies all changes indicated for each service

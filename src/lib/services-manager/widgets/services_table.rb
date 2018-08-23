@@ -120,7 +120,31 @@ module Y2ServicesManager
       #
       # @return [Yast2::SystemService, nil] nil if the service is not found
       def selected_service
-        ServicesManagerService.find(selected_service_name)
+        service(selected_service_name)
+      end
+
+      # Help text
+      #
+      # @return [String]
+      def help
+        # TRANSLATORS: help text to explain the columns of the services table
+        _(
+          "<b>Service</b> shows the name of the service." \
+          "<br />" \
+          "<b>Start</b> shows the start mode of the service:" \
+          "<ul>" \
+            "<li>On Boot: the service will be automatically started after booting the system.</li>" \
+            "<li>On Demand: the service will be automatically started when needed.</li>" \
+            "<li>Manually: the service will not be automatically started.</li>" \
+          "</ul>" \
+          "<b>State</b> shows the state and substate of the service." \
+          "<br />" \
+          "<b>Description</b> shows the description of the service." \
+          "<br />" \
+          "<br />" \
+          "Note: edited values are marked with '(*)'. These new values will be saved by " \
+          "using 'Apply' or 'OK' button."
+        )
       end
 
     private

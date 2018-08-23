@@ -89,4 +89,11 @@ describe Y2ServicesManager::Widgets::ServicesTable do
       expect(subject.selected_service.name).to eq(selected_service_name)
     end
   end
+
+  describe "#help" do
+    it "returns the help text" do
+      expect(subject.help).to be_a(String)
+      expect(subject.help).to match(/shows the name/)
+    end
+  end
 end
