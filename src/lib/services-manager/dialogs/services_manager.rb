@@ -122,7 +122,7 @@ module Y2ServicesManager
         Yast::Wizard.OpenDialog(dialog)
 
         Yast::Wizard.SetContents(title, contents, help, true, true)
-        refresh_services
+        refresh
       end
 
       # Closes the dialog
@@ -244,16 +244,6 @@ module Y2ServicesManager
         @logs_button ||= Widgets::LogsButton.new(id: WidgetsId::LOGS_BUTTON)
       end
 
-      # Redraw all buttons according to the selected service
-      def refresh_service_buttons
-        @start_mode_button = nil
-        @start_stop_button = nil
-        @show_details_button = nil
-        @logs_button = nil
-
-        UI.ReplaceWidget(Id(WidgetsId::SERVICE_BUTTONS), service_buttons)
-      end
-
       # Handle all events in the dialog
       #
       # @note The loop finishes when some event handler sets {#finish} to true.
@@ -313,7 +303,7 @@ module Y2ServicesManager
 
         if !success && continue_editing?
           self.finish = false
-          refresh_services
+          refresh
         else
           self.finish = true
         end
@@ -330,7 +320,7 @@ module Y2ServicesManager
 
         if success || continue_editing?
           self.finish = false
-          refresh_services
+          refresh
         else
           self.finish = true
         end
@@ -354,6 +344,7 @@ module Y2ServicesManager
 
         log.info("Setting new default target '#{target_selector.value}'")
         ServicesManagerTarget.default_target = target_selector.value
+        refresh_buttons
       end
 
       # Handler when a service is started/stopped
@@ -367,9 +358,9 @@ module Y2ServicesManager
           "#{ServicesManagerService.active(service) ? 'inactive' : 'active'}"
         )
 
-        success = ServicesManagerService.switch(service)
-
-        refresh_selected_service if success
+        ServicesManagerService.switch(service)
+        refresh_selected_service
+        refresh_buttons
       end
 
       # Handler when a start mode is selected
@@ -380,6 +371,7 @@ module Y2ServicesManager
 
         ServicesManagerService.set_start_mode(selected_service_name, mode)
         refresh_selected_service
+        refresh_buttons
       end
 
       # Handler when "Show Details" button is used
@@ -451,6 +443,38 @@ module Y2ServicesManager
         log.info("Writing configuration...")
 
         Yast2::Feedback.show(_("Writing configuration...")) { Yast::ServicesManager.save }
+      end
+
+      # Refreshes the widgets and the buttons of the dialog
+      def refresh
+        refresh_targets
+        refresh_services
+        refresh_buttons
+      end
+
+      # Refreshes the buttons of the dialog
+      #
+      # @note The 'Apply' button is disabled when there are no changes to apply.
+      def refresh_buttons
+        return unless show_apply_button?
+
+        Yast::UI.ChangeWidget(Id(:apply), :Enabled, Yast::ServicesManager.modified?)
+      end
+
+      # Refreshes all service buttons according to the selected service
+      def refresh_service_buttons
+        @start_mode_button = nil
+        @start_stop_button = nil
+        @show_details_button = nil
+        @logs_button = nil
+
+        UI.ReplaceWidget(Id(WidgetsId::SERVICE_BUTTONS), service_buttons)
+      end
+
+      # Refreshes the target selector
+      def refresh_targets
+        ServicesManagerTarget.reset
+        target_selector.refresh
       end
 
       # Reads services and updates the table content

@@ -172,6 +172,19 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
 
         subject.run
       end
+
+      context "and there are no changes yet" do
+        before do
+          allow(Yast::ServicesManager).to receive(:modified?).and_return(false)
+          allow(Yast::UI).to receive(:ChangeWidget).and_call_original
+        end
+
+        it "disables the 'Apply' button" do
+          expect(Yast::UI).to receive(:ChangeWidget).with(Id(:apply), :Enabled, false)
+
+          subject.run
+        end
+      end
     end
 
     context "when apply button should not be shown" do
