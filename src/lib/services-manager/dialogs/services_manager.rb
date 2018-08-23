@@ -20,6 +20,7 @@
 # find current contact information at www.suse.com.
 
 require "yast"
+require "yast2/popup"
 require "yast2/feedback"
 require "services-manager/widgets/base"
 require "services-manager/widgets/target_selector"
@@ -303,8 +304,11 @@ module Y2ServicesManager
 
       # Handler for next event (accept button is used)
       #
-      # @note It finishes the dialog if all changes were correctly applied.
+      # @note A confirmation popup is shown and it finishes the dialog if all
+      #   changes were correctly applied.
       def next_handler
+        return unless confirm_changes?
+
         self.success = save
 
         if !success && continue_editing?
@@ -317,8 +321,11 @@ module Y2ServicesManager
 
       # Handler for apply event (apply button is used)
       #
-      # @note It does not finish the dialog when all changes were correctly applied.
+      # @note A confirmation popup is shown and it does not finish the dialog when
+      #   all changes were correctly applied.
       def apply_handler
+        return unless confirm_changes?
+
         self.success = save
 
         if success || continue_editing?
@@ -407,6 +414,17 @@ module Y2ServicesManager
         Y2Journal::EntriesDialog.new(query: query).run
 
         services_table.focus
+      end
+
+      # When there are changes, it opens up a confirmation popup with a summary of all changes
+      #
+      # @return [Boolean]
+      def confirm_changes?
+        return true unless Yast::ServicesManager.modified?
+
+        message = Yast::ServicesManager.changes_summary + _("Apply all changes?")
+
+        Yast2::Popup.show(message, richtext: true, headline: _("Summary of changes"), buttons: :yes_no) == :yes
       end
 
       # Opens up a popup to ask the user whether to continue editing

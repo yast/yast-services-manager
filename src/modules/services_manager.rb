@@ -45,7 +45,7 @@ module Yast
       end
     end
 
-    def import data
+    def import(data)
       profile = ServicesManagerProfile.new(data)
       ServicesManagerTarget.import(profile)
       ServicesManagerService.import(profile)
@@ -92,6 +92,13 @@ module Yast
       true
     end
 
+    # Summary of changes
+    #
+    # @return [String]
+    def changes_summary
+      ServicesManagerTarget.changes_summary + ServicesManagerService.changes_summary
+    end
+
     publish({:function => :export,      :type => "map <string, any> ()"          })
     publish({:function => :import,      :type => "boolean ()"                    })
     publish({:function => :modified,    :type => "boolean ()"                    })
@@ -99,7 +106,7 @@ module Yast
     publish({:function => :read,        :type => "void ()"                       })
     publish({:function => :reset,       :type => "void ()"                       })
     publish({:function => :save,        :type => "map <string, string> (boolean)"})
-
   end
+
   ServicesManager = ServicesManagerClass.new
 end

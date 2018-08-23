@@ -49,9 +49,6 @@ module Yast
       system-update
     )
 
-    # @return [Boolean] True if properties of the ServicesManagerTarget has been modified
-    attr_accessor :modified
-
     # Used during installation workflow
     # @return [Boolean] Used by client default_target_proposal to override the default settings
     attr_accessor :force
@@ -62,7 +59,6 @@ module Yast
 
     def initialize
       textdomain 'services-manager'
-      @modified = false
     end
 
     # @return [Hash] Collection of available targets
@@ -82,13 +78,14 @@ module Yast
 
     def read
       @targets = {}
-      @default_target = ''
+      @default_target = ""
 
       # Reads the data on a running system only
       return true if Stage.initial
 
       default_target = SystemdTarget.get_default
-      @default_target = default_target ? default_target.name : ''
+      @initial_default_target = default_target ? default_target.name : ""
+      @default_target = @initial_default_target
 
       SystemdTarget.all.each do |target|
         next unless target.allow_isolate?
@@ -105,13 +102,12 @@ module Yast
       !@targets.empty?
     end
 
-    def default_target= new_default
+    def default_target=(new_default)
       if !Stage.initial && !targets.keys.include?(new_default)
         raise "Target #{new_default} not found, available only #{targets.keys.join(', ')}"
       end
 
       @default_target = new_default
-      self.modified = true
       log.info "New default target has been set: #{new_default}"
       new_default
     end
@@ -137,15 +133,41 @@ module Yast
     end
 
     def save
-      return true if !modified
+      return true unless modified?
       log.info('Saving default target...')
       SystemdTarget.set_default(default_target)
     end
 
     def reset
-      self.modified = false
       read
     end
+
+    # Whether the default target has been changed
+    #
+    # @return [Boolean]
+    def modified?
+      default_target != initial_default_target
+    end
+
+    alias_method :modified, :modified?
+
+    # Summary of changes regarding the default target
+    #
+    # @return [String]
+    def changes_summary
+      return "" unless modified?
+
+      target = @targets[default_target][:description]
+
+      format(
+        _("Default target will be changed to '%{target}'<br /><br />"),
+        target: target
+      )
+    end
+
+  private
+
+    attr_reader :initial_default_target
 
     publish({:function => :all,            :type => "map <string, map> ()" })
     publish({:function => :default_target, :type => "string ()"            })
@@ -153,7 +175,6 @@ module Yast
     publish({:function => :export,         :type => "string ()"            })
     publish({:function => :import,         :type => "string ()"            })
     publish({:function => :modified,       :type => "boolean ()"           })
-    publish({:function => :modified=,      :type => "boolean (boolean)"    })
     publish({:function => :read,           :type => "boolean ()"           })
     publish({:function => :reset,          :type => "boolean ()"           })
     publish({:function => :save,           :type => "boolean ()"           })

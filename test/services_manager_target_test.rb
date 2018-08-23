@@ -1,4 +1,24 @@
 #!/usr/bin/env rspec
+# encoding: utf-8
+
+# Copyright (c) [2014-2018] SUSE LLC
+#
+# All Rights Reserved.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 2 of the GNU General Public License as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, contact SUSE LLC.
+#
+# To contact SUSE LLC about this file by physical or electronic mail, you may
+# find current contact information at www.suse.com.
 
 require_relative "test_helper"
 
@@ -12,10 +32,10 @@ module Yast
     )
     end
 
-    GRAPHICAL  = Template.new('graphical', true)
-    MULTI_USER = Template.new('multi-user', true)
-    POWEROFF   = Template.new('poweroff', true)
-    SLEEP      = Template.new('sleep', false)
+    GRAPHICAL  = Template.new("graphical", true)
+    MULTI_USER = Template.new("multi-user", true)
+    POWEROFF   = Template.new("poweroff", true)
+    SLEEP      = Template.new("sleep", false)
 
     ALL = [ GRAPHICAL, MULTI_USER, POWEROFF, SLEEP ]
   end
@@ -23,70 +43,131 @@ module Yast
   extend Yast::I18n
   Yast::textdomain "services-manager"
 
-  describe ServicesManagerTarget do
-    before(:each) do
-      log.info "--- test ---"
+  describe ServicesManagerTargetClass do
+    subject { described_class.new }
+
+    before do
       allow(Yast::Mode).to receive(:mode).and_return("normal")
+
+      allow(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
+      allow(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
     end
 
-    context "reading targets" do
-      it "reads default target name and other targets" do
-        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
-        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
-
-        target = ServicesManagerTargetClass.new
-
-        expect(target.default_target).to eq('graphical')
-        expect(target.targets).not_to be_empty
-        expect(target.targets.keys).to include('multi-user')
-        expect(target.targets.keys).to include('graphical')
-        expect(target.targets.keys).not_to include('poweroff')
-        expect(target.targets.keys).not_to include('sleep')
+    describe "#default_target" do
+      context "when the default target has not been set yet" do
+        it "returns the default target in the system" do
+          expect(subject.default_target).to eq("graphical")
+        end
       end
 
-      it "skips reading targets if `Stage` is `initial`" do
-        allow(Yast::Stage).to receive(:stage).and_return("initial")
-        expect(SystemdTarget).not_to receive(:all)
-        expect(SystemdTarget).not_to receive(:get_default)
-        target = ServicesManagerTargetClass.new
-        expect(target.targets).to be_empty
-        expect(target.default_target).to be_empty
+      context "when the default target has been set" do
+        before do
+          subject.default_target = "multi-user"
+        end
+
+        it "returns the new default target" do
+          expect(subject.default_target).to eq("multi-user")
+        end
       end
     end
 
-    context "saving default target" do
-      it "saves the modified default target name" do
-        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
-        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
-        expect(SystemdTarget).to receive(:set_default).and_return(true)
-        target = ServicesManagerTargetClass.new
-        expect(target.default_target).to eq('graphical')
-        target.default_target = 'multi-user'
-        expect(target.default_target).to eq('multi-user')
-        expect(target.save).to eq(true)
+    describe "#targets" do
+      it "returns the list of all possible targets" do
+        expect(subject.targets.keys).to contain_exactly("multi-user", "graphical")
       end
 
-      it "skips setting the default target if not modified" do
-        allow(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
-        allow(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
-        target = ServicesManagerTargetClass.new
-        expect(target.modified).to eq(false)
-        expect(target.save).to eq(true)
+      it "does not include targets that does not allow isolate" do
+        expect(subject.targets.keys).to_not include("sleep")
+      end
+
+      it "does not include targets that belongs to the black list" do
+        expect(subject.targets.keys).to_not include("poweroff")
+      end
+
+      context "when running in 'initial' stage" do
+        before do
+          allow(Yast::Stage).to receive(:stage).and_return("initial")
+        end
+
+        it "returns an empty list" do
+          expect(subject.targets).to be_empty
+        end
       end
     end
 
-    context "re-setting targets" do
-      it "reloads the object properties" do
-        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
-        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
-        target = ServicesManagerTargetClass.new
-        target.default_target = 'multi-user'
-        expect(target.modified).to eq(true)
-        expect(SystemdTarget).to receive(:all).and_return(TestTarget::ALL)
-        expect(SystemdTarget).to receive(:get_default).and_return(TestTarget::GRAPHICAL)
-        target.reset
-        expect(target.modified).to eq(false)
-        expect(target.default_target).to eq('graphical')
+    describe "#save" do
+      before do
+        subject.default_target = target
+      end
+
+      context "when the default target has not been changed" do
+        let(:target) { "graphical" }
+
+        it "does not perform changes in the underlying system" do
+          expect(SystemdTarget).to_not receive(:set_default)
+
+          subject.save
+        end
+      end
+
+      context "when the default target has been changed" do
+        let(:target) { "multi-user" }
+
+        it "saves the changes in the underlying system" do
+          expect(SystemdTarget).to receive(:set_default).with("multi-user")
+
+          subject.save
+        end
+      end
+    end
+
+    describe "#reset" do
+      it "sets the default target according to value in the system" do
+        subject.default_target = "multi-user"
+
+        subject.reset
+
+        expect(subject.default_target).to eq("graphical")
+      end
+    end
+
+    describe "#modified?" do
+      before do
+        subject.default_target = target
+      end
+
+      context "when the default target has not been changed" do
+        let(:target) { "graphical" }
+
+        it "returns false" do
+          expect(subject.modified?).to eq(false)
+        end
+      end
+
+      context "when the default target has been changed" do
+        let(:target) { "multi-user" }
+
+        it "returns true" do
+          expect(subject.modified?).to eq(true)
+        end
+      end
+    end
+
+    describe "#changes_summary" do
+      context "when the default target has not been changed" do
+        it "returns an empty text" do
+          expect(subject.changes_summary).to be_empty
+        end
+      end
+
+      context "when the default target has been changed" do
+        before do
+          subject.default_target = "multi-user"
+        end
+
+        it "returns a summary describing the change" do
+          expect(subject.changes_summary).to include("Default target will be changed")
+        end
       end
     end
   end

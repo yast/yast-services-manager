@@ -312,6 +312,17 @@ module Yast
 
     alias_method :modified?, :modified
 
+    # Summary of changes in the services
+    #
+    # @return [String]
+    def changes_summary
+      started_services_summary +
+        stopped_services_summary +
+        changed_to_on_boot_services_summary +
+        changed_to_on_demand_services_summary +
+        changed_to_manual_services_summary
+    end
+
   private
 
     # Registers errors for missing services
@@ -470,6 +481,114 @@ module Yast
     # too early (from the instsys and not from the installed system).
     def refresh_services
       services.values.each(&:refresh)
+    end
+
+    # Summary of services that have been started
+    #
+    # @return [String]
+    def started_services_summary
+      return "" unless started_services.any?
+
+      format(
+        _("The following services(%{amount}) will be started:<br />%{services}<br /><br />"),
+        amount: started_services.size,
+        services: services_names(started_services)
+      )
+    end
+
+    # Summary of services that have been stopped
+    #
+    # @return [String]
+    def stopped_services_summary
+      return "" unless stopped_services.any?
+
+      format(
+        _("The following services(%{amount}) will be stopped:<br />%{services}<br /><br />"),
+        amount:   stopped_services.size,
+        services: services_names(stopped_services)
+      )
+    end
+
+    # Summary of services that have been set to start on boot
+    #
+    # @return [String]
+    def changed_to_on_boot_services_summary
+      return "" unless changed_to_on_boot_services.any?
+
+      format(
+        _("The following services(%{amount}) will be configured to start after booting:<br />%{services}<br /><br />"),
+        amount:   changed_to_on_boot_services.size,
+        services: services_names(changed_to_on_boot_services)
+      )
+    end
+
+    # Summary of services that have been set to start on demand
+    #
+    # @return [String]
+    def changed_to_on_demand_services_summary
+      return "" unless changed_to_on_demand_services.any?
+
+      format(
+        _("The following services(%{amount}) will be configured to start on demand:<br />%{services}<br /><br />"),
+        amount:   changed_to_on_demand_services.size,
+        services: services_names(changed_to_on_demand_services)
+      )
+    end
+
+    # Summary of services that have been set to start manually
+    #
+    # @return [String]
+    def changed_to_manual_services_summary
+      return "" unless changed_to_manual_services.any?
+
+      format(
+        _("The following services(%{amount}) will be configured to start manually:<br />%{services}<br /><br />"),
+        amount:   changed_to_manual_services.size,
+        services: services_names(changed_to_manual_services)
+      )
+    end
+
+    # Returns the name of the given services
+    #
+    # @param services [Array<Yast2::SystemService>]
+    # @return [Array<String>]
+    def services_names(services)
+      services.map(&:name).join(", ")
+    end
+
+    # Services that have been marked to start
+    #
+    # @return [Array<Yast2::SystemService>]
+    def started_services
+      modified_services.select { |s| s.action == :start }
+    end
+
+    # Services that have been market to stop
+    #
+    # @return [Array<Yast2::SystemService>]
+    def stopped_services
+      modified_services.select { |s| s.action == :stop }
+    end
+
+    # Services that have been configured to start on boot
+    #
+    # @return [Array<Yast2::SystemService>]
+    def changed_to_on_boot_services
+      modified_services.select { |s| s.changed?(:start_mode) && s.start_mode == :on_boot }
+    end
+
+    # Services that have been configured to start on demand
+    #
+    # @return [Array<Yast2::SystemService>]
+    def changed_to_on_demand_services
+      modified_services.select { |s| s.changed?(:start_mode) && s.start_mode == :on_demand }
+    end
+
+    # Services that have been configured to start manually
+    #
+    # @return [Array<Yast2::SystemService>]
+    def changed_to_manual_services
+      modified_services.select { |s| s.changed?(:start_mode) && s.start_mode == :manual }
     end
 
     publish({:function => :active,         :type => "boolean ()"              })
