@@ -54,6 +54,17 @@ module Y2ServicesManager
         ServicesManagerService.all_start_modes
       end
 
+      # Help text
+      #
+      # @return [String]
+      def help
+        # TRANSLATORS: help text for the 'Start Mode' button
+        _(
+          "<b>Start Mode</b> allows to change the start mode of the service (On Boot, On Demand or Manually). " \
+          "The possible start modes depend on the service."
+        )
+      end
+
     private
 
       # @return [String] name of the service

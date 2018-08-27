@@ -129,6 +129,7 @@ module Y2ServicesManager
       def help
         # TRANSLATORS: help text to explain the columns of the services table
         _(
+          "<h2>The table contains the following information:</h2>" \
           "<b>Service</b> shows the name of the service." \
           "<br />" \
           "<b>Start</b> shows the start mode of the service:" \
@@ -142,8 +143,7 @@ module Y2ServicesManager
           "<b>Description</b> shows the description of the service." \
           "<br />" \
           "<br />" \
-          "Note: edited values are marked with '(*)'. These new values will be saved by " \
-          "using 'Apply' or 'OK' button."
+          "Note: edited values are marked with '(*)'."
         )
       end
 
