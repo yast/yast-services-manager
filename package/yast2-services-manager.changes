@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug 27 16:20:38 UTC 2018 - jlopez@suse.com
+
+- Add help for buttons in the dialog (related to bsc#1089999 and
+  fate#319428).
+- 4.1.6
+
+-------------------------------------------------------------------
 Thu Aug 23 14:23:27 UTC 2018 - dgonzalez@suse.com
 
 - Update calls to YaST2 systemd classes (related to fate#319428)
