@@ -62,7 +62,7 @@ module Y2ServicesManager
       # @return [String]
       def help
         # TRANSLATORS: help text for the 'Default System Target' selectbox
-        _("<b>Default System Target</b> Allows to select the Systemd defatult target.")
+        _("<b>Default System Target</b> Allows to select the Systemd default target.")
       end
 
     private

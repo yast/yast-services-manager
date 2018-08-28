@@ -47,7 +47,7 @@ module Y2ServicesManager
       # @return [String]
       def help
         # TRANSLATORS: help text for the 'Show Log' button
-        _("<b>Show Log</b> shows service logs since last booting. It opens a new windows.")
+        _("<b>Show Log</b> shows service logs since last booting. It opens a new window.")
       end
 
     private
