@@ -47,6 +47,18 @@ module Y2ServicesManager
         PushButton(id, label)
       end
 
+      # Help text
+      #
+      # @return [String]
+      def help
+        # TRANSLATORS: help text for the 'Start'/'Stop' button
+        _(
+          "<b>Start</b> sets the service to be started (only shown if the service is inactive)." \
+          "<br />" \
+          "<b>Stop</b> sets the service to be stopped (only shown if the service is active)."
+        )
+      end
+
     private
 
       # @return [String] name of the service

@@ -44,6 +44,14 @@ module Y2ServicesManager
         PushButton(id, label)
       end
 
+      # Help text
+      #
+      # @return [String]
+      def help
+        # TRANSLATORS: help text for the 'Show Details' button
+        _("<b>Show Details</b> shows low level information about the service (state, memory, cpu, etc).")
+      end
+
     private
 
       # Default widget id

@@ -141,7 +141,11 @@ module Y2ServicesManager
       #
       # @return [String]
       def help
-        services_table.help
+        target_selector.help +
+          "<br /><br />" +
+          services_table.help +
+          "<br /><br />" +
+          buttons_help
       end
 
       # Dialog content
@@ -175,6 +179,78 @@ module Y2ServicesManager
           show_apply_button? ? PushButton(Id(:apply), _("&Apply")) : Empty(),
           PushButton(Id(:next), Opt(:key_F10, :default), Label.OKButton)
         )
+      end
+
+      # Help of dialog buttons
+      #
+      # @return [String]
+      def buttons_help
+        # TRANSLATORS: help section to describe the dialog buttons
+        _("<h2>Buttons description:</h2>") +
+          start_stop_button_help +
+          start_mode_button_help +
+          logs_button_help +
+          show_details_button_help +
+          apply_button_help +
+          ok_button_help +
+          "<br />" +
+          help_note
+      end
+
+      # @return [String]
+      def start_stop_button_help
+        return "" unless show_start_stop_button?
+
+        start_stop_button.help + "<br />"
+      end
+
+      # @return [String]
+      def start_mode_button_help
+        start_mode_button.help + "<br />"
+      end
+
+      # @return [String]
+      def logs_button_help
+        return "" unless show_logs_button?
+
+        logs_button.help + "<br />"
+      end
+
+      # @return [String]
+      def show_details_button_help
+        show_details_button.help + "<br />"
+      end
+
+      # @return [String]
+      def apply_button_help
+        return "" unless show_apply_button?
+
+        # TRANSLATORS: help text for the 'Apply' button
+        help = _(
+          "<b>Apply</b> saves all changes without closing the Service Manager. This button is enabled " \
+          "only if something has been edited."
+        )
+
+        help + "<br />"
+      end
+
+      # @return [String]
+      def ok_button_help
+        # TRANSLATORS: help text for the 'OK' button
+        help = _("<b>OK</b> saves all changes and closes the Service Manager.")
+
+        help + "<br />"
+      end
+
+      # @return [String]
+      def help_note
+        if show_apply_button?
+          # TRANSLATORS: note about dialog behavior when both buttons (Apply and OK) are available
+          _("Note: the services will not be modified until all changes are saved by using the 'Apply' or the 'OK' button.")
+        else
+          # TRANSLATORS: note about dialog behavior when only OK button is available
+          _("Note: the services will not be modified until all changes are saved by using the 'OK' button.")
+        end
       end
 
       def target_selector
@@ -286,7 +362,6 @@ module Y2ServicesManager
       # A popup with help is shown
       def help_handler
         self.finish = false
-
         show_help
       end
 
@@ -444,7 +519,7 @@ module Y2ServicesManager
 
       # Opens up a popup with the help text
       def show_help
-        Yast2::Popup.show(help, richtext: true, headline: _("Help"), buttons: :ok)
+        Yast::Wizard.ShowHelp(help)
       end
 
       # Applies all changes indicated for each service

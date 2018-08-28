@@ -34,6 +34,7 @@ module Y2ServicesManager
       # @param id [Symbol] widget id
       def initialize(id: nil)
         textdomain "services-manager"
+
         super
       end
 
@@ -54,6 +55,14 @@ module Y2ServicesManager
       # Refreshes the widget content
       def refresh
         UI.ChangeWidget(id, :Items, system_targets_items)
+      end
+
+      # Help text
+      #
+      # @return [String]
+      def help
+        # TRANSLATORS: help text for the 'Default System Target' selectbox
+        _("<b>Default System Target</b> Allows to select the Systemd default target.")
       end
 
     private
