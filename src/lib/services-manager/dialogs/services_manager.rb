@@ -194,8 +194,7 @@ module Y2ServicesManager
           apply_button_help +
           ok_button_help +
           "<br />" +
-          # TRANSLATORS: note about dialog behavior
-          _("Note: the services will not be modified until all changes are saved by using 'Apply' or 'OK' button.")
+          help_note
       end
 
       # @return [String]
@@ -241,6 +240,17 @@ module Y2ServicesManager
         help = _("<b>OK</b> saves all changes and closes the Service Manager.")
 
         help + "<br />"
+      end
+
+      # @return [String]
+      def help_note
+        if show_apply_button?
+          # TRANSLATORS: note about dialog behavior when both buttons (Apply and OK) are available
+          _("Note: the services will not be modified until all changes are saved by using the 'Apply' or the 'OK' button.")
+        else
+          # TRANSLATORS: note about dialog behavior when only OK button is available
+          _("Note: the services will not be modified until all changes are saved by using the 'OK' button.")
+        end
       end
 
       def target_selector
