@@ -153,6 +153,35 @@ module Yast
       end
     end
 
+    describe "#modified=" do
+      context "when is set to true" do
+        it "sets the module as modified" do
+          subject.modified = true
+          expect(subject.modified?).to eq(true)
+        end
+      end
+
+      context "when is set to false" do
+        it "sets the module as 'not modified'" do
+          subject.modified = false
+          expect(subject.modified?).to eq(false)
+        end
+
+        context "but the default target has been changed" do
+          let(:target) { "multi-user" }
+
+          before do
+            subject.default_target = "multi-user"
+          end
+
+          it "does not set the module as 'not modified'" do
+            subject.modified = false
+            expect(subject.modified?).to eq(true)
+          end
+        end
+      end
+    end
+
     describe "#changes_summary" do
       context "when the default target has not been changed" do
         it "returns an empty text" do
