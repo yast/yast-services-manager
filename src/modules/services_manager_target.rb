@@ -49,6 +49,11 @@ module Yast
       system-update
     )
 
+    # @!attribute [w] modified
+    #   @note Used by AutoYaST.
+    #   @return [Boolean] Whether the module has been modified
+    attr_writer :modified
+
     # Used during installation workflow
     # @return [Boolean] Used by client default_target_proposal to override the default settings
     attr_accessor :force
@@ -146,7 +151,7 @@ module Yast
     #
     # @return [Boolean]
     def modified?
-      default_target != initial_default_target
+      @modified || (default_target != initial_default_target)
     end
 
     alias_method :modified, :modified?
