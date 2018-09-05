@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Sep  5 08:47:10 UTC 2018 - igonzalezsosa@suse.com
+
+- Bring back the ServicesManagerTargetClass#modified= method
+  (bsc#1107240).
+- 4.1.7
+
+-------------------------------------------------------------------
 Mon Aug 27 16:20:38 UTC 2018 - jlopez@suse.com
 
 - Add help for buttons in the dialog (related to bsc#1089999 and
