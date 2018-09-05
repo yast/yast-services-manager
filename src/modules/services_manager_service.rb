@@ -43,6 +43,7 @@ module Yast
     }.freeze
 
     # @!attribute [w] modified
+    #   @note Used by AutoYaST.
     #   @return [Boolean] Whether the module has been modified
     attr_writer :modified
 
