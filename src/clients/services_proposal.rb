@@ -315,7 +315,7 @@ module Yast
       end
 
       def open_firewall_ports plugins
-        zone_names = known_interfaces.map { |i| i["zone"] || firewalld.default_zone }
+        zone_names = known_interfaces.map { |i| i.zone || firewalld.default_zone }
 
         zones = if zone_names.empty?
           firewalld.zones.select { |z| !["block", "drop", "trusted"].include?(z.name) }

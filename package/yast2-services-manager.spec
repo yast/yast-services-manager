@@ -32,8 +32,8 @@ BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby
-# Yast2::SystemService#build
-Requires:       yast2 >= 4.0.82
+# Yast2::Firewalld::Interface
+Requires:       yast2 >= 4.0.95
 Requires:       yast2-ruby-bindings >= 1.2.0
 # need new enough installation for its inst clients
 Conflicts:      yast2-installation < 3.1.32
@@ -45,7 +45,7 @@ BuildRequires:  ruby
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # Yast2::SystemService#build
-BuildRequires:  yast2 >= 4.0.82
+BuildRequires:  yast2 >= 4.0.95
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(yast-rake) >= 0.1.7
 BuildRequires:  rubygem(rspec)
