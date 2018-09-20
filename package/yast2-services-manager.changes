@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Sep 19 20:39:00 UTC 2018 - knut.anderssen@suse.com
+
+- Adapted to use the Y2Firewall::Firewalld::Zone object returned by
+  Y2Firewall::Firewalld::Interface#zone instead of a String.
+- Adapted to use the new Y2Firewall::Firewalld::Interface objects
+  instead of a hash (fate#324662)
+- 4.1.8
+
+-------------------------------------------------------------------
 Wed Sep  5 08:47:10 UTC 2018 - igonzalezsosa@suse.com
 
 - Bring back the ServicesManagerTargetClass#modified= method
