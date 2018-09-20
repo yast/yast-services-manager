@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.1.7
+Version:        4.1.8
 Release:        0
 BuildArch:      noarch
 
@@ -32,8 +32,8 @@ BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}-%{version}.tar.bz2
 
 Requires:       ruby
-# Yast2::Systemd::Target
-Requires:       yast2 >= 4.1.3
+# Yast2::Firewalld::Interface#zone returns a Zone object
+Requires:       yast2 >= 4.1.17
 Requires:       yast2-ruby-bindings >= 1.2.0
 # To show service logs
 Suggests:	yast2-journal >= 4.1.1
@@ -45,8 +45,8 @@ Conflicts:      yast2-runlevel
 
 BuildRequires:  ruby
 BuildRequires:  update-desktop-files
-# Yast2::Systemd::Target
-BuildRequires:  yast2 >= 4.1.3
+# Yast2::Firewalld::Interface#zone returns a Zone object
+BuildRequires:  yast2 >= 4.1.17
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # To show service logs
 BuildRequires: 	yast2-journal >= 4.1.1
