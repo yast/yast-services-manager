@@ -1,7 +1,14 @@
 -------------------------------------------------------------------
+Wed Sep 19 20:39:00 UTC 2018 - knut.anderssen@suse.com
+
+- Adapted to use the Y2Firewall::Firewalld::Zone object returned by
+  Y2Firewall::Firewalld::Interface#zone instead of a String.
+- 4.0.9
+
+-------------------------------------------------------------------
 Wed Sep 19 12:26:15 UTC 2018 - knut.anderssen@suse.com
 
-- Adapted to use the new Y2Firewall::Firewalld::Service objects
+- Adapted to use the new Y2Firewall::Firewalld::Interface objects
   instead of a hash (fate#324662)
 - 4.0.8
 
