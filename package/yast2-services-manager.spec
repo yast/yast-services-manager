@@ -98,4 +98,4 @@ rake install DESTDIR="%{buildroot}"
 %{_prefix}/share/applications/YaST2/services-manager.desktop
 
 %_docdir/%name/
-%_docdir/%name/COPYING
+%license COPYING
