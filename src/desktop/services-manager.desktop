@@ -17,7 +17,7 @@ X-SuSE-YaST-AutoInstSchema=services-manager.rnc
 X-SuSE-YaST-AutoInstResourceAliases=runlevel
 X-SuSE-YaST-Keywords=systemd,system,background
 
-Icon=yast-runlevel
+Icon=yast-services-manager
 Exec=xdg-su -c "/sbin/yast2 services-manager"
 
 Name=Services Manager
