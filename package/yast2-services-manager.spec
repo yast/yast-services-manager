@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.1.8
+Version:        4.1.9
 Release:        0
 BuildArch:      noarch
 
@@ -96,6 +96,6 @@ rake install DESTDIR="%{buildroot}"
 %dir %{yast_dir}/lib/services-manager/dialogs
 %{yast_dir}/lib/services-manager/dialogs/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
-
+%{yast_icondir}
 %_docdir/%name/
 %license COPYING
