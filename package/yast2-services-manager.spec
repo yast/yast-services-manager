@@ -79,6 +79,7 @@ rake install DESTDIR="%{buildroot}"
 %suse_update_desktop_file services-manager
 
 %define yast_dir %{_prefix}/share/YaST2
+%define yast_icondir %{_datadir}/icons
 
 %files
 %defattr(-,root,root)
