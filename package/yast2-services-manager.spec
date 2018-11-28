@@ -96,6 +96,6 @@ rake install DESTDIR="%{buildroot}"
 %dir %{yast_dir}/lib/services-manager/dialogs
 %{yast_dir}/lib/services-manager/dialogs/*.rb
 %{_prefix}/share/applications/YaST2/services-manager.desktop
-%{_datadir}/icons/*
+%{yast_icondir}
 %_docdir/%name/
 %license COPYING
