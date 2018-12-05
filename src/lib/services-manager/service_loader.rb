@@ -171,13 +171,12 @@ module Y2ServicesManager
       extract_services_from_unit_files
       # Add old LSB services (Services which are loaded but not available as a unit file)
       extract_services_from_units
-
       service_names = services.keys.sort
       ss = Yast2::SystemService.find_many(service_names)
       # Rest of settings
       services.clear
       ss.each do |s|
-        services[s.name] = s
+        services[s.name] = s if s
       end
     rescue Yast2::SystemService::NotFoundError
       services.clear
