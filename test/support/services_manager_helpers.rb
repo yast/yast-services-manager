@@ -83,9 +83,9 @@ module Yast
         end
 
         start_modes = service_specs[:start_modes] || [:on_boot, :manually]
-
+        service_name = service_specs[:unit].split(".").first
         service = instance_double(Yast2::SystemService,
-          name:         service_specs[:unit].split(".").first,
+          name:         service_name,
           start_mode:   start_mode,
           start_modes:  start_modes,
           active?:      service_specs[:active] == "active",
@@ -93,7 +93,8 @@ module Yast
           substate:     service_specs[:sub],
           description:  service_specs[:description],
           keywords:     service_specs[:keywords],
-          changed?:     service_specs[:changed] || false
+          changed?:     service_specs[:changed] || false,
+          service:      Yast2::SystemService.build(service_name)
         )
 
         allow(service).to receive(:start_mode=)
