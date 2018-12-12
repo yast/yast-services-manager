@@ -91,7 +91,7 @@ module Y2ServicesManager
       @unit_files = {}
       @units      = {}
 
-      return {} if Y2ServicesManager::ServiceLoader.chroot_env? # systemd is not available
+      return {} if self.class.chroot_env? # systemd is not available
 
       load_unit_files
       load_units
