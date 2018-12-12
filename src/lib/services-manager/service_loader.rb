@@ -115,10 +115,6 @@ module Y2ServicesManager
       command = TERM_OPTIONS + STATUS_COMMAND + COMMAND_OPTIONS
       ret =  Yast::SCR.Execute(Yast::Path.new('.target.bash_output'), command)['stderr']
       ret.start_with?("Running in chroot")
-        return true
-      else
-        return false
-      end
     end
 
   private
