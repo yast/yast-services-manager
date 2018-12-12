@@ -89,7 +89,7 @@ describe Y2ServicesManager::ServiceLoader do
     end
   end
 
-  describe "#chroot_env?" do
+  describe ".chroot_env?" do
     context "when it has been started in chroot environment" do
       it "returns true" do
         expect(Yast::SCR).to receive(:Execute).with(Yast::Path.new(".target.bash_output"),
