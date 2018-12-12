@@ -42,9 +42,8 @@ module Y2ServicesManager
   class ServiceLoader
     include Yast::Logger
 
-    LIST_UNIT_FILES_COMMAND = 'systemctl list-unit-files --type service'
-    LIST_UNITS_COMMAND      = 'systemctl list-units --all --type service'
-    STATUS_COMMAND          = 'systemctl status'
+    LIST_UNIT_FILES_COMMAND = '/usr/bin/systemctl list-unit-files --type service'
+    LIST_UNITS_COMMAND      = '/usr/bin/systemctl list-units --all --type service'
     # FIXME: duplicated in Yast::Systemctl
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
