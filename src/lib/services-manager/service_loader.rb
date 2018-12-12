@@ -91,6 +91,8 @@ module Y2ServicesManager
       @unit_files = {}
       @units      = {}
 
+      return {} if Y2ServicesManager::ServiceLoader.chroot_env? # systemd is not available
+
       load_unit_files
       load_units
 
@@ -104,6 +106,19 @@ module Y2ServicesManager
 
       extract_services
       services
+    end
+
+    # Checking if the module is running in chroot environment
+    #
+    # @return [Boolean] if running in chroot environment
+    def self.chroot_env?
+      command = TERM_OPTIONS + STATUS_COMMAND + COMMAND_OPTIONS
+      ret =  Yast::SCR.Execute(Yast::Path.new('.target.bash_output'), command)['stderr']
+      if ret.start_with?("Running in chroot")
+        return true
+      else
+        return false
+      end
     end
 
   private
@@ -176,7 +191,7 @@ module Y2ServicesManager
       # Rest of settings
       services.clear
       ss.each do |s|
-        services[s.name] = s if s
+        services[s.name] = s if s.service # name is a def_delegator of SystemService.service.name
       end
     rescue Yast2::SystemService::NotFoundError
       services.clear

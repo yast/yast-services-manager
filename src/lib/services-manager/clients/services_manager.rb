@@ -22,6 +22,7 @@
 require "yast"
 require "yast2/feedback"
 require "services-manager/widgets/services_table"
+require "services-manager/service_loader"
 
 Yast.import "ServicesManager"
 Yast.import "UI"
@@ -215,6 +216,8 @@ module Y2ServicesManager
       def start_items_for(service_name)
         start_modes = ServicesManagerService.start_modes(service_name)
 
+        return [] unless start_modes #start_modes can also return false due errors
+
         ServicesManagerService.all_start_modes.each_with_object([]) do |mode, all|
           next unless start_modes.include?(mode)
           all << Item(Id(mode), ServicesManagerService.start_mode_to_human(mode))
@@ -254,6 +257,10 @@ module Y2ServicesManager
       #
       # It shows a temporary popup meanwhile the services are obtained.
       def redraw_services
+        if Y2ServicesManager::ServiceLoader.chroot_env?
+          Popup.Error(_("Cannot read services in chroot environment."))
+          return
+        end
         services = Yast2::Feedback.show(_('Reading services status...')) { services_names }
 
         services_table.refresh(services_names: services)

@@ -22,6 +22,7 @@
 
 require_relative 'test_helper'
 
+
 require "yast"
 require "services-manager/service_loader"
 
@@ -33,14 +34,20 @@ describe Y2ServicesManager::ServiceLoader do
     instance_double(
       Yast2::SystemService, name: "alsasound", description: "alsasound", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
-      save: nil, refresh: nil, errors: {}
+      save: nil, refresh: nil, errors: {}, service: Yast2::SystemService.build("alsasound")
     )
   end
 
   let(:apparmor) do
     instance_double(
       Yast2::SystemService, name: "apparmor", changed?: true, active?: true,
-      running?: false, refresh: nil, save: nil, errors: {}
+      running?: false, refresh: nil, save: nil, errors: {}, service: Yast2::SystemService.build("apparmor")
+    )
+  end
+
+  let(:empty_SystemService) do
+    instance_double(
+      Yast2::SystemService, errors: {}, service: nil
     )
   end
   
@@ -57,8 +64,10 @@ describe Y2ServicesManager::ServiceLoader do
       allow_any_instance_of(Y2ServicesManager::ServiceLoader)
         .to receive(:list_units).
         and_return(["alsasound.service loaded inactive dead Sound Card\n",
-                    "apparmor.service loaded active exited AppArmor profiles\n"])      
-    end
+                    "apparmor.service loaded active exited AppArmor profiles\n"])
+      allow(Y2ServicesManager::ServiceLoader)
+        .to receive(:chroot_env?).and_return(false)
+   end
 
     context "when services can be evalutated by systemd/sockets" do
       it "returns services with correct name" do
@@ -74,11 +83,27 @@ describe Y2ServicesManager::ServiceLoader do
       it "returns none services" do
         expect(Yast2::SystemService).to receive(:find_many).
           with(services.map {|service| service.name}.sort).          
-          and_return([nil,nil])
+          and_return([empty_SystemService,empty_SystemService])
         expect(subject.read).to be_empty
       end
     end
-    
+  end
+
+  describe "#chroot_env?" do
+    context "when it has been started in chroot environment" do
+      it "returns true" do
+        expect(Yast::SCR).to receive(:Execute).with(Yast::Path.new(".target.bash_output"),
+          /systemctl status/).and_return({"stderr" => "Running in chroot"})
+        expect(Y2ServicesManager::ServiceLoader.chroot_env?).to be true
+      end
+    end
+
+    context "when it has not been started in chroot environment" do
+      it "returns true" do
+        expect(Yast::SCR).to receive(:Execute).with(Yast::Path.new(".target.bash_output"),
+          /systemctl status/).and_return({"stderr" => ""})
+        expect(Y2ServicesManager::ServiceLoader.chroot_env?).to be false
+      end
+    end
   end
 end
-
