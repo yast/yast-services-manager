@@ -29,6 +29,7 @@ require "services-manager/widgets/start_mode_button"
 require "services-manager/widgets/show_details_button"
 require "services-manager/widgets/logs_button"
 require "services-manager/widgets/services_table"
+require "services-manager/service_loader"
 
 Yast.import "ServicesManager"
 Yast.import "UI"
@@ -586,6 +587,10 @@ module Y2ServicesManager
       #
       # @return [Array<String>] name of all services
       def read_services
+        if Y2ServicesManager::ServiceLoader.chroot_env?
+           Popup.Error(_("Cannot read services in chroot environment."))
+           return []
+        end
         Yast2::Feedback.show(_("Reading services status...")) do
           ServicesManagerService.reload
           ServicesManagerService.all.keys
