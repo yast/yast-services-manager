@@ -91,6 +91,7 @@ module Y2ServicesManager
       # @return [Array<Yast::Term>]
       def items
         start_modes = ServicesManagerService.start_modes(service_name)
+        return [] unless start_modes #start_modes can also return false due errors
 
         ServicesManagerService.all_start_modes.each_with_object([]) do |mode, all|
           next unless start_modes.include?(mode)
