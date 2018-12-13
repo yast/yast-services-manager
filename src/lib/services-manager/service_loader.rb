@@ -44,6 +44,7 @@ module Y2ServicesManager
 
     LIST_UNIT_FILES_COMMAND = '/usr/bin/systemctl list-unit-files --type service'
     LIST_UNITS_COMMAND      = '/usr/bin/systemctl list-units --all --type service'
+    STATUS_COMMAND          = '/usr/bin/systemctl status'
     # FIXME: duplicated in Yast::Systemctl
     COMMAND_OPTIONS         = ' --no-legend --no-pager --no-ask-password '
     TERM_OPTIONS            = ' LANG=C TERM=dumb COLUMNS=1024 '
