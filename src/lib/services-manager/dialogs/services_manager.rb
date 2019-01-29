@@ -466,7 +466,7 @@ module Y2ServicesManager
 
         service = selected_service
         full_info = ServicesManagerService.status(service)
-        x_size = full_info.lines.collect{|line| line.size}.sort.last
+        x_size = full_info.lines.map(&:size).sort.last
         y_size = full_info.lines.count
 
         Popup.LongText(
