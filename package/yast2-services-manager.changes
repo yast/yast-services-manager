@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jan 29 07:52:57 UTC 2019 - dgonzalez@suse.com
+
+- Includes the associated socket status, if applicable, as part of
+  the service details (bsc#119276)
+- 4.1.12
+
+-------------------------------------------------------------------
 Wed Dec 12 15:55:24 UTC 2018 - schubi@suse.de
 
 - Fix: Do not crash in chroot environment (bsc#1113732)
