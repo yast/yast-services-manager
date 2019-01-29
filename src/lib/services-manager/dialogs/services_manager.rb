@@ -464,13 +464,13 @@ module Y2ServicesManager
       def show_details_button_handler
         self.finish = false
 
-        service = selected_service_name
+        service = selected_service
         full_info = ServicesManagerService.status(service)
         x_size = full_info.lines.collect{|line| line.size}.sort.last
         y_size = full_info.lines.count
 
         Popup.LongText(
-          format(_("Service %{service} Full Info"), service: service),
+          format(_("Service %{service} Full Info"), service: service.name),
           RichText("<pre>#{full_info}</pre>"),
           # counted size plus dialog spacing
           x_size + 8,

@@ -32,14 +32,16 @@ describe Yast::ServicesManagerServiceClass do
     instance_double(
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
-      save: nil, refresh: nil, errors: {}, found?: true, action: nil
+      save: nil, refresh: nil, errors: {}, found?: true, action: nil,
+      keywords: ["cups.service", "cups.socket"]
     )
   end
 
   let(:dbus) do
     instance_double(
       Yast2::SystemService, name: "dbus", changed?: true, start_mode: nil, active?: true,
-      running?: true, refresh: nil, save: nil, errors: {}, found?: true, action: nil
+      running?: true, refresh: nil, save: nil, errors: {}, found?: true, action: nil,
+      keywords: ["dbus.service"]
     )
   end
 
@@ -560,6 +562,21 @@ describe Yast::ServicesManagerServiceClass do
       it "returns an empty array" do
         expect(subject.errors).to be_empty
       end
+    end
+  end
+
+  describe "#status" do
+    let(:fake_cmd_result) { { "stdout" => "Fake status output" } }
+
+    before do
+      allow(Yast2::Systemctl).to receive(:execute).with(/status/).and_return(fake_cmd_result)
+    end
+
+    it "queries for the status of each service keyword" do
+      expect(Yast2::Systemctl).to receive(:execute).with(/status cups\.service/)
+      expect(Yast2::Systemctl).to receive(:execute).with(/status cups\.socket/)
+
+      subject.status(cups)
     end
   end
 

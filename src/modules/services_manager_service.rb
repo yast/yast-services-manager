@@ -34,8 +34,6 @@ module Yast
     include Yast::Logger
     extend Yast::I18n
 
-    SERVICE_SUFFIX = '.service'
-
     START_MODE = {
       on_boot:   N_('On Boot'),
       on_demand: N_('On Demand'),
@@ -291,13 +289,18 @@ module Yast
       exists?(name, &:start_modes)
     end
 
-    # Returns full information about the service as returned from systemctl command
+    # Returns full information from systemctl command about the service status
     #
-    # @param name [String] Service name
+    # @param service [Yast2::SystemService]
+    #
     # @return [String] full unformatted information
-    def status(name)
-      out = Yast2::Systemctl.execute("status #{name}#{SERVICE_SUFFIX} 2>&1")
-      out['stdout']
+    def status(service)
+      output = service.keywords.map do |keyword|
+        cmd = Yast2::Systemctl.execute("status #{keyword} 2>&1")
+        cmd["stdout"]
+      end
+
+      output.join("\n")
     end
 
     # Translates the start mode for a given service
