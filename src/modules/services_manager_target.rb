@@ -103,7 +103,6 @@ module Yast
           :active  => target.active?,
           :description => BaseTargets.localize("#{target.name}.target")
         }
-      log.info "xxxxxxxx #{target.name}, #{target.enabled?}, #{target.loaded?}, #{target.active?} "
       end
 
       !@targets.empty?
@@ -143,7 +142,6 @@ module Yast
       return true unless modified?
 
       log.info('Saving default target...')
-      log.info "xxxxxxxx #{self.default_target}"
       unless Yast2::Systemd::Target.find(self.default_target)
         # TRANSLATORS: error popup, %s is the default target e.g. graphical
          Report.Warning(_("Cannot find default target '%s' which is not available," \
