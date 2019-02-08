@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.1.12
+Version:        4.1.13
 Release:        0
 BuildArch:      noarch
 
