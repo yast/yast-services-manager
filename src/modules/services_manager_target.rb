@@ -3,6 +3,7 @@ require "yast2/systemd/target"
 
 module Yast
   import 'Stage'
+  import "Report"
 
   class ServicesManagerTargetClass < Module
     include Yast::Logger
@@ -102,6 +103,7 @@ module Yast
           :active  => target.active?,
           :description => BaseTargets.localize("#{target.name}.target")
         }
+      log.info "xxxxxxxx #{target.name}, #{target.enabled?}, #{target.loaded?}, #{target.active?} "
       end
 
       !@targets.empty?
@@ -139,8 +141,16 @@ module Yast
 
     def save
       return true unless modified?
+
       log.info('Saving default target...')
-      Yast2::Systemd::Target.set_default(default_target)
+      log.info "xxxxxxxx #{self.default_target}"
+      unless Yast2::Systemd::Target.find(self.default_target)
+        # TRANSLATORS: error popup, %s is the default target e.g. graphical
+         Report.Warning(_("Cannot find default target '%s' which is not available," \
+                          "using the text mode fallback.") % self.default_target)
+         self.default_target = BaseTargets::MULTIUSER
+      end
+      Yast2::Systemd::Target.set_default(self.default_target)
     end
 
     def reset
