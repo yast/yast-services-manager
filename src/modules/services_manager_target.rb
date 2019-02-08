@@ -142,12 +142,8 @@ module Yast
       return true unless modified?
 
       log.info('Saving default target...')
-      unless Yast2::Systemd::Target.find(self.default_target)
-        # TRANSLATORS: error popup, %s is the default target e.g. graphical
-         Report.Warning(_("Cannot find default target '%s' which is not available," \
-                          "using the text mode fallback.") % self.default_target)
-         self.default_target = BaseTargets::MULTIUSER
-      end
+
+      ensure_target
       Yast2::Systemd::Target.set_default(self.default_target)
     end
 
@@ -179,6 +175,16 @@ module Yast
     end
 
   private
+
+    def ensure_target
+      return if Yast2::Systemd::Target.find(self.default_target)
+
+      # TRANSLATORS: error popup, %s is the default target e.g. graphical
+      Report.Warning(_("Target '%s' is not available." \
+                       " Using text mode as default target.") % default_target)
+      self.default_target = BaseTargets::MULTIUSER
+    end
+
 
     attr_reader :initial_default_target
 

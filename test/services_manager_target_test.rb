@@ -157,7 +157,7 @@ module Yast
       context "when the default target has been changed" do
         let(:target) { "graphical" }
 
-        it "returns false" do
+        it "returns true" do
           expect(subject.modified?).to eq(true)
         end
       end
@@ -165,7 +165,7 @@ module Yast
       context "when the default target has not been changed" do
         let(:target) { "multi-user" }
 
-        it "returns true" do
+        it "returns false" do
           expect(subject.modified?).to eq(false)
         end
       end
