@@ -130,7 +130,7 @@ module Yast
       context "when default target is not available" do
         let(:target) { "graphical" }
 
-        it "reports an error and set to multi-user" do
+        it "reports a warning and sets to multi-user" do
           expect(Yast2::Systemd::Target).to receive(:find).and_return(nil)
           expect(Yast::Report).to receive(:Warning)
           expect(Yast2::Systemd::Target).to receive(:set_default).with("multi-user")
