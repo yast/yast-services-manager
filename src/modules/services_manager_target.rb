@@ -85,6 +85,7 @@ module Yast
     def read
       @targets = {}
       @default_target = ""
+      @initial_default_target = ""
 
       # Reads the data on a running system only
       return true if Stage.initial
@@ -139,7 +140,10 @@ module Yast
     end
 
     def save
-      return true unless modified?
+      if !modified?
+        log.info('Default target has not been changed.')
+        return true
+      end
 
       log.info('Saving default target...')
 

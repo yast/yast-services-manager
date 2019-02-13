@@ -139,6 +139,24 @@ module Yast
       end
     end
 
+    describe "#read" do
+      context "when an installation/update will be done" do
+        before do
+          allow(Yast::Stage).to receive(:initial).and_return(true)
+        end
+
+        it "does not read from the system" do
+          expect(Yast2::Systemd::Target).not_to receive(:get_default)
+          subject.read
+        end
+
+        it "reports that no data has been changed if it has not been set explicit" do
+          subject.read
+          expect(subject.modified?).to eq(false)
+        end
+      end
+    end
+
     describe "#reset" do
       it "sets the default target according to value in the system" do
         subject.default_target = "mdmonitor"
