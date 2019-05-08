@@ -56,9 +56,9 @@ module Y2ServicesManager
           "start-pre"     => N_("Start-pre"),
           "stop"          => N_("Stop"),
           "stop-post"     => N_("Stop-post"),
-          "stop-sigabrt"  => N_("Stop-sigabrt"),
           "stop-sigkill"  => N_("Stop-sigkill"),
-          "stop-sigterm"  => N_("Stop-sigterm")
+          "stop-sigterm"  => N_("Stop-sigterm"),
+          "stop-watchdog" => N_("Stop-watchdog")
         }
       }
       private_constant :TRANSLATIONS
