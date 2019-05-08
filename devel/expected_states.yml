@@ -22,6 +22,6 @@ service unit substates:
 - start-pre
 - stop
 - stop-post
-- stop-sigabrt
 - stop-sigkill
 - stop-sigterm
+- stop-watchdog
