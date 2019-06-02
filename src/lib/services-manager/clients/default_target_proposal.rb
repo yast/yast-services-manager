@@ -114,7 +114,7 @@ module Yast
       def create_dialog
         caption = _("Set Default Systemd Target")
         Wizard.CreateDialog
-        Wizard.SetDesktopIcon "org.openSUSE.YaST.ServicesManager"
+        Wizard.SetDesktopIcon "org.opensuse.yast.ServicesManager"
         Wizard.SetContentsButtons(
           caption,
           generate_content,
