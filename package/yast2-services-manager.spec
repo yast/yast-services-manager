@@ -43,7 +43,7 @@ BuildRequires:  yast2-journal >= 4.1.1
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(yast-rake) >= 0.1.7
 BuildRequires:  rubygem(rspec)
-BuildRequires:  yast2-devtools
+BuildRequires:  yast2-devtools >= 4.2.2
 
 Requires:       ruby
 # Yast2::Firewalld::Interface#zone returns a Zone object
