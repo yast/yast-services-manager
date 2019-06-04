@@ -12,7 +12,7 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
+# Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
 
 
@@ -24,24 +24,14 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.1.15
+Version:        4.2.0
 Release:        0
-BuildArch:      noarch
+Summary:        YaST2 - Services Manager
+Group:          System/YaST
+License:        GPL-2.0-or-later
+Url:            https://github.com/yast/yast-services-manager
 
-BuildRoot:      %{_tmppath}/%{name}-build
 Source0:        %{name}-%{version}.tar.bz2
-
-Requires:       ruby
-# Yast2::Firewalld::Interface#zone returns a Zone object
-Requires:       yast2 >= 4.1.17
-Requires:       yast2-ruby-bindings >= 1.2.0
-# To show service logs
-Suggests:	yast2-journal >= 4.1.1
-# need new enough installation for its inst clients
-Conflicts:      yast2-installation < 3.1.32
-
-Obsoletes:      yast2-runlevel
-Conflicts:      yast2-runlevel
 
 BuildRequires:  ruby
 BuildRequires:  update-desktop-files
@@ -49,54 +39,52 @@ BuildRequires:  update-desktop-files
 BuildRequires:  yast2 >= 4.1.17
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # To show service logs
-BuildRequires: 	yast2-journal >= 4.1.1
+BuildRequires:  yast2-journal >= 4.1.1
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(yast-rake) >= 0.1.7
 BuildRequires:  rubygem(rspec)
+BuildRequires:  yast2-devtools >= 4.2.2
 
-Summary:        YaST2 - Services Manager
-Group:          System/YaST
-License:        GPL-2.0-or-later
-Url:            https://github.com/yast/yast-services-manager
+Requires:       ruby
+# Yast2::Firewalld::Interface#zone returns a Zone object
+Requires:       yast2 >= 4.1.17
+Requires:       yast2-ruby-bindings >= 1.2.0
+
+# To show service logs
+Suggests:       yast2-journal >= 4.1.1
+
+Obsoletes:      yast2-runlevel
+
+# need new enough installation for its inst clients
+Conflicts:      yast2-installation < 3.1.32
+Conflicts:      yast2-runlevel
+
+BuildArch:      noarch
 
 %description
 Provides user interface and libraries to configure systemd
 services and targets.
 
 %prep
-%setup -n %{name}-%{version}
+%setup -q
 
 %build
 
 %check
-# opensuse-13.1 does not contain rspec in default repositories
-%if 0%{?suse_version} > 1310
 rake test:unit
-%endif
 
 %install
-rake install DESTDIR="%{buildroot}"
-%suse_update_desktop_file services-manager
-
-%define yast_dir %{_prefix}/share/YaST2
-%define yast_icondir %{_datadir}/icons
+%yast_install
+%yast_metainfo
 
 %files
-%defattr(-,root,root)
-%{yast_dir}/clients/*.rb
-%{yast_dir}/modules/*.rb
-%{yast_dir}/schema/autoyast/rnc/*.rnc
-%dir %{yast_dir}/lib/services-manager/
-%dir %{yast_dir}/lib/services-manager/clients
-%{yast_dir}/lib/services-manager/*.rb
-%{yast_dir}/lib/services-manager/clients/*.rb
-%dir %{yast_dir}/data/services-manager/
-%{yast_dir}/data/services-manager/*.erb
-%dir %{yast_dir}/lib/services-manager/widgets
-%{yast_dir}/lib/services-manager/widgets/*.rb
-%dir %{yast_dir}/lib/services-manager/dialogs
-%{yast_dir}/lib/services-manager/dialogs/*.rb
-%{_prefix}/share/applications/YaST2/services-manager.desktop
+%{yast_clientdir}
+%{yast_moduledir}
+%{yast_schemadir}
+%{yast_libdir}
+%{yast_ydatadir}
+%{yast_desktopdir}
+%{yast_metainfodir}
 %{yast_icondir}
-%_docdir/%name/
+%doc %{yast_docdir}
 %license COPYING

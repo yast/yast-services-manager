@@ -20,6 +20,7 @@ X-SuSE-YaST-Keywords=systemd,system,background
 Icon=yast-services-manager
 Exec=xdg-su -c "/sbin/yast2 services-manager"
 
-Name=Services Manager
-GenericName=Configure running services and the default target
+Name=YaST Services Manager
+GenericName=Services Manager
+Comment=Configure running services and the default target
 StartupNotify=true
