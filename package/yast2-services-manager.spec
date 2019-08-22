@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.2.0
+Version:        4.2.3
 Release:        0
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
@@ -41,8 +41,8 @@ BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # To show service logs
 BuildRequires:  yast2-journal >= 4.1.1
 # Support for 'data' directory in rake install task
-BuildRequires:  rubygem(yast-rake) >= 0.1.7
-BuildRequires:  rubygem(rspec)
+BuildRequires:  rubygem(%{rb_default_ruby_abi}:yast-rake) >= 0.1.7
+BuildRequires:  rubygem(%{rb_default_ruby_abi}:rspec)
 BuildRequires:  yast2-devtools >= 4.2.2
 
 Requires:       ruby
