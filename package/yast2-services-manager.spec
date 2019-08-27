@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        4.2.3
+Version:        4.2.4
 Release:        0
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
