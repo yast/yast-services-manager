@@ -177,7 +177,7 @@ module Yast
         it "setting to graphical if X11 is available" do
           expect(Installation).to receive(:x11_setup_needed).and_return(true)
           expect(Arch).to receive(:x11_setup_needed).and_return(true)
-          expect(Pkg).to receive(:IsSelected).with("xorg-x11-server").and_return(true)
+          expect(Pkg).to receive(:IsSelected).with("xdm").and_return(true)
           expect(ServicesManagerTarget).to receive(:import).and_call_original
           expect(ServicesManager.import({})).to eq(true)
           expect(ServicesManagerTarget.default_target).to eq("graphical")
