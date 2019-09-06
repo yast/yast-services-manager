@@ -125,7 +125,7 @@ module Yast
         # setting default_target due the defined environment
         self.default_target = (Installation.x11_setup_needed &&
           Arch.x11_setup_needed &&
-          Pkg.IsSelected("xorg-x11-server")) ? BaseTargets::GRAPHICAL : BaseTargets::MULTIUSER
+          Pkg.IsSelected("xdm")) ? BaseTargets::GRAPHICAL : BaseTargets::MULTIUSER
       else
         self.default_target = profile.target
       end
