@@ -234,7 +234,7 @@ module Yast
 
       def detect_target
         self.default_target =
-          if Arch.x11_setup_needed && Pkg.IsSelected("xorg-x11-server")
+          if Arch.x11_setup_needed && Pkg.IsSelected("xdm")
             give_reason _("X11 packages have been selected for installation")
             Target::GRAPHICAL
           elsif Mode.live_installation
@@ -257,7 +257,7 @@ module Yast
           elsif Linuxrc.usessh
             give_reason _("SSH installation mode assumes no GUI on the target system")
             Target::MULTIUSER
-          elsif !(Arch.x11_setup_needed && Pkg.IsSelected("xorg-x11-server"))
+          elsif !(Arch.x11_setup_needed && Pkg.IsSelected("xdm"))
             give_reason _("X11 packages have not been selected for installation")
             Target::MULTIUSER
           else
