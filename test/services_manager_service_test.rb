@@ -33,7 +33,7 @@ describe Yast::ServicesManagerServiceClass do
       Yast2::SystemService, name: "cups", description: "CUPS", start: true, stop: true,
       state: "active", substate: "running", changed?: false, start_mode: :on_boot,
       save: nil, refresh: nil, errors: {}, found?: true, action: nil,
-      keywords: ["cups.service", "cups.socket"]
+      keywords: ["cups.service", "cups.socket"], default_start_mode?: false
     )
   end
 
@@ -41,12 +41,20 @@ describe Yast::ServicesManagerServiceClass do
     instance_double(
       Yast2::SystemService, name: "dbus", changed?: true, start_mode: nil, active?: true,
       running?: true, refresh: nil, save: nil, errors: {}, found?: true, action: nil,
-      keywords: ["dbus.service"]
+      keywords: ["dbus.service"], default_start_mode?: false
+    )
+  end
+
+  let(:sshd) do
+    instance_double(
+      Yast2::SystemService, name: "sshd", changed?: false, start_mode: nil, active?: true,
+      running?: true, refresh: nil, save: nil, errors: {}, found?: true, action: nil,
+      keywords: ["sshd.service"], default_start_mode?: true
     )
   end
 
   let(:services) do
-    { "cups" => cups, "dbus" => dbus }
+    { "cups" => cups, "dbus" => dbus, "sshd" => sshd }
   end
 
   let(:loader) do
@@ -294,12 +302,30 @@ describe Yast::ServicesManagerServiceClass do
   end
 
   describe "#export" do
-    before do
-      allow(cups).to receive(:start_mode)
-      allow(dbus).to receive(:start_mode)
-    end
-
     let(:exported_services) { subject.export }
+
+    context "on compact mode" do
+      let(:exported_services) { subject.export(target: :compact) }
+
+      context "when all services are using the preset start mode" do
+        before do
+          allow(dbus).to receive(:default_start_mode?).and_return(true)
+          allow(cups).to receive(:default_start_mode?).and_return(true)
+        end
+
+        it "does not return any list" do
+          expect(exported_services).to eq(
+            "disable" => [],
+            "enable" => [],
+            "on_demand" => []
+          )
+        end
+      end
+
+      it "exports the service which start mode is not the preset" do
+        expect(exported_services).to include("enable" => ["cups"])
+      end
+    end
 
     context "when service is proposed to be started on boot" do
       before do

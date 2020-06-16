@@ -206,16 +206,34 @@ module Yast
     #
     # FIXME: should be checked (and decided what to do if so) if service is marked to be exported as
     # both, enabled or disabled
-    # @return [Hash{String => Array<String>}]
-    def export
-      on_boot_srvs = exportable_on_boot_services | ServicesProposal.enabled_services
-      on_demand_srvs = exportable_on_demand_services
-      disabled_srvs = exportable_disabled_services | ServicesProposal.disabled_services
+    #
+    # @param target [Symbol] Control how much information should be exported
+    #   (e.g., :default or :compact).
+    # @return [Hash{String => Array<String>}] profile data
+    def export(target: :default)
+      exportable_services = select_exportable_services(target == :compact)
+
+      on_boot_srvs = exportable_on_boot_services(exportable_services)
+      on_demand_srvs = exportable_on_demand_services(exportable_services)
+      disabled_srvs = exportable_disabled_services(exportable_services)
 
       log.info "Exported services: on boot: #{on_boot_srvs}; on-demand: #{on_demand_srvs}; " \
         "disabled: #{disabled_srvs}"
 
       { "enable" => on_boot_srvs, "on_demand" => on_demand_srvs, "disable" => disabled_srvs }
+    end
+
+    # Selects which services should be exported
+    #
+    # @param changed_preset [Boolean] Consider only those services which start mode is not the preset
+    # @return [Hash{String => Array<String>}] profile data
+    def select_exportable_services(changed_preset)
+      exportable_services = services.keys
+      return exportable_services unless changed_preset
+
+      exportable_services.reject! do |name|
+        exists?(name, &:default_start_mode?)
+      end
     end
 
     # Import services from AutoYast profile
@@ -460,16 +478,19 @@ module Yast
 
     # Selects candidate services to be exported as enabled to AutoYast profile
     #
-    # @return [Array<String>]
-    def exportable_on_boot_services
-      services.select { |n, _| start_mode(n) == :on_boot }.keys
+    # @param srvs [Array<String>] Exportable services names
+    # @return [Array<String>] Service names
+    def exportable_on_boot_services(srvs)
+      service_names = srvs.select { |s| start_mode(s) == :on_boot }
+      service_names | ServicesProposal.enabled_services
     end
 
     # Selects candidate services to be exported as enabled on-demand to AutoYast profile
     #
-    # @return [Array<String>]
-    def exportable_on_demand_services
-      services.select { |n, _| start_mode(n) == :on_demand }.keys
+    # @param srvs [Array<String>] Exportable services names
+    # @return [Array<String>] Service names
+    def exportable_on_demand_services(srvs)
+      srvs.select { |s| start_mode(s) == :on_demand }
     end
 
     # Selects candidate services to be exported as disabled to AutoYast profile
@@ -477,9 +498,11 @@ module Yast
     # Untouched services are discarded; only services modified by the user to be disabled must be
     # exported to AutoYast profile.
     #
-    # @return [Array<String>]
-    def exportable_disabled_services
-      services.select { |n, s| s.changed? && !enabled(n) }.keys
+    # @param srvs [Array<String>] Exportable services names
+    # @return [Array<String>] Service names
+    def exportable_disabled_services(srvs)
+      service_names = srvs.select { |s| !enabled(s) && changed_value?(s, :start_mode) }
+      service_names | ServicesProposal.disabled_services
     end
 
     # Enable or disable given services according to its status

@@ -29,10 +29,13 @@ module Yast
       textdomain 'services-manager'
     end
 
-    def export
+    # @param target [Symbol] Control how much information should be exported
+    #   (e.g., :default or :compact).
+    # @return [Hash] profile data
+    def export(target: :default)
       {
         TARGET   => ServicesManagerTarget.export,
-        SERVICES => ServicesManagerService.export
+        SERVICES => ServicesManagerService.export(target: target)
       }
     end
 
