@@ -46,8 +46,8 @@ module Y2ServicesManager
       end
 
       # @see ::Installation::AutoClient#export
-      def export
-        Yast::ServicesManager.export
+      def export(target: :default)
+        Yast::ServicesManager.export(target: target)
       end
 
       # @see ::Installation::AutoClient#read
