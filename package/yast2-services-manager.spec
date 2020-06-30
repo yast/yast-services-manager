@@ -35,8 +35,8 @@ Source0:        %{name}-%{version}.tar.bz2
 
 BuildRequires:  ruby
 BuildRequires:  update-desktop-files
-# Yast2::Firewalld::Interface#zone returns a Zone object
-BuildRequires:  yast2 >= 4.1.17
+# 'target' argument for Installation::AutoClient#export method
+BuildRequires:  yast2 >= 4.3.10
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
 # To show service logs
 BuildRequires:  yast2-journal >= 4.1.1
@@ -46,8 +46,8 @@ BuildRequires:  rubygem(%{rb_default_ruby_abi}:rspec)
 BuildRequires:  yast2-devtools >= 4.2.2
 
 Requires:       ruby
-# Yast2::Firewalld::Interface#zone returns a Zone object
-Requires:       yast2 >= 4.1.17
+ # 'target' argument for Installation::AutoClient#export method
+Requires:       yast2 >= 4.3.10
 Requires:       yast2-ruby-bindings >= 1.2.0
 
 # To show service logs
