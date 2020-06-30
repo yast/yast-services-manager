@@ -314,11 +314,7 @@ describe Yast::ServicesManagerServiceClass do
         end
 
         it "does not return any list" do
-          expect(exported_services).to eq(
-            "disable" => [],
-            "enable" => [],
-            "on_demand" => []
-          )
+          expect(exported_services).to eq({})
         end
       end
 
@@ -346,7 +342,6 @@ describe Yast::ServicesManagerServiceClass do
         exported = subject.export
         expect(exported["on_demand"]).to include("dbus")
         expect(exported["enable"]).to_not include("dbus")
-        expect(exported["disable"]).to_not include("dbus")
       end
     end
 
@@ -371,8 +366,8 @@ describe Yast::ServicesManagerServiceClass do
         end
 
         it "exports the service as disabled" do
-          expect(exported_services["enable"]).to_not include("cups")
           expect(exported_services["disable"]).to include("cups")
+          expect(exported_services["enable"]).to be_nil
         end
       end
 
@@ -383,7 +378,7 @@ describe Yast::ServicesManagerServiceClass do
 
         it "exports the service as enable" do
           expect(exported_services["enable"]).to include("cups")
-          expect(exported_services["disable"]).to_not include("cups")
+          expect(exported_services["disable"]).to be_nil
         end
       end
 
@@ -394,8 +389,8 @@ describe Yast::ServicesManagerServiceClass do
 
         it "exports the service to be started on demand" do
           expect(exported_services["on_demand"]).to include("cups")
-          expect(exported_services["enable"]).to_not include("cups")
-          expect(exported_services["disable"]).to_not include("cups")
+          expect(exported_services["enable"]).to be_nil
+          expect(exported_services["disable"]).to be_nil
         end
       end
 

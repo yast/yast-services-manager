@@ -220,7 +220,10 @@ module Yast
       log.info "Exported services: on boot: #{on_boot_srvs}; on-demand: #{on_demand_srvs}; " \
         "disabled: #{disabled_srvs}"
 
-      { "enable" => on_boot_srvs, "on_demand" => on_demand_srvs, "disable" => disabled_srvs }
+      exported = {
+        "enable" => on_boot_srvs, "on_demand" => on_demand_srvs, "disable" => disabled_srvs
+      }
+      exported.reject { |_k, v| v.empty? }
     end
 
     # Selects which services should be exported
