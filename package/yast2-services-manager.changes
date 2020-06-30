@@ -2,7 +2,7 @@
 Tue Jun 30 11:48:27 UTC 2020 - Imobach Gonzalez Sosa <igonzalezsosa@suse.com>
 
 - Honor the 'target' argument when cloning the system. If it is
-  set to 'compact', it only export those services which start
+  set to 'compact', it only exports those services which start
   mode is not set to their predefined values (bsc#1172749).
 - 4.3.1
 
