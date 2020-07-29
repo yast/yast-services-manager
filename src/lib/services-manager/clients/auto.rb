@@ -32,7 +32,7 @@ module Y2ServicesManager
 
       # @see ::Installation::AutoClient#change
       def change
-        WFM.CallFunction("services-manager")
+        WFM.CallFunction("services-manager") ? :accept : :cancel
       end
 
       # @see ::Installation::AutoClient#summary
