@@ -587,6 +587,9 @@ module Y2ServicesManager
       #
       # @return [Array<String>] name of all services
       def read_services
+        # use stored services for config mode
+        return ServicesManagerService.services.keys if Mode.config
+
         if Y2ServicesManager::ServiceLoader.chroot_env?
            Popup.Error(_("Cannot read services in chroot environment."))
            return []
