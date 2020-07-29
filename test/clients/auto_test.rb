@@ -36,8 +36,8 @@ describe Y2ServicesManager::Clients::Auto do
       client.change
     end
 
-    it "returns the value from the services-manager client" do
-      expect(client.change).to eq(true)
+    it "returns :accept if changes are confirmed" do
+      expect(client.change).to eq(:accept)
     end
   end
 
