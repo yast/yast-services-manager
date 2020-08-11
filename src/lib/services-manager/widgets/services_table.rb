@@ -79,7 +79,7 @@ module Y2ServicesManager
 
       # @return [Yast::Term]
       def widget
-        @table ||= Table(id, Opt(:immediate), header, items)
+        @table ||= Table(id, Opt(:immediate, :keepSorting), header, items)
       end
 
       # Sets focus on the table
