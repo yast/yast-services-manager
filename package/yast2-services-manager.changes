@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug 10 15:18:56 UTC 2020 - Martin Vidner <mvidner@suse.com>
+
+- Fix changing other services than the user expects (bsc#1165388,
+  bsc#1174615)
+- 4.2.7
+
+-------------------------------------------------------------------
 Wed Jul 29 11:15:35 UTC 2020 - Josef Reidinger <jreidinger@suse.com>
 
 - Fix detection of modifications in AutoYaST config mode
