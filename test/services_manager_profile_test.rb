@@ -191,6 +191,7 @@ module Yast
       end
 
       it "provides empty list of services" do
+        expect(Yast::Report).to receive(:Error)
         expect(profile.services).to be_empty
       end
     end
