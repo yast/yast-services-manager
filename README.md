@@ -7,7 +7,9 @@ https://ci.opensuse.org/view/Yast/job/yast-yast-services-manager-master/)
 [![Coverage Status](https://img.shields.io/coveralls/yast/yast-services-manager.svg)](https://coveralls.io/r/yast/yast-services-manager?branch=master)
 [![inline docs](http://inch-ci.org/github/yast/yast-services-manager.svg?branch=master)](http://inch-ci.org/github/yast/yast-services-manager)
 
-Systemd status check: [![Build Status](https://travis-ci.org/yast/yast-services-manager.svg?branch=systemd_states_check)](https://travis-ci.org/yast/yast-services-manager/branches)
+[Systemd status check](https://github.com/yast/yast-services-manager/tree/check_systemd_states):
+[![Check](https://github.com/yast/yast-services-manager/actions/workflows/check.yml/badge.svg?branch=check_systemd_states)](
+https://github.com/yast/yast-services-manager/actions/workflows/check.yml?query=branch%3Acheck_systemd_states)
 
 
 Systemd target and services configuration library for Yast
