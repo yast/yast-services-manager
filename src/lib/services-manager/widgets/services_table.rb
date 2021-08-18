@@ -44,25 +44,25 @@ module Y2ServicesManager
           "reloading"    => N_("Reloading")
         },
         service_substate: {
-          "auto-restart"  => N_("Auto-restart"),
-          "cleaning"      => N_("Cleaning"),
-          "condition"     => N_("Condition"),
-          "dead"          => N_("Dead"),
-          "exited"        => N_("Exited"),
-          "failed"        => N_("Failed"),
-          "final-sigkill" => N_("Final-sigkill"),
-          "final-sigterm" => N_("Final-sigterm"),
+          "auto-restart"   => N_("Auto-restart"),
+          "cleaning"       => N_("Cleaning"),
+          "condition"      => N_("Condition"),
+          "dead"           => N_("Dead"),
+          "exited"         => N_("Exited"),
+          "failed"         => N_("Failed"),
+          "final-sigkill"  => N_("Final-sigkill"),
+          "final-sigterm"  => N_("Final-sigterm"),
           "final-watchdog" => N_("Final-watchdog"),
-          "reload"        => N_("Reload"),
-          "running"       => N_("Running"),
-          "start"         => N_("Start"),
-          "start-post"    => N_("Start-post"),
-          "start-pre"     => N_("Start-pre"),
-          "stop"          => N_("Stop"),
-          "stop-post"     => N_("Stop-post"),
-          "stop-sigkill"  => N_("Stop-sigkill"),
-          "stop-sigterm"  => N_("Stop-sigterm"),
-          "stop-watchdog" => N_("Stop-watchdog")
+          "reload"         => N_("Reload"),
+          "running"        => N_("Running"),
+          "start"          => N_("Start"),
+          "start-post"     => N_("Start-post"),
+          "start-pre"      => N_("Start-pre"),
+          "stop"           => N_("Stop"),
+          "stop-post"      => N_("Stop-post"),
+          "stop-sigkill"   => N_("Stop-sigkill"),
+          "stop-sigterm"   => N_("Stop-sigterm"),
+          "stop-watchdog"  => N_("Stop-watchdog")
         }
       }
       private_constant :TRANSLATIONS
