@@ -7,14 +7,18 @@ unit active states:
 - deactivating
 - failed
 - inactive
+- maintenance
 - reloading
 service unit substates:
 - auto-restart
+- cleaning
+- condition
 - dead
 - exited
 - failed
 - final-sigkill
 - final-sigterm
+- final-watchdog
 - reload
 - running
 - start
