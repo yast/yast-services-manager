@@ -32,7 +32,7 @@ module Y2ServicesManager
       # Systemd states and substates might change. Use the following script to check
       # whether new states are not considered yet:
       #
-      # https://github.com/yast/yast-services-manager/blob/systemd_states_check/devel/systemd_status_check.rb
+      # https://github.com/yast/yast-services-manager/blob/check_systemd_states/systemd_status_check.rb
       TRANSLATIONS = {
         service_state: {
           "activating"   => N_("Activating"),
