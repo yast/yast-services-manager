@@ -100,5 +100,8 @@ if equal
   puts Rainbow("Check OK, no difference found").green
 else
   puts Rainbow("Check failed!").red
+  puts "Tips for resolving this and pointers to relevant code"
+  puts "in YaST and Systemd are in"
+  puts "https://github.com/yast/yast-services-manager/blob/check_systemd_states/README.md"
   exit 1
 end
