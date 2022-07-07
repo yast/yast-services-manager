@@ -44,6 +44,8 @@ BuildRequires:  yast2-journal >= 4.1.1
 BuildRequires:  rubygem(%{rb_default_ruby_abi}:yast-rake) >= 0.1.7
 BuildRequires:  rubygem(%{rb_default_ruby_abi}:rspec)
 BuildRequires:  yast2-devtools >= 4.2.2
+# The tests need systemctl
+BuildRequires:  pkgconfig(systemd)
 
 Requires:       ruby
  # 'target' argument for Installation::AutoClient#export method
