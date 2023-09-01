@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Sep 01 19:57:03 UTC 2023 - Josef Reidinger <jreidinger@suse.com>
+
+- Branch package for SP6 (bsc#1208913)
+
+-------------------------------------------------------------------
 Thu Jul  7 09:44:23 UTC 2022 - Fabian Vogt <fvogt@suse.com>
 
 - Explicitly pull in systemctl for buildtime tests (jsc#SMO-84)
