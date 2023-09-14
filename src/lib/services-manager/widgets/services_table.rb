@@ -133,7 +133,8 @@ module Y2ServicesManager
       def help
         # TRANSLATORS: help text to explain the columns of the services table
         _(
-          "<h2>The table contains the following information:</h2>" \
+          "<h2>The Services Table</h2>" \
+          "<p>This table contains <b>all services</b> with the following information about each service:</p>" \
           "<b>Service</b> shows the name of the service." \
           "<br />" \
           "<b>Start</b> shows the start mode of the service:" \
