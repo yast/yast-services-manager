@@ -2,8 +2,7 @@
 
 [![Workflow Status](https://github.com/yast/yast-services-manager/workflows/CI/badge.svg?branch=master)](
 https://github.com/yast/yast-services-manager/actions?query=branch%3Amaster)
-[![Jenkins Status](https://ci.opensuse.org/buildStatus/icon?job=yast-yast-services-manager-master)](
-https://ci.opensuse.org/view/Yast/job/yast-yast-services-manager-master/)
+[![OBS](https://github.com/yast/yast-services-manager/actions/workflows/submit.yml/badge.svg)](https://github.com/yast/yast-services-manager/actions/workflows/submit.yml)
 [![Coverage Status](https://img.shields.io/coveralls/yast/yast-services-manager.svg)](https://coveralls.io/r/yast/yast-services-manager?branch=master)
 [![inline docs](http://inch-ci.org/github/yast/yast-services-manager.svg?branch=master)](http://inch-ci.org/github/yast/yast-services-manager)
 
