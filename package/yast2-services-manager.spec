@@ -1,7 +1,7 @@
 #
 # spec file for package yast2-services-manager
 #
-# Copyright (c) 2013 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2023 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -29,7 +29,7 @@ Release:        0
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
 License:        GPL-2.0-or-later
-Url:            https://github.com/yast/yast-services-manager
+URL:            https://github.com/yast/yast-services-manager
 
 Source0:        %{name}-%{version}.tar.bz2
 
@@ -42,8 +42,8 @@ BuildRequires:  yast2-ruby-bindings >= 1.2.0
 BuildRequires:  yast2-journal >= 4.1.1
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(%{rb_default_ruby_abi}:yast-rake) >= 0.1.7
-BuildRequires:  rubygem(%{rb_default_ruby_abi}:rspec)
 BuildRequires:  yast2-devtools >= 4.2.2
+BuildRequires:  rubygem(%{rb_default_ruby_abi}:rspec)
 # The tests need systemctl
 BuildRequires:  pkgconfig(systemd)
 
@@ -92,3 +92,5 @@ rake test:unit
 %{yast_icondir}
 %doc %{yast_docdir}
 %license COPYING
+
+%changelog
