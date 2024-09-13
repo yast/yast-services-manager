@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Sep 13 08:04:45 UTC 2024 - Ladislav Slezák <lslezak@suse.com>
+
+- Branch package for SP7 (bsc#1230201)
+
+-------------------------------------------------------------------
 Mon May 15 13:36:23 UTC 2023 - Stefan Hundhammer <shundhammer@suse.com>
 
 - Improved help text for services table (bsc#1211320)
