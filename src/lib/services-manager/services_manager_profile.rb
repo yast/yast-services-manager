@@ -12,7 +12,6 @@ module Yast
   #     <enable config:type="list">
   #       <service>at</service>
   #       <service>cron</service>
-  #       <service>nscd</service>
   #       <service>openct</service>
   #       <service>postfix</service>
   #       <service>rsyslog</service>
