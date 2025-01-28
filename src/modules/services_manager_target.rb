@@ -68,7 +68,6 @@ module Yast
     end
 
     # @return [Hash] Collection of available targets
-    # @example {'rescue' => {:enabled=>false, :loaded=>true, :active=>false, :description=>'Rescue'}}
     def targets
       read if @targets.nil?
       @targets
