@@ -24,7 +24,7 @@
 ######################################################################
 
 Name:           yast2-services-manager
-Version:        5.0.1
+Version:        5.0.2
 Release:        0
 Summary:        YaST2 - Services Manager
 Group:          System/YaST
@@ -34,7 +34,6 @@ Url:            https://github.com/yast/yast-services-manager
 Source0:        %{name}-%{version}.tar.bz2
 
 BuildRequires:  ruby
-BuildRequires:  update-desktop-files
 # 'target' argument for Installation::AutoClient#export method
 BuildRequires:  yast2 >= 4.3.10
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
