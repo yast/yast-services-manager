@@ -37,8 +37,13 @@ BuildRequires:  ruby
 # 'target' argument for Installation::AutoClient#export method
 BuildRequires:  yast2 >= 4.3.10
 BuildRequires:  yast2-ruby-bindings >= 1.2.0
-# To show service logs
+
+# only in openSUSE Tumbleweed or Leap, not in SLES
+%if 0%{?suse_version} == 1699 || 0%{?is_opensuse}
+# needed just to run an unit test
 BuildRequires:  yast2-journal >= 4.1.1
+%endif
+
 # Support for 'data' directory in rake install task
 BuildRequires:  rubygem(%{rb_default_ruby_abi}:yast-rake) >= 0.1.7
 BuildRequires:  rubygem(%{rb_default_ruby_abi}:rspec)

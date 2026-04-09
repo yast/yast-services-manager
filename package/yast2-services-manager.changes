@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Apr  9 13:49:00 UTC 2026 - Ladislav Slezák <lslezak@suse.com>
+
+- Drop the yast2-journal build dependency in SLES, this allows also
+  dropping libyui from SLES (related to bsc#1254978)
+- 5.0.3
+
+-------------------------------------------------------------------
 Tue Mar 10 09:00:28 UTC 2026 - Michal Filka <mfilka@suse.com>
 
 - jsc#PED-14507

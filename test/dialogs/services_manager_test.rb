@@ -23,7 +23,11 @@
 require_relative '../test_helper'
 
 require "yast"
-require "y2journal"
+begin
+  require "y2journal"
+rescue LoadError
+  puts "yast2-journal not installed, skipping journal tests"
+end
 require "services-manager/dialogs/services_manager"
 
 describe Y2ServicesManager::Dialogs::ServicesManager do
@@ -331,24 +335,26 @@ describe Y2ServicesManager::Dialogs::ServicesManager do
       include_examples "save with errors"
     end
 
-    context "when user selects 'Show Log' button" do
-      let(:user_input) { [:logs_button, :cancel] }
+    if defined?(::Y2Journal)
+      context "when user selects 'Show Log' button" do
+        let(:user_input) { [:logs_button, :cancel] }
 
-      let(:entries_dialog) { instance_double(Y2Journal::EntriesDialog, run: nil) }
+        let(:entries_dialog) { instance_double(Y2Journal::EntriesDialog, run: nil) }
 
-      let(:services_specs) { [sshd_specs2, postfix_specs] }
+        let(:services_specs) { [sshd_specs2, postfix_specs] }
 
-      let(:sshd_specs2) { sshd_specs.merge(keywords: keywords) }
+        let(:sshd_specs2) { sshd_specs.merge(keywords: keywords) }
 
-      let(:keywords) { ["sshd.service", "sshd.socket"] }
+        let(:keywords) { ["sshd.service", "sshd.socket"] }
 
-      it "shows the systemd journal entries for the selected service" do
-        expect(Y2Journal::EntriesDialog).to receive(:new) do |params|
-          filters = params[:query].filters["unit"]
-          expect(filters).to contain_exactly(*keywords)
-        end.and_return(entries_dialog)
+        it "shows the systemd journal entries for the selected service" do
+          expect(Y2Journal::EntriesDialog).to receive(:new) do |params|
+            filters = params[:query].filters["unit"]
+            expect(filters).to contain_exactly(*keywords)
+          end.and_return(entries_dialog)
 
-        subject.run
+          subject.run
+        end
       end
     end
 
