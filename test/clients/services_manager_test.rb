@@ -23,7 +23,11 @@
 require_relative '../test_helper'
 
 require "yast"
-require "y2journal"
+begin
+  require "y2journal"
+rescue LoadError
+  puts "yast2-journal not installed, skipping journal tests"
+end
 require "services-manager/clients/services_manager"
 
 describe Y2ServicesManager::Clients::ServicesManager do
@@ -42,16 +46,18 @@ describe Y2ServicesManager::Clients::ServicesManager do
       subject.run
     end
 
-    context "when yast2-journal is installed" do
-      before do
-        allow(subject).to receive(:journal_loaded?).and_return(true)
-      end
+    if defined?(::Y2Journal)
+      context "when yast2-journal is installed" do
+        before do
+          allow(subject).to receive(:journal_loaded?).and_return(true)
+        end
 
-      it "runs the dialog with a button to show the logs" do
-        expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
-          .with(hash_including(show_logs_button: true)).and_return(dialog)
+        it "runs the dialog with a button to show the logs" do
+          expect(Y2ServicesManager::Dialogs::ServicesManager).to receive(:new)
+            .with(hash_including(show_logs_button: true)).and_return(dialog)
 
-        subject.run
+          subject.run
+        end
       end
     end
 
